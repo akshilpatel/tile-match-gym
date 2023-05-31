@@ -2,10 +2,11 @@ import numpy as np
 import time
 
 class Board:
-    def __init__(self, width, height, num_types: int= 4):
+    def __init__(self, width, height, num_types: int= 6):
         self.board = np.random.randint(1, num_types, size=(width, height))
         self.height = height
         self.width = width
+        self.num_types = num_types
 
     def set_board(self, board):
         self.board = board
@@ -45,8 +46,26 @@ class Board:
                         hit = True
         # apply the mask
         self.board = self.board * mask
-
-
+    
+    """ moves all the zeros in a column up to the top """
+    def cascade(self):
+        for col in self.board.T:
+            zero_count = 0
+            for i in range(len(col)-1, -1, -1):
+                if col[i] == 0:
+                    zero_count += 1
+                elif zero_count != 0:
+                    col[i+zero_count] = col[i]
+                    col[i] = 0
+    
+    """ fills in the missing spaces with random numbers """
+    def fill_missing(self):
+        for col in self.board.T:
+            for i in range(len(col)):
+                if col[i] == 0:
+                    col[i] = np.random.randint(1, self.num_types) # TODO: change this thing
+                else:
+                    break
 
 def alternating_board(w,h):
     board = np.zeros((w,h), np.int32)
@@ -111,7 +130,12 @@ if __name__ == '__main__':
     print("time taken:", time.time() - s)
     print("before:\n",y)
     print("after:\n",board.board)
+    board.cascade()
+    print("after cascade:\n",board.board)
+    board.fill_missing()
+    print("after filling zeros:\n",board.board)
 
+    print("#"*80)
 
     board = Board(200,200)
     y = board.board.copy()
