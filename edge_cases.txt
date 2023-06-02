@@ -1,0 +1,22 @@
+x o
+x o
+o x  # Swap these two
+x o 
+
+
+---
+
+bomb
+ o 
+ o
+ x o # Swap these two
+
+ This should first create a stripe candy at the bottom, replacing the bottom 3. Then the bomb falls and activates.
+
+
+ ---
+ x x o x o o 
+
+ They should both go at the same time.
+
+
