@@ -58,6 +58,7 @@ class CandyCrush(gym.Env):
             "cookie": 4
         }
 
+
     def reset(self, seed:Optional[int] = None):
         if seed is not None:
             self.np_random = np.random.default_rng(seed)
@@ -99,13 +100,13 @@ class CandyCrush(gym.Env):
             if self.board[coord[0], coord[1]] == int(4*self.num_candy_types + 1) or self.board[coord2[0], coord2[1]] == int(4*self.num_candy_types + 1):
                 return True, 1
         
-        
         # Extract a 6x6 grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
         y_ranges = max(0, coord[0] - 2), min(self.board_height, coord2[0] + 3)
         x_ranges = max(0, coord[1] - 2), min(self.board_width, coord2[1] + 3)
         surround_grid = self.board[y_ranges[0]: y_ranges[1]][x_ranges[0]: x_ranges[1]][:]
-        surround_grid[coord[0], coord[1]], surround_grid[coord2[0], coord2[1]] = surround_grid[coord2[0], coord2[1]], self.board[coord[0], coord[1]]        
         
+        # Swap the coordinates to see what happens.
+        surround_grid[coord[0], coord[1]], surround_grid[coord2[0], coord2[1]] = surround_grid[coord2[0], coord2[1]], self.board[coord[0], coord[1]]        
         # Set to zero for multi-coloured bombs. This does nothing when not using specials. 
         surround_grid[surround_grid == int(4*self.num_candy_types + 1)] = -1 
         
@@ -114,8 +115,8 @@ class CandyCrush(gym.Env):
         for sg in [surround_grid, surround_grid.T]:
             for j in range(sg.shape[0]):
                 for i in range(2, sg.shape[1]):
-                    # If the current and previous 2 are matched
-                    if sg[j, i-2] == sg[j, i-1] == sg[j, i] > 0:
+                    # If the current and previous 2 are matched and that they are not cookies.
+                    if sg[j, i-2] == sg[j, i-1] == sg[j, i] and sg[j, i]> 0:
                         return True, 0
         return False, 0
     
@@ -131,6 +132,17 @@ class CandyCrush(gym.Env):
             return candy_colour1 == candy_colour2
 
     def _get_activation_area(self, affected_coords_list: List[Tuple[int, int]], num_special=0) -> List[Tuple[int, int]]:
+        """
+        Given a list of root coordinates, this function finds the island of candies of the same colour.
+        The function works using a depth first search using the neighbours of a coordinate. 
+
+        Args:
+            affected_coords_list (List[Tuple[int, int]]): List of coordinates to start searching from.
+            num_special (int, optional): If there are knwo. Defaults to 0.
+
+        Returns:
+            List[Tuple[int, int]]: _description_
+        """
         # Determine if the neighbours of each cell are part of the affected group i.e. if there is a match of 3 starting from the bottom up.
         if num_special == 0:
             cardinal_dirs = [(0,1), (1, 0), (-1, 0), (0, -1)]   
@@ -148,7 +160,7 @@ class CandyCrush(gym.Env):
                                 affected_coords_list.append(nbh_coord)
                     visited.add(coord)
             return visited.union(nbh_visited)
-        
+    
 
         # Cookie involved TODO: Make this work for specials.
         if num_special == 1:
@@ -163,8 +175,8 @@ class CandyCrush(gym.Env):
             elif candy_type == self.special_translator["bomb"]:
                 pass
         # Two cookies, cookie and stripe, v stripe and vstripe, stripe and bomb, bomb and bomb.
-        else:
-            pass
+        raise NotImplementedError()
+            
 
     def _filter_target_area(self, target_area: List[List[Tuple[int, int]]]):
         """Given a board and target area, this function determines what cells actually are activated.It determines what cells are blown up first.
@@ -176,7 +188,6 @@ class CandyCrush(gym.Env):
         # Activate 1 special.
         if len(target_area) == 1:
             return target_area
-
 
         v_sort = sorted(target_area, key = lambda x : x[0])
         h_sort = sorted(target_area, key = lambda x : x[1])
@@ -205,6 +216,8 @@ class CandyCrush(gym.Env):
                         else:
                             start_col = end_col
                     end_col += 1
+
+        
         if max_line_len > 3:
             # Horizontal line
             if max_line_start[0] == max_line_end[0]: 
@@ -212,7 +225,6 @@ class CandyCrush(gym.Env):
             # Vertical Line
             else:
                 return [(max_line_start[0] + i, max_line_start[1]) for i in range(max_line_end[0] - max_line_start[0])]
-            
         else: # Has to be 3.
             three_coords = set()
             for start, end in max_line_candidates:
@@ -221,7 +233,7 @@ class CandyCrush(gym.Env):
                         three_coords.add((x, y))
             return three_coords
 
-    def _activate_cells(self, cell_coords: List[Tuple[int, int]]):
+    def _activation_pass(self, filtered_activation_coords: List[Tuple[int, int]], skip_coords:List[Tuple[int, int]] = []):
         """ 
         Cases:
             3 in a row. 
@@ -234,35 +246,87 @@ class CandyCrush(gym.Env):
             3 in a row with specials
             4 in a ro with specials
             5 in a row with specials.
-            1 special.    
+            1 special.
         """
-
         # If there are 5 or more, get the centre one, turn it into a cookie, activate the rest. the rest.
         # If it's 4, get the centre one, turn it into a stripe delete the rest.
         # If 
-        pass
+        for coord in filtered_activation_coords:
+            if coord not in skip_coords:
+                self._activate_cell(coord)
 
-    def _creation_pass(self, coords):
-        pass
+    def _get_candy_value(self, candy_type:str, candy_colour: int):
+        return self.special_translator[candy_type] * self.num_candy_types + candy_colour
+
+    def _activate_cell(self, coord:Tuple[int, int]):
+        # Only call this when the cell is hit by another thing. Not for specials.
+        # Bunch of if statements for which the board changes.
+        candy_type = self._get_candy_type(coord)
+        self.board[coord[0], coord[1]] = 0
+        if candy_type == "horizontal_stripe":
+            map(self._activate_cell, [(coord[0], i) for i in range(self.board_width)])
+        elif candy_type == "vertical_stripe":
+            map(self._activate_cell, [(i, coord[1]) for i in range(self.board_height)])
+        elif candy_type == "bomb":
+            coords = [(coord[0] + i, coord[1] + j) for i in range(-1, 2) for j in range(-1, 2)]
+            map(self._activate_cell, coords)
+        elif candy_type == "cookie":
+            raise NotImplementedError()
+            # Choose a random cell next to it and 
+
+    def _creation_pass(self, activation_coords_list: List[Tuple[int, int]]):
+        """This function takes a pass over the activation coordinates and checks if there are 4s, 5s or Ls or Ts.
+          If so, inserts special. 
+
+        Args:
+            activation_coords_list (List[List[Tuple[int, int]]]): List containing lists of coordinates to consider for activation next.
+        """
+        # Loop through each list of coordinates. Get the length of the list. If it's 5 then cookie, elif f
+        # Could be more than one 
+        skip_coords = set()
+        if len(activation_coords_list) == 1:
+            return skip_coords
+        else:
+            # Horizontal line given
+            is_horizontal = activation_coords_list[0][0] == activation_coords_list[1][0]
+            coord_list = sorted(activation_coords_list, key = lambda x: x[is_horizontal])
+            if len(coord_list) >= 5:
+                special_coord = coord_list[0] + int(is_horizontal*2), coord_list[1] + int((1-is_horizontal)*3)
+                self.board[special_coord[0], special_coord[1]] = self._get_candy_value("cookie", 0)
+                skip_coords.add(special_coord)
+            elif len(coord_list) == 4:
+                # horizontal stripe if the line is horizontal. 
+                stripe_type = "horizontal_stripe" if is_horizontal else "vertical_stripe"
+                special_coord = coord_list[0] + int(is_horizontal*2), coord_list[1] + int((1-is_horizontal)*3)
+                self.board[coord_list[0] + int(is_horizontal), coord_list[1] + int((1-is_horizontal))] = self._get_candy_value(stripe_type, 0) # TODO: Adaptively set coordinate of where to put striped candy depending on where the move takes place.
+            # Matched 3
+            # TODO: Add functionality for bombs.
+                # Put a 
+        return skip_coords
+
+    def _execute_pass(self, filtered_activation_coords):
+        skip_coords = self._creation_pass(filtered_activation_coords) # Creates 
+        # Remove all match 3s, carry out effects of specials.
+        self._activation_pass(filtered_activation_coords, skip_coords)
+
 
     def step(self, action:int) -> Tuple[np.ndarray, float, bool, bool, Dict]:
         # Actions correspond to 2 for each tile position. One for a down swipe and another for a right swipe. 
         # 1) Find the coordinate and the up or right coord. Check for invalid actions.
         coord, coord2 = self._action_to_coords(action)
         is_valid, num_special = self._check_valid_action(coord, coord2)
+        
         if not is_valid:
             return self.board.copy(), self.default_reward, False, False, self._get_info()
         else:
             # These are the cells that need to be activated together. What happens to them is determined in _activate_cells.
-            next_affected_cells_list = self._get_next_activated_cells([coord, coord2], num_special=num_special > 0)  
-            while len(next_affected_cells_list) > 0:
-                self._activate_cells(next_affected_cells_list) # Figure out what needs to happen to the region depending on its shape. 
+            next_affected_cells = self._get_next_activated_cells([coord, coord2], num_special=num_special > 0)  
+            while len(next_affected_cells) > 0:
+                self._activate_cells(next_affected_cells) # Figure out what needs to happen to the region depending on its shape. 
                 self._cascade()
                 next_affected_cells = self._get_next_activated_cells()
 
-
         # Invalid action
-            has_matched_candies = self.eliminate_matched_candies()
             if not has_matched_candies:
                 self.board[coord[0], coord[1]], self.board[coord2[0], coord2[1]] = self.board[coord2[0], coord2[1]], self.board[coord[0], coord[1]]
             else:            
@@ -342,6 +406,13 @@ class CandyCrush(gym.Env):
 
 ##############
 
+
+# Check valid move
+# If specials - activate specials. 
+# If 5s make a cookie at the coordinate of the move or at the centre of the line, activate the rest of the cells.
+# If 4s make a stripe at the coordinate of the move or at the centre of the line, 
+# If L or T make a bomb at the coordinate of the move or at the centre of the line.
+# If 3 disappear.
 
 # def alternating_board(w,h):
 #     board = np.zeros((w,h), np.int32)
