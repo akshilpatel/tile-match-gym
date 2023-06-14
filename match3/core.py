@@ -10,31 +10,31 @@ from collections import deque
 
 
 
-class CandyCrush(gym.Env):
+class Board(gym.Env):
     """
-    CANDY_TYPES = {
-        1:      candy1 
-        2:      candy2,
+    tile_TYPES = {
+        1:      tile1 
+        2:      tile2,
         ...
-        n:      candyn,
-        n+1:    vstripe_candy1,
+        n:      tilen,
+        n+1:    vstripe_tile1,
         ...,
-        2n:     vstripe_candyn,
-        2n+1:   hstripe_candy1,
+        2n:     vstripe_tilen,
+        2n+1:   hstripe_tile1,
         ...,
-        3n:     hstripe_candyn,
-        3n+1:   bomb_candy1,
+        3n:     hstripe_tilen,
+        3n+1:   bomb_tile1,
         ...,
-        4n:     bomb_candyn,
+        4n:     bomb_tilen,
         4n+1:   cookie
     }
     """
-    def __init__(self, board_height:int, board_width:int, num_candy_types:int, add_specials:bool=False, num_blockers:int=0, seed:Optional[int] = None):
+    def __init__(self, board_height:int, board_width:int, num_tile_types:int, add_specials:bool=False, num_blockers:int=0, seed:Optional[int] = None):
 
         super().__init__()
         self.board_height = board_height
         self.board_width = board_width
-        self.num_candy_types = num_candy_types
+        self.num_tile_types = num_tile_types
         self.num_blockers = num_blockers
         if seed is None:
             seed = np.random.randint(0, 1000000000)
@@ -43,9 +43,9 @@ class CandyCrush(gym.Env):
          
         self._add_specials = add_specials
         if add_specials:
-            high = 2 + int(4*num_candy_types)
+            high = 2 + int(4*num_tile_types)
         else:
-            high = num_candy_types + 1
+            high = num_tile_types + 1
         
         self.observation_space = Box(low = 1, high = high, shape=(board_height, board_width)) # Normal, v stripe, h stripe, wrapped, and 1 bomb. # TODO: Add blockers for next version of environment. 
         self.action_space = Discrete(int(2 * self.flat_size))
@@ -62,7 +62,7 @@ class CandyCrush(gym.Env):
     def reset(self, seed:Optional[int] = None):
         if seed is not None:
             self.np_random = np.random.default_rng(seed)
-        self.board = self.np_random.integers(1, self.num_candy_types + 1, size = self.flat_size).reshape(self.board_height, self.board_width)
+        self.board = self.np_random.integers(1, self.num_tile_types + 1, size = self.flat_size).reshape(self.board_height, self.board_width)
         has_matched_candies = True
         while has_matched_candies:
             has_matched_candies = self.eliminate_matched_candies()
@@ -93,11 +93,11 @@ class CandyCrush(gym.Env):
 
         if self._add_specials:
             ## Check if the candies at both coordinates are both special.
-            if self.board[coord[0], coord[1]] > self.num_candy_types and self.board[coord2[0], coord2[1]] > self.num_candy_types:
+            if self.board[coord[0], coord[1]] > self.num_tile_types and self.board[coord2[0], coord2[1]] > self.num_tile_types:
                 return True, 2
             
-            ## Check if one candy is a multi-coloured bomb.
-            if self.board[coord[0], coord[1]] == int(4*self.num_candy_types + 1) or self.board[coord2[0], coord2[1]] == int(4*self.num_candy_types + 1):
+            ## Check if one tile is a multi-coloured bomb.
+            if self.board[coord[0], coord[1]] == int(4*self.num_tile_types + 1) or self.board[coord2[0], coord2[1]] == int(4*self.num_tile_types + 1):
                 return True, 1
         
         # Extract a 6x6 grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
@@ -108,10 +108,10 @@ class CandyCrush(gym.Env):
         # Swap the coordinates to see what happens.
         surround_grid[coord[0], coord[1]], surround_grid[coord2[0], coord2[1]] = surround_grid[coord2[0], coord2[1]], self.board[coord[0], coord[1]]        
         # Set to zero for multi-coloured bombs. This does nothing when not using specials. 
-        surround_grid[surround_grid == int(4*self.num_candy_types + 1)] = -1 
+        surround_grid[surround_grid == int(4*self.num_tile_types + 1)] = -1 
         
-        # Doesn't matter what type of candy it is, if the colours match then its a match
-        surround_grid %= self.num_candy_types 
+        # Doesn't matter what type of tile it is, if the colours match then its a match
+        surround_grid %= self.num_tile_types 
         for sg in [surround_grid, surround_grid.T]:
             for j in range(sg.shape[0]):
                 for i in range(2, sg.shape[1]):
@@ -120,16 +120,16 @@ class CandyCrush(gym.Env):
                         return True, 0
         return False, 0
     
-    def _get_candy_type(self, coord: Tuple[int, int]) -> str:        
-        return self.special_translator[self.board[coord[0], coord[1]] // self.num_candy_types]
+    def _get_tile_type(self, coord: Tuple[int, int]) -> str:        
+        return self.special_translator[self.board[coord[0], coord[1]] // self.num_tile_types]
     
     def _check_same_colour(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
         if self.special_translator[self.board[coord1[0], coord1[1]]] == "cookie":
             return False
         else:
-            candy_colour1 = self.board[coord1[0], coord1[1]] % self.num_candy_types
-            candy_colour2 = self.board[coord2[0], coord2[1]] % self.num_candy_types
-            return candy_colour1 == candy_colour2
+            tile_colour1 = self.board[coord1[0], coord1[1]] % self.num_tile_types
+            tile_colour2 = self.board[coord2[0], coord2[1]] % self.num_tile_types
+            return tile_colour1 == tile_colour2
 
     def _get_activation_area(self, affected_coords_list: List[Tuple[int, int]], num_special=0) -> List[Tuple[int, int]]:
         """
@@ -165,14 +165,14 @@ class CandyCrush(gym.Env):
         # Cookie involved TODO: Make this work for specials.
         if num_special == 1:
             [coord, coord2] = affected_coords_list
-            candy_type = self._get_candy_type(coord)
-            if candy_type == self.special_translator["cookie"]:
+            tile_type = self._get_tile_type(coord)
+            if tile_type == self.special_translator["cookie"]:
                 return np.ravel_multi_index(np.flatnonzero(self.board == self.board[coord2[0], coord2[1]]), self.board.shape)
-            elif candy_type == self.special_translator["v_stripe"]:
+            elif tile_type == self.special_translator["v_stripe"]:
                 pass
-            elif candy_type == self.special_translator["h_stripe"]:
+            elif tile_type == self.special_translator["h_stripe"]:
                 pass
-            elif candy_type == self.special_translator["bomb"]:
+            elif tile_type == self.special_translator["bomb"]:
                 pass
         # Two cookies, cookie and stripe, v stripe and vstripe, stripe and bomb, bomb and bomb.
         raise NotImplementedError()
@@ -205,7 +205,7 @@ class CandyCrush(gym.Env):
                 end_col = 0
                 curr_line_len = 0
                 while end_col < sg.shape[1]:
-                    if self._get_candy_type(sg[end_col]) == self._get_candy_type(sg[end_col]):
+                    if self._get_tile_type(sg[end_col]) == self._get_tile_type(sg[end_col]):
                         curr_line_len += 1
                     else:
                         if max_line_len < curr_line_len:
@@ -255,22 +255,22 @@ class CandyCrush(gym.Env):
             if coord not in skip_coords:
                 self._activate_cell(coord)
 
-    def _get_candy_value(self, candy_type:str, candy_colour: int):
-        return self.special_translator[candy_type] * self.num_candy_types + candy_colour
+    def _get_tile_value(self, tile_type:str, tile_colour: int):
+        return self.special_translator[tile_type] * self.num_tile_types + tile_colour
 
     def _activate_cell(self, coord:Tuple[int, int]):
         # Only call this when the cell is hit by another thing. Not for specials.
         # Bunch of if statements for which the board changes.
-        candy_type = self._get_candy_type(coord)
+        tile_type = self._get_tile_type(coord)
         self.board[coord[0], coord[1]] = 0
-        if candy_type == "horizontal_stripe":
+        if tile_type == "horizontal_stripe":
             map(self._activate_cell, [(coord[0], i) for i in range(self.board_width)])
-        elif candy_type == "vertical_stripe":
+        elif tile_type == "vertical_stripe":
             map(self._activate_cell, [(i, coord[1]) for i in range(self.board_height)])
-        elif candy_type == "bomb":
+        elif tile_type == "bomb":
             coords = [(coord[0] + i, coord[1] + j) for i in range(-1, 2) for j in range(-1, 2)]
             map(self._activate_cell, coords)
-        elif candy_type == "cookie":
+        elif tile_type == "cookie":
             raise NotImplementedError()
             # Choose a random cell next to it and 
 
@@ -292,13 +292,13 @@ class CandyCrush(gym.Env):
             coord_list = sorted(activation_coords_list, key = lambda x: x[is_horizontal])
             if len(coord_list) >= 5:
                 special_coord = coord_list[0] + int(is_horizontal*2), coord_list[1] + int((1-is_horizontal)*3)
-                self.board[special_coord[0], special_coord[1]] = self._get_candy_value("cookie", 0)
+                self.board[special_coord[0], special_coord[1]] = self._get_tile_value("cookie", 0)
                 skip_coords.add(special_coord)
             elif len(coord_list) == 4:
                 # horizontal stripe if the line is horizontal. 
                 stripe_type = "horizontal_stripe" if is_horizontal else "vertical_stripe"
                 special_coord = coord_list[0] + int(is_horizontal*2), coord_list[1] + int((1-is_horizontal)*3)
-                self.board[coord_list[0] + int(is_horizontal), coord_list[1] + int((1-is_horizontal))] = self._get_candy_value(stripe_type, 0) # TODO: Adaptively set coordinate of where to put striped candy depending on where the move takes place.
+                self.board[coord_list[0] + int(is_horizontal), coord_list[1] + int((1-is_horizontal))] = self._get_tile_value(stripe_type, 0) # TODO: Adaptively set coordinate of where to put striped tile depending on where the move takes place.
             # Matched 3
             # TODO: Add functionality for bombs.
                 # Put a 
@@ -394,7 +394,7 @@ class CandyCrush(gym.Env):
         for col in self.board.T:
             for i in range(len(col)):
                 if col[i] == 0:
-                    col[i] = self.np_random.integers(1, self.num_candy_types + 1, size=1)
+                    col[i] = self.np_random.integers(1, self.num_tile_types + 1, size=1)
                 else:
                     break
 
@@ -497,6 +497,6 @@ class CandyCrush(gym.Env):
 
 
 if __name__ == "__main__":
-    env = CandyCrush(5, 4, 3, 0, 1)
+    env = tileCrush(5, 4, 3, 0, 1)
     print(env.reset())
     print(env.step(13))
