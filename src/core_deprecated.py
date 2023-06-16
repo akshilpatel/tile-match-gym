@@ -9,7 +9,6 @@ from collections import deque
 # For one match, add +
 
 
-
 class Board(gym.Env):
     """
     tile_TYPES = {
