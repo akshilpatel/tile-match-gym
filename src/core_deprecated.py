@@ -216,7 +216,6 @@ class Board(gym.Env):
                             start_col = end_col
                     end_col += 1
 
-        
         if max_line_len > 3:
             # Horizontal line
             if max_line_start[0] == max_line_end[0]: 

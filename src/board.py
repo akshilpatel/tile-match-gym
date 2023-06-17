@@ -123,7 +123,7 @@ class Board:
         Search top to bottom in each column and break if you hit something that isn't zero.
         Since the board should
         """
-        
+
         for col in self.board.T:
             for i in range(len(col)):
                 if col[i] == 0:
@@ -160,7 +160,6 @@ class Board:
         else:
             return "vertical3"
     
-
     def clear_coords(self, match_coords: List[Tuple[int, int]], match_type: str):
         if match_type in ["horizontal3", "vertical3"]:
             self.board[np.array(match_coords)] = 0
@@ -225,7 +224,51 @@ class Board:
 
         return v_matches
 
-        return v_matches
+    def check_move_validity(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
+        """
+        This function checks if the action actually does anything. 
+        First it checks if both coordinates are on the board. Then it checks if the action achieves some form of matching.
+
+        Args:
+            coord (tuple): The first coordinate on grid corresponding to the action taken. This will always be above or to the left of the second coordinate below.
+            coord2 (tuple): coordinate on grid corresponding to the action taken.
+
+        Returns:
+            bool: True iff action has an effect on the environment.
+        """
+        ## Check both coords are on the board. ##
+        if not (0 <= coord1[0] < self.board_height and 0 <= coord1[1] < self.board_width):
+            return False, None
+        if not (0 <= coord2[0] < self.board_height and 0 <= coord2[1] < self.board_width):
+            return False, None
+
+        # Extract a 6x6 grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
+        y_ranges = max(0, coord1[0] - 2), min(self.board_height, coord2[0] + 3)
+        x_ranges = max(0, coord1[1] - 2), min(self.board_width, coord2[1] + 3)
+        surround_grid = self.board[y_ranges[0]: y_ranges[1]][x_ranges[0]: x_ranges[1]][:]
+        
+        # Swap the coordinates to see what happens.
+        surround_grid[coord1[0], coord1[1]], surround_grid[coord2[0], coord2[1]] = surround_grid[coord2[0], coord2[1]], self.board[coord1[0], coord1[1]]                
+        # Doesn't matter what type of tile it is, if the colours match then its a match
+        surround_grid %= self.num_tile_types 
+        for sg in [surround_grid, surround_grid.T]:
+            for j in range(sg.shape[0]):
+                for i in range(2, sg.shape[1]):
+                    # If the current and previous 2 are matched and that they are not cookies.
+                    if sg[j, i-2] == sg[j, i-1] == sg[j, i]:
+                        return True, 0
+        return False
+
+    def move(self, coord1: Tuple[int, int], coord2:Tuple[int, int]) -> None:
+        if not self.check_move_validity(coord1, coord2):
+            return
+        self.board[coord1[0], coord1[1]], self.board[coord2[0], coord2[1]] = self.board[coord2[0], coord2[1]], self.board[coord1[0], coord1[1]]
+        has_match = True
+        while has_match:
+            has_match = self.automatch()
+            self.gravity()
+            self.refill()
+
 if __name__ == "__main__":
     board = Board(8, 7, 4)
     board.board = board.np_random.integers(1, board.num_colours + 1, size = board.flat_size).reshape(board.height, board.width)
