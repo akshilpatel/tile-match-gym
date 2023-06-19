@@ -75,6 +75,7 @@ class Board:
         self.num_actions = self.width * (self.width - 1) + self.height * (self.height - 1)
         
         # self.generate_board()
+        self.board = self.np_random.integers(1, self.num_colours + 1, size = self.flat_size).reshape(self.height, self.width)
 
     def generate_board(self):
         self.board = self.np_random.integers(1, self.num_colours + 1, size = self.flat_size).reshape(self.height, self.width)
