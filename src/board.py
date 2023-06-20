@@ -65,7 +65,7 @@ class TileTranslator:
             raise NotImplementedError("Have not implemented special tiles yet.")
 
 class Board:
-    def __init__(self, height: int, width:int, num_colours:int, seed:Optional[int] = None):
+    def __init__(self, height: int, width:int, num_colours:int, seed:Optional[int] = None, board:Optional[np.ndarray] = None):
         self.height = height
         self.width = width
         self.num_colours = num_colours
@@ -79,6 +79,13 @@ class Board:
         self.num_actions = self.width * (self.width - 1) + self.height * (self.height - 1)
         
         # self.generate_board()
+        self.board = self.np_random.integers(1, self.num_colours + 1, size = self.flat_size).reshape(self.height, self.width)
+
+        # handle the case where we are given a board
+        if board is not None:
+            self.board = board
+            self.height = board.shape
+            self.width = board.shape[1]
 
     def generate_board(self):
         self.board = self.np_random.integers(1, self.num_colours + 1, size = self.flat_size).reshape(self.height, self.width)
