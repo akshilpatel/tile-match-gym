@@ -318,6 +318,66 @@ class Board:
         print(' ' + '-' * (self.width * 2 + 1))
 
 
+
+    # def apply_activation(coord, activation_type=None, special_coords=None)
+
+    #     if activation_type is None:
+    #         """This function takes an activation type and applies it to board at the specified coordinate"""
+    #         if coord is 0:
+    #             return
+    #         if coord is normal:
+    #             delete_coord
+    #         elif coord == v_tstripe:
+    #             delete_coord
+    #             add_v_slice_to_activation_queue
+    #         elif coord == h_stripe:
+    #             delete_coord
+    #             add_h_slice_to_activation_queue
+    #         elif coord == bomb:
+    #             delete coord
+    #             add bomb slice to activation_queue	
+
+    #     # activation is cookie + special:
+    #     if activation_type == cookie + v_stripe + colour:
+    #         delete cookie_coord
+    #         turn all same colour into v or h stripe
+    #         add those coords to the activation queue in random order.
+
+    #     if activation_type == v_stripe + h_stripe:
+    #         delete both coords.
+    #         add vslice and h_slice to activation queue
+
+    #     if activation_type == stripe + bomb:
+    #         delete both coords.
+    #         add 3 vslices and 3 hslices to activation_queue
+
+    #     if activation_type == bomb + bomb:
+    #         delete both bombs
+    #         add 5x5 grid to queue
+
+    #     if activation_type == cookie + bomb:
+    #         delete cookie coord
+    #         turn all same colour into bomb
+    #         add those bombs to activation queue
+
+    #     if activation_type == cookie + cookie:
+    #         delete cookies 
+    #         Add all coords to activation queue
+
+
+
+    # while activation_queue:
+    #     activation = activation_queue.pop()
+    #     gravity(activation_queue) # This also updates the activation_coords in the activation_queue
+    #     refill()
+
+    #     update_activation_queue() # This adds new activations (resulting from the call to gravity and refill) to the activation_queue
+    #     # maybe has to call automatch()
+    #     # get_match_type -> match_type
+    #     # get_match_coords -> 
+
+
+
 if __name__ == "__main__":
     board = Board(8, 7, 4)
     board.board = board.np_random.integers(1, board.num_colours + 1, size = board.flat_size).reshape(board.height, board.width)
