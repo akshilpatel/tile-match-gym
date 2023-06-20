@@ -21,8 +21,9 @@ from typing import Optional, List, Tuple
     """
 
 class TileTranslator:
-    def __init__(self, num_colours:int):
+    def __init__(self, num_colours:int, board_shape: Tuple[int, int]):
         self.num_colours = num_colours
+        self.board_shape = board_shape
 
     def _tile_type_str(self, tile_idx:int):
         tile_type = self.get_tile_type(tile_idx)
@@ -53,10 +54,13 @@ class TileTranslator:
     
     def get_activation_effect(self, tile_idx):
         tile_type = self.get_tile_type(tile_idx)
-
         # Ordinary tiles are just deleted.
-        if tile_type == 0:
+        if tile_type == 0: # ordinary 
             return 0
+        elif tile_type == 1 # horizontal
+            return np.zeros(self.board_shape[1])
+        elif tile_type == 2: # vertical
+            return np.zeros(self.board_shape[0])
         else:
             raise NotImplementedError("Have not implemented special tiles yet.")
 
@@ -84,7 +88,6 @@ class Board:
             self.gravity()
             self.refill()
         
-
     def automatch(self, scoring: Optional[bool] = False) -> bool:
         """Implements one round of automatching. Assumes and implements only one match per call.
 
@@ -123,7 +126,6 @@ class Board:
         Search top to bottom in each column and break if you hit something that isn't zero.
         Since the board should
         """
-
         for col in self.board.T:
             for i in range(len(col)):
                 if col[i] == 0:
@@ -131,8 +133,8 @@ class Board:
                 else:
                     break
     
-    def get_match_coords(self) -> List[List[Tuple[int, int]]]:
-        
+    
+    def get_match_coords(self) -> List[List[Tuple[int, int]]]:    
         """For the current board, find the first set of matches. Go from the bottom up and find the set of matches. 
 
         Returns:
@@ -155,10 +157,25 @@ class Board:
             return v_matches
 
     def get_match_type(self, match_coords: List[Tuple[int, int]]) -> str:
-        if match_coords[0][0] == match_coords[1][0]:
-            return "horizontal3"
-        else:
-            return "vertical3"
+        """STring indicator of what match has occured.
+
+        Args:
+            match_coords (List[Tuple[int, int]]): Coords contained within a single match.
+
+        Returns:
+            str: Describing the match.
+        """
+        if len(match_coords) == 4:
+            if match_coords[0][0] == match_coords[1][0]:
+                return "horizontal4"
+            else:
+                return "vertical4"
+        
+        if len(match_coords) == 3:
+            if match_coords[0][0] == match_coords[1][0]:
+                return "horizontal3"
+            else:
+                return "vertical3"
     
     def clear_coords(self, match_coords: List[Tuple[int, int]], match_type: str):
         if match_type in ["horizontal3", "vertical3"]:
@@ -166,6 +183,22 @@ class Board:
         else:
             raise NotImplementedError("Special tiles not yet implemented")
     
+    def acivate_old_specials(self, match_coords: List[Tuple[int, int]]):
+        effects_masks = []
+        for coord in match_coords:
+            tile_type = self.tile_translator.get_tile_type(coord)
+            tile_effect = self.tile_translator.get_activation_effect(coord)
+            if tile_type == 0: # Ordinary
+                continue
+            else:
+                effects_masks.append(tile_effect)
+                
+
+    # HAppens after all effects are done, you just put the special in place.
+    def create_special(self, match_coords, match_type: str) -> None: 
+        pass
+
+
     def _check_same_colour(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
         tile1 = self.board[coord1[0], coord1[1]]
         tile2 = self.board[coord2[0], coord2[1]]
