@@ -57,7 +57,7 @@ class TileTranslator:
         # Ordinary tiles are just deleted.
         if tile_type == 0: # ordinary 
             return 0
-        elif tile_type == 1 # horizontal
+        elif tile_type == 1: # horizontal
             return np.zeros(self.board_shape[1])
         elif tile_type == 2: # vertical
             return np.zeros(self.board_shape[0])
@@ -70,7 +70,7 @@ class Board:
         self.width = width
         self.num_colours = num_colours
 
-        self.tile_translator = TileTranslator(num_colours)
+        self.tile_translator = TileTranslator(num_colours, (height, width))
 
         if seed is None:
             seed = np.random.randint(0, 1000000000)
