@@ -140,7 +140,7 @@ class Board:
                 else:
                     break
     
-    
+
     def get_match_coords(self) -> List[List[Tuple[int, int]]]:    
         """For the current board, find the first set of matches. Go from the bottom up and find the set of matches. 
 
@@ -203,7 +203,6 @@ class Board:
     # HAppens after all effects are done, you just put the special in place.
     def create_special(self, match_coords, match_type: str) -> None: 
         pass
-
 
     def _check_same_colour(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
         tile1 = self.board[coord1[0], coord1[1]]
