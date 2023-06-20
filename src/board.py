@@ -199,7 +199,6 @@ class Board:
                 continue
             else:
                 effects_masks.append(tile_effect)
-                
 
     # HAppens after all effects are done, you just put the special in place.
     def create_special(self, match_coords, match_type: str) -> None: 
@@ -215,7 +214,7 @@ class Board:
     def get_lowest_h_match_coords(self) -> List[List[Tuple[int, int]]]:
         h_matches = []
         lowest_row_h = -1
-        # Check all horizontal matches starting from the bottom 
+        # Check all horizontal matches starting from the bottom
         for row in range(self.height - 1, -1, -1):
             if lowest_row_h != -1: # Don't need to check rows higher up.
                 break
@@ -309,6 +308,17 @@ class Board:
             self.gravity()
             self.refill()
 
+    def print_board(self) -> None:
+        get_col = lambda x: "\033[1;3{}m{}\033[0m".format(x, x)
+        print(' ' + '-' * (self.width * 2 + 1))
+        for row in self.board:
+            print('| ', end='')
+            for tile in row:
+                print(get_col(tile), end=' ')
+            print('|')
+        print(' ' + '-' * (self.width * 2 + 1))
+
+
 if __name__ == "__main__":
     board = Board(8, 7, 4)
     board.board = board.np_random.integers(1, board.num_colours + 1, size = board.flat_size).reshape(board.height, board.width)
@@ -355,4 +365,6 @@ if __name__ == "__main__":
     ])
 
     print(board.get_lowest_h_match_coords())
+
+    board.print_board()
 
