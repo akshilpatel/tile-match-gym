@@ -27,11 +27,19 @@ class TileTranslator:
 
     def _tile_type_str(self, tile_idx:int):
         tile_type = self.get_tile_type(tile_idx)
-        if tile_type > 0:
-            raise NotImplementedError("Have not implemented special tiles yet.")
         if tile_type == 0:
             return "ordinary"
-    
+        elif tile_type == 1:
+            return "vertical_stripe"
+        elif tile_type == 2:
+            return "horizontal_stripe"
+        elif tile_type == 3:
+            return "bomb"
+        elif tile_type == 4:
+            return "cookie"
+        else:
+            raise ValueError("Invalid tile type.")
+
     def is_tile_ordinary(self, tile_idx: int) -> bool:
         return (tile_idx - 1) < self.num_colours 
 
@@ -45,14 +53,9 @@ class TileTranslator:
         Returns:
             int: Index of tile type
         """
-        if (tile_idx - 1) >= self.num_colours:
-            raise NotImplementedError("Have not implemented special tiles yet.")
         return tile_idx // self.num_colours
 
     def get_tile_colour(self, tile_idx: int):
-        if tile_idx -1 >= self.num_colours:
-            raise NotImplementedError("Have not implemented special tiles yet.")
-        
         return (tile_idx - 1) % self.num_colours
     
     def get_activation_effect(self, tile_idx):
@@ -66,7 +69,6 @@ class TileTranslator:
             return np.zeros(self.board_shape[0])
         else:
             raise NotImplementedError("Have not implemented special tiles yet.")
-        
 
 class Board:
     def __init__(self, height: int, width:int, num_colours:int, seed:Optional[int] = None, board:Optional[np.ndarray] = None):
@@ -171,61 +173,89 @@ class Board:
             rand_vals = self.np_random.integers(1, self.num_colours + 1, size=num_zeros)
             self.board[zero_mask] = rand_vals
 
-    def apply_activation(self, coord: Tuple[int, int], activation_type: Optional[int]=None, special_coords: Optional[Tuple[int, int]]=None):
+    def apply_activation(self, coord: Tuple[int, int], activation_type: Optional[int]=None, special_coord: Optional[Tuple[int, int]]=None):
         """
         Should take a particular coordinate of the board.
         Get the activation effect given the tile
         """
-        if activation_type == None: # there is no matching category
+        if activation_type == None:
             activation_type = self.tile_translator.get_tile_type(self.board[coord])
             if self.board[coord] == 0:
                 return
         
-        if special_coords == None:
+        if special_coord is not None:
             self.board[coord] = 0
             if activation_type == 1: # v_stripe
-                self.activation_q.append(self.indices[:, coord[1]].reshape((-1,2)))
+                self.activation_q += self.indices[:, coord[1]].reshape((-1,2)).tolist()
             elif activation_type == 2: # h_stripe
-                self.activation_q.append(self.indices[coord[0], :].reshape((-1,2)))
+                self.activation_q += self.indices[coord[0], :].reshape((-1,2)).tolist()
             elif activation_type == 3: # bomb
-                min_left = max(0,coord[0]-1) # max of 0 and leftmost bomb
-                min_top = max(coord[1]-1, 0) # max of 0 and topmost bomb
-                max_right = min(self.width, coord[0]+2) # min of rightmost and width
-                max_bottom = min(coord[1]+2, self.height) # min of bottommost and height
-                self.activation_q.append(self.indices[min_left:max_right, min_top:max_bottom])
+                min_top = max(0,coord[0]-1) # max of 0 and leftmost bomb
+                min_left = max(coord[1]-1, 0) # max of 0 and topmost bomb
+                max_bottom = min(self.height, coord[0]+2) # min of rightmost and width
+                max_right = min(coord[1]+2, self.width) # min of bottommost and height
+                self.activation_q += self.indices[min_top:max_bottom, min_left:max_right].reshape((-1,2)).tolist()
         else: 
-            pass
-            # if activition_type = 
+            tile_type = self.tile_translator.get_tile_type(self.board[coord])
+            tile_colour = self.tile_translator.get_tile_colour(self.board[coord])
+            tile2_type = self.tile_translator.get_tile_type(self.board[special_coord])
+            tile_colour = self.tile_translator.get_tile_colour(self.board[special_coord])
+            if tile_type == 4: # One cookie
+                if tile2_type == 4: # Two cookies
+                    self.activation_q += self.indices.reshape(-1, 2).tolist()
+                else: 
+                    self.board[coord] = 0
+                    mask = (self.board != int(self.num_colours * 4) + 1) & (self.board % self.num_colours == tile_colour) # Get same colour
+                    self.board[mask] = self.board[special_coord] # cookie
 
+            if tile2_type == 4: # One cookie
+                self.board[coord] = 0
+                mask = (self.board != int(self.num_colours * 4) + 1) & (self.board % self.num_colours == tile_colour) # Get same colour
+                self.board[mask] = self.board[coord] # cookie
+            
+            if tile_type == 3: # Bomb
+                if tile2_type == 3: # Two bombs
+                    self.board[coord] = 0
+                    self.board[special_coord] = 0
+                    if coord[0] == special_coord[0]: # Horizontal match 
+                        base_coord = coord[0], min(coord[1], special_coord[1])
+                        min_top = max(0, base_coord[0]-2) # max of 0 and leftmost bomb
+                        max_bottom = min(self.height, base_coord[0]+3) # min of rightmost and width
+                        min_left = max(base_coord[1]-2, 0) # max of 0 and topmost bomb
+                        max_right = min(base_coord[1] + 4, self.width) # min of bottommost and height
+                        self.activation_q += self.indices[min_top:max_bottom, min_left:max_right].reshape((-1,2)).tolist()
+                    else: # Vertical match
+                        base_coord = coord[0], min(coord[1], special_coord[1])
+                        min_top = max(0, base_coord[0]-2) # max of 0 and leftmost bomb
+                        max_bottom = min(self.height, base_coord[0]+4) # min of rightmost and width
+                        min_left = max(base_coord[1]-2, 0) # max of 0 and topmost bomb
+                        max_right = min(base_coord[1] + 3, self.width) # min of bottommost and height
+                        self.activation_q += self.indices[min_top:max_bottom, min_left:max_right].reshape((-1,2)).tolist()
+                elif tile2_type <= 2: # Bomb + stripe
+                    self.board[coord] = 0
+                    self.board[special_coord] = 0
+                    min_left = max(0, special_coord[0]-1)
+                    max_right = min(self.width, special_coord[0]+2)
+                    min_top = max(0, special_coord[1]-1)
+                    max_bottom = min(self.height, special_coord[1]+2)
+                    self.activation_q += np.intersect1d(self.indices[min_top:max_bottom, :].reshape((-1,2)), self.indices[:, min_left:max_right].reshape((-1,2))).tolist()
+            
+            elif tile2_type == 3: # Bomb + stripe
+                self.board[coord] = 0
+                self.board[special_coord] = 0
+                min_left = max(0, coord[0]-1)
+                max_right = min(self.width, coord[0]+2)
+                min_top = max(0, coord[1]-1)
+                max_bottom = min(self.height, coord[1]+2)
+                self.activation_q += np.intersect1d(self.indices[min_top:max_bottom, :].reshape((-1,2)), self.indices[:, min_left:max_right].reshape((-1,2))).tolist()
+            
+            elif tile_type <= 2: # Stripe + stripe
+                self.board[coord] = 0
+                self.board[special_coord] = 0
+                self.activation_q += np.intersect1d(self.indices[special_coord[0], :].reshape((-1,2)), self.indices[:, special_coord[1]].reshape((-1,2))).tolist()
 
-    
-    #     # activation is cookie + special:
-    #     if activation_type == cookie + v_stripe + colour:
-    #         delete cookie_coord
-    #         turn all same colour into v or h stripe
-    #         add those coords to the activation queue in random order.
-    
-    #     if activation_type == v_stripe + h_stripe:
-    #         delete both coords.
-    #         add vslice and h_slice to activation queue
-    
-    #     if activation_type == stripe + bomb:
-    #         delete both coords.
-    #         add 3 vslices and 3 hslices to activation_queue
-    
-    #     if activation_type == bomb + bomb:
-    #         delete both bombs
-    #         add 5x5 grid to queue
-    
-    #     if activation_type == cookie + bomb:
-    #         delete cookie coord
-    #         turn all same colour into bomb
-    #         add those bombs to activation queue
-    
-    #     if activation_type == cookie + cookie:
-    #         delete cookies 
-    #         Add all coords to activation queue
-    
+            else:
+                raise ValueError(f"We are ridden with bugs. candy1: {tile_type} candy2: {tile2_type}")
     def get_match_coords(self) -> List[List[Tuple[int, int]]]:    
         """For the current board, find the first set of matches. Go from the bottom up and find the set of matches. 
 
