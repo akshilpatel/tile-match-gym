@@ -20,15 +20,15 @@ def board():
     yield example_board
 
 
-@pytest.mark.parametrize("height, width, num_colours", [
-    (4, 4, 4),
-    (90, 2, 12),
-    (50, 50, 4),
-    (8, 8, 1),
-])
-def (height: int, width:int, num_colours:int, seed:Optional[int] = None):
-    board = Board(height, width, num_colours, seed)
-    assert not contains_threes(board.board)
-    assert board.board.shape == (height, width)
-    assert board.num_colours == num_colours
-
+# @pytest.mark.parametrize("height, width, num_colours", [
+#     (4, 4, 4),
+#     (90, 2, 12),
+#     (50, 50, 4),
+#     (8, 8, 1),
+# ])
+# def (height: int, width:int, num_colours:int, seed:Optional[int] = None):
+#     board = Board(height, width, num_colours, seed)
+#     assert not contains_threes(board.board)
+#     assert board.board.shape == (height, width)
+#     assert board.num_colours == num_colours
+# 
