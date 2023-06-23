@@ -8,6 +8,9 @@ from utils import print_board_diffs
 ################## This is just templating - needs to be changed ###############
 ################################################################################
 
+# Need to call 'pytest -k test_activation -s' to run the file and get output if error
+
+
 t1 = {
     "original": np.array([
         [2,3,2,3,2,3,2],
@@ -27,9 +30,19 @@ t1 = {
 
 
 
-def test_activation(height: int, width:int, num_colours:int, seed:Optional[int] = None):
-    board = Board(height, width, num_colours, seed)
-    assert board.board.shape == (height, width)
-    assert board.num_colours == num_colours
+def test_activation():
+    board = Board(5, 7, 4, 0)
+    # board = Board(height, width, num_colours, seed)
+    board.board = t1["original"]
+    board.width = 7
+    board.height = 5
+    board.num_colours = 4
+    board.apply_activation((1,1), 2)
+    
+    if not np.array_equal(board.board, t1["expected"]):
+        print()
+        print_board_diffs.highlight_board_diff(board.board, t1["expected"])
+
+
 
 
