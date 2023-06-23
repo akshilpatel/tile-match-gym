@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Optional, List, Tuple
-
+from collections import deque
 """
     tile_TYPES = {
         1:      tile1 
@@ -31,7 +31,10 @@ class TileTranslator:
             raise NotImplementedError("Have not implemented special tiles yet.")
         if tile_type == 0:
             return "ordinary"
-            
+    
+    def is_tile_ordinary(self, tile_idx: int) -> bool:
+        return (tile_idx - 1) < self.num_colours 
+
     def get_tile_type(self, tile_idx:int) -> int:
         """
         Convert the tile index to whether the tile is ordinary, or which type of special it is.
@@ -63,6 +66,8 @@ class TileTranslator:
             return np.zeros(self.board_shape[0])
         else:
             raise NotImplementedError("Have not implemented special tiles yet.")
+        
+     
 
 class Board:
     def __init__(self, height: int, width:int, num_colours:int, seed:Optional[int] = None, board:Optional[np.ndarray] = None):
@@ -77,7 +82,7 @@ class Board:
         self.np_random = np.random.default_rng(seed)
         self.flat_size = int(self.width * self.height)
         self.num_actions = self.width * (self.width - 1) + self.height * (self.height - 1)
-        
+        self._special_match_types = ["vertical4", "horizontal4", "vertical5", "horizontal5", "bomb"]
         # self.generate_board()
         self.board = self.np_random.integers(1, self.num_colours + 1, size = self.flat_size).reshape(self.height, self.width)
 
@@ -106,40 +111,63 @@ class Board:
         """
         if scoring:
             raise NotImplementedError("Scoring functionality")
-        
-        matches = self.get_match_coords()
-        if len(matches) > 0:
+        matches = self.get_match_coords() # List of coordinates consisting a match.
+        if len(matches) > 0: # If there are matches
             for match in matches:
                 match_type = self.get_match_type(match)
-                self.clear_coords(match, match_type)
+                if match_type in self._special_match_types:
+                    self.create_special(match, match_type)
                 return True
         else:
             return False
         
-    def gravity(self) -> None:
-        """Push empty slots to the top."""
-        for col in self.board.T:
-            zero_count = 0
-            for i in range(len(col)-1, -1, -1):
-                if col[i] == 0:
-                    zero_count += 1
-                elif zero_count != 0:
-                    col[i + zero_count] = col[i]
-                    col[i] = 0
+    # Happens after all effects are done, you just put the special in place.
+    def create_special(self, match_coords: List[Tuple[int, int]], match_type: str, color_idx: Optional[int]=None) -> None: 
+        rand_coord = self.np_random.choice(list(filter(self.tile_translator.is_tile_ordinary, match_coords)))
+        if color_idx is None:
+            color_idx = self.tile_translator.get_tile_colour(rand_coord)
+        if match_type in ["horizontal5", "vertical5"]:
+            self.board[rand_coord] = int(self.num_colours * 4) + 1
+        elif match_type == "horizontal4": 
+            self.board[rand_coord] = self.num_colours + color_idx
+        elif match_type == "verticall4": 
+            self.board[rand_coord] = int(2*self.num_colours) + color_idx
+        elif match_type == "bomb":
+            self.board[rand_coord] = int(3*self.num_colours) + color_idx
+        else:
+            raise NotImplementedError(f"The special type does not exist: {match_type}")
 
+    def gravity(self, activation_queue: Optional[deque] = None) -> None:
+        """
+        Given a board with zeros, push the zeros to the top of the board.
+        If an activation queue of coordinates is passed in, then the coordinates in the queue are updated as gravity pushes the coordinates down.
+        Args:
+            activation_queue: A queue of activations to be applied to the board. The coordinates in these must be updated.
+        """
+        board_transposed = self.board.T
+        zero_mask = board_transposed == 0
+        non_zero_mask = ~zero_mask
+
+        # Compute the number of zeros pushed to the top at each position
+        zero_counts = np.cumsum(zero_mask, axis=0)
+        # Shift non-zero elements to their correct positions
+        board_transposed[non_zero_mask] = board_transposed[non_zero_mask][zero_counts[non_zero_mask] - 1]
+        board_transposed[zero_mask] = 0
+
+        # Update coordinates in activation queue
+        if activation_queue is not None:
+            for activation in activation_queue:
+                i, col = activation["coord"]
+                activation["coord"][0] += zero_counts[i, col]
+        self.board = board_transposed.T
 
     def refill(self) -> None:
-        """
-        Search top to bottom in each column and break if you hit something that isn't zero.
-        Since the board should
-        """
-        for col in self.board.T:
-            for i in range(len(col)):
-                if col[i] == 0:
-                    col[i] = self.np_random.integers(1, self.num_colours + 1, size=1)
-                else:
-                    break
-    
+        """Replace all empty tiles."""
+        zero_mask = self.board == 0
+        num_zeros = zero_mask.sum()
+        if num_zeros > 0:
+            rand_vals = self.np_random.integers(1, self.num_colours + 1, size=num_zeros)
+            self.board[zero_mask] = rand_vals
 
     def get_match_coords(self) -> List[List[Tuple[int, int]]]:    
         """For the current board, find the first set of matches. Go from the bottom up and find the set of matches. 
@@ -152,7 +180,6 @@ class Board:
         """
         h_matches, lowest_row_h = self.get_lowest_h_match_coords()
         v_matches, lowest_row_v = self.get_lowest_v_match_coords()
-
         if lowest_row_h == lowest_row_v == -1:
             return []
         # Check which matches are lowest and only return those.
@@ -164,14 +191,18 @@ class Board:
             return v_matches
 
     def get_match_type(self, match_coords: List[Tuple[int, int]]) -> str:
-        """STring indicator of what match has occured.
-
+        """String indicator of what match has occured.
         Args:
             match_coords (List[Tuple[int, int]]): Coords contained within a single match.
-
         Returns:
             str: Describing the match.
         """
+        if len(match_coords) == 5:
+            if match_coords[0][0] == match_coords[1][0]:
+                return "horizontal5"
+            else:
+                return "vertical5"
+        
         if len(match_coords) == 4:
             if match_coords[0][0] == match_coords[1][0]:
                 return "horizontal4"
@@ -183,30 +214,10 @@ class Board:
                 return "horizontal3"
             else:
                 return "vertical3"
-    
-    def clear_coords(self, match_coords: List[Tuple[int, int]], match_type: str):
-        if match_type in ["horizontal3", "vertical3"]:
-            self.board[np.array(match_coords)] = 0
-        else:
-            raise NotImplementedError("Special tiles not yet implemented")
-    
-    def acivate_old_specials(self, match_coords: List[Tuple[int, int]]):
-        effects_masks = []
-        for coord in match_coords:
-            tile_type = self.tile_translator.get_tile_type(coord)
-            tile_effect = self.tile_translator.get_activation_effect(coord)
-            if tile_type == 0: # Ordinary
-                continue
-            else:
-                effects_masks.append(tile_effect)
-
-    # HAppens after all effects are done, you just put the special in place.
-    def create_special(self, match_coords, match_type: str) -> None: 
-        pass
 
     def _check_same_colour(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
-        tile1 = self.board[coord1[0], coord1[1]]
-        tile2 = self.board[coord2[0], coord2[1]]
+        tile1 = self.board[coord1]
+        tile2 = self.board[coord2]
         return self.tile_translator.get_tile_colour(tile1) == self.tile_translator.get_tile_colour(tile2)
     
     # Could use a mask to fix by setting those that have been added to a match to mask.
@@ -241,7 +252,6 @@ class Board:
         Returns:
             List[List[Tuple[int, int]]]: List of coordinates defining the vertical matches.
         """
-
         v_matches = []
         lowest_row_v = -1
         # Bottom left to top right
@@ -259,7 +269,6 @@ class Board:
                         match.append((m_search_row, col))
                     v_matches.append(match)        
             row -=1
-
         return v_matches
 
     def check_move_validity(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
@@ -275,20 +284,20 @@ class Board:
             bool: True iff action has an effect on the environment.
         """
         ## Check both coords are on the board. ##
-        if not (0 <= coord1[0] < self.board_height and 0 <= coord1[1] < self.board_width):
+        if not (0 <= coord1[0] < self.height and 0 <= coord1[1] < self.width):
             return False, None
-        if not (0 <= coord2[0] < self.board_height and 0 <= coord2[1] < self.board_width):
+        if not (0 <= coord2[0] < self.height and 0 <= coord2[1] < self.width):
             return False, None
 
         # Extract a 6x6 grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
-        y_ranges = max(0, coord1[0] - 2), min(self.board_height, coord2[0] + 3)
-        x_ranges = max(0, coord1[1] - 2), min(self.board_width, coord2[1] + 3)
+        y_ranges = max(0, coord1[0] - 2), min(self.height, coord2[0] + 3)
+        x_ranges = max(0, coord1[1] - 2), min(self.width, coord2[1] + 3)
         surround_grid = self.board[y_ranges[0]: y_ranges[1]][x_ranges[0]: x_ranges[1]][:]
         
         # Swap the coordinates to see what happens.
-        surround_grid[coord1[0], coord1[1]], surround_grid[coord2[0], coord2[1]] = surround_grid[coord2[0], coord2[1]], self.board[coord1[0], coord1[1]]                
+        surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], self.board[coord1]                
         # Doesn't matter what type of tile it is, if the colours match then its a match
-        surround_grid %= self.num_tile_types 
+        surround_grid %= self.num_colours 
         for sg in [surround_grid, surround_grid.T]:
             for j in range(sg.shape[0]):
                 for i in range(2, sg.shape[1]):
@@ -300,7 +309,7 @@ class Board:
     def move(self, coord1: Tuple[int, int], coord2:Tuple[int, int]) -> None:
         if not self.check_move_validity(coord1, coord2):
             return
-        self.board[coord1[0], coord1[1]], self.board[coord2[0], coord2[1]] = self.board[coord2[0], coord2[1]], self.board[coord1[0], coord1[1]]
+        self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
         has_match = True
         while has_match:
             has_match = self.automatch()
@@ -317,6 +326,16 @@ class Board:
             print('|')
         print(' ' + '-' * (self.width * 2 + 1))
 
+    def activation_loop(self, activation_queue: deque):
+        while activation_queue:
+            activation = activation_queue.pop()
+            self.apply_activation(**activation)
+            self.gravity(activation_queue)
+            self.refill()
+
+        has_match = True
+        while has_match:
+            has_match = self.automatch()
 
 
     # def apply_activation(coord, activation_type=None, special_coords=None)
