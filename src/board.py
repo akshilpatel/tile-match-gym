@@ -67,7 +67,6 @@ class TileTranslator:
         else:
             raise NotImplementedError("Have not implemented special tiles yet.")
         
-     
 
 class Board:
     def __init__(self, height: int, width:int, num_colours:int, seed:Optional[int] = None, board:Optional[np.ndarray] = None):
@@ -85,6 +84,9 @@ class Board:
         self._special_match_types = ["vertical4", "horizontal4", "vertical5", "horizontal5", "bomb"]
         # self.generate_board()
         self.board = self.np_random.integers(1, self.num_colours + 1, size = self.flat_size).reshape(self.height, self.width)
+        self.activation_q = []
+
+        self.indices = np.array([[(r,c) for r in range(0,width)] for c in range(0,height)])
 
         # handle the case where we are given a board
         if board is not None:
@@ -169,6 +171,61 @@ class Board:
             rand_vals = self.np_random.integers(1, self.num_colours + 1, size=num_zeros)
             self.board[zero_mask] = rand_vals
 
+    def apply_activation(self, coord: Tuple[int, int], activation_type: Optional[int]=None, special_coords: Optional[Tuple[int, int]]=None):
+        """
+        Should take a particular coordinate of the board.
+        Get the activation effect given the tile
+        """
+        if activation_type == None: # there is no matching category
+            activation_type = self.tile_translator.get_tile_type(self.board[coord])
+            if self.board[coord] == 0:
+                return
+        
+        if special_coords == None:
+            self.board[coord] = 0
+            if activation_type == 1: # v_stripe
+                self.activation_q.append(self.indices[:, coord[1]].reshape((-1,2)))
+            elif activation_type == 2: # h_stripe
+                self.activation_q.append(self.indices[coord[0], :].reshape((-1,2)))
+            elif activation_type == 3: # bomb
+                min_left = max(0,coord[0]-1) # max of 0 and leftmost bomb
+                min_top = max(coord[1]-1, 0) # max of 0 and topmost bomb
+                max_right = min(self.width, coord[0]+2) # min of rightmost and width
+                max_bottom = min(coord[1]+2, self.height) # min of bottommost and height
+                self.activation_q.append(self.indices[min_left:max_right, min_top:max_bottom])
+        else: 
+            pass
+            # if activition_type = 
+
+
+    
+    #     # activation is cookie + special:
+    #     if activation_type == cookie + v_stripe + colour:
+    #         delete cookie_coord
+    #         turn all same colour into v or h stripe
+    #         add those coords to the activation queue in random order.
+    
+    #     if activation_type == v_stripe + h_stripe:
+    #         delete both coords.
+    #         add vslice and h_slice to activation queue
+    
+    #     if activation_type == stripe + bomb:
+    #         delete both coords.
+    #         add 3 vslices and 3 hslices to activation_queue
+    
+    #     if activation_type == bomb + bomb:
+    #         delete both bombs
+    #         add 5x5 grid to queue
+    
+    #     if activation_type == cookie + bomb:
+    #         delete cookie coord
+    #         turn all same colour into bomb
+    #         add those bombs to activation queue
+    
+    #     if activation_type == cookie + cookie:
+    #         delete cookies 
+    #         Add all coords to activation queue
+    
     def get_match_coords(self) -> List[List[Tuple[int, int]]]:    
         """For the current board, find the first set of matches. Go from the bottom up and find the set of matches. 
 
@@ -441,6 +498,26 @@ if __name__ == "__main__":
     ])
 
     print(board.get_lowest_h_match_coords())
-
+    
+    print("original")
     board.print_board()
+
+    # board.apply_activation((1, 1), 0)
+
+    # print("normal activation at (1,1)")
+    # board.print_board()
+
+    board.apply_activation((1, 1), 1)
+    print("v_stripe activation at (1,1)")
+    board.print_board()
+    print("board activation q = ", board.activation_q)
+
+    # board.apply_activation((1, 1), 2)
+
+    # print("h_stripe activation at (1,1)")
+    # board.print_board()
+
+    # board.apply_activation((2,2), 3)
+    # print("bomb activation at (2,2)")
+    # board.print_board()
 
