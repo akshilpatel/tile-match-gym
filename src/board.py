@@ -183,7 +183,7 @@ class Board:
             if self.board[coord] == 0:
                 return
         
-        if special_coord is not None:
+        if special_coord is None:
             self.board[coord] = 0
             if activation_type == 1: # v_stripe
                 self.activation_q += self.indices[:, coord[1]].reshape((-1,2)).tolist()
@@ -198,6 +198,8 @@ class Board:
         else: 
             tile_type = self.tile_translator.get_tile_type(self.board[coord])
             tile_colour = self.tile_translator.get_tile_colour(self.board[coord])
+            print("special_coord", special_coord)
+            print("self.board[special_boy] = ", self.board[special_coord])
             tile2_type = self.tile_translator.get_tile_type(self.board[special_coord])
             tile_colour = self.tile_translator.get_tile_colour(self.board[special_coord])
             if tile_type == 4: # One cookie
