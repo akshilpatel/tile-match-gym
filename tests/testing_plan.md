@@ -23,28 +23,6 @@ This file documents the test cases planned for testing, sectioned out by high-le
 - [ ] If the board has empty tiles in the middle the non-empty tiles above shift down according to the number of intermediary empty tiles.
 - [ ] Given a board with a non-empty activation queue, gravity updates the coordinates for the activation queue.
 
-## Automatch - One round of automatching. Detect,
-
-- [ ] Given a board with no matches, automatch does not change the board and returns False.
-      Given a board with one match:
-- [ ] If the match is 3+ ordinary tiles in a row or column, automatch returns True and eliminates the ordinary tiles.
-- [ ] If the match is 4 tiles in a row, it creates a horizontal laser tile
-- [ ]
-
-## Create Special
-
-## Apply activation
-
-- [ ] Ordinary tiles. No side effects
-- [ ] Ordinary tiles. Side effects.
-- [ ] Laser tiles. No side effects
-- [ ] Cookie + cookie
-- [ ] Cookie + laser
-- [ ] Cookie + bomb
-- [ ] Laser + bomb
-- [ ] Bomb + bomb
-- [ ] Laser + laser
-
 ## Get match coordinates
 
 - [ ] Given a board with no matches, this returns an empty list.
@@ -75,8 +53,38 @@ This file documents the test cases planned for testing, sectioned out by high-le
    1. 4 and 5
 5. One long match - should only return one match and not repeated matches.
 
+## Create Special
+
+1. Given a string match type and match coordinates, the function should place a special tile of the correct type in one of the match coordinates.
+
+## Automatch - One round of automatching. Detect,
+
+- [ ] Given a board with no matches, automatch does not change the board and returns False.
+      Given a board with one match:
+- [ ] If the match is 3+ ordinary tiles in a row or column, automatch returns True and the ordinary tiles are eliminated, and refilled and gravitied.
+- [ ] If the match is 4 tiles in a row, it creates a horizontal laser tile in one of the coordinates, the others are eliminated and refilled and gravitied.
+- [ ]
+
+## Apply activation
+
+- [ ] Ordinary tiles. No side effects
+- [ ] Ordinary tiles. Side effects.
+- [ ] Laser tiles. No side effects
+- [ ] Match two ordinary with 1 special of same colour. The special should be activated, the ordinaries should be deleted.
+- [ ] Match three ordinaries with 1 special of same colour. The special should be activated, the ordinaries should be deleted, then a special should remain in one of the coordinates.
+- [ ] Match three ordinaries with 2 specials of same colour. The specials should be activated, the ordinaries should be deleted, then a special should remain in one of the coordinates.
+- Swap two specials
+  - [ ] Cookie + cookie
+  - [ ] Cookie + laser
+  - [ ] Cookie + bomb
+  - [ ] Laser + bomb
+  - [ ] Bomb + bomb
+  - [ ] Laser + laser
+
 ## Activation loop
 
 - [ ] If the activation queue is empty. Nothing happens.
 - [ ] If the activation queue is not empty, the activation queue is processed with eliminations.
 - [ ] Activation loop and automatch don't hang (since they call each other.)
+- [ ] **Chaining**: If the activation queue is not empty, the activation queue is processed with eliminations and the activation queue is updated with any new activations that occur due to chaining..
+- [ ]
