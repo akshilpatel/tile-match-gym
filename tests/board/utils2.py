@@ -1,6 +1,6 @@
 
 import pytest
-from src.board import Board
+from tile_match_gym.board import Board
 import numpy as np
 from typing import Optional, List, Tuple
 

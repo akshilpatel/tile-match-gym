@@ -1,8 +1,8 @@
 import pytest
-from src.tile_match_gym.board import Board
+from tile_match_gym.board import Board
 import numpy as np
 from typing import Optional, List, Tuple
-from tile_match_gym.tests.board.utils2 import create_alternating_array
+from tests.board.utils2 import create_alternating_array
 import copy
 
 example_board = Board(0,0,0,0,np.array([

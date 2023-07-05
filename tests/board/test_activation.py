@@ -1,5 +1,5 @@
 import pytest
-from src.tile_match_gym.board import Board
+from tile_match_gym.board import Board
 import numpy as np
 from typing import Optional, List, Tuple
 from utils import print_board_diffs
