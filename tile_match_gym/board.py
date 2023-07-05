@@ -104,26 +104,7 @@ class Board:
             self.gravity()
             self.refill()
         
-    def automatch(self, scoring: Optional[bool] = False) -> bool:
-        """Implements one round of automatching. Assumes and implements only one match per call.
-
-        Args:
-            scoring (Optional[bool], optional): Whether or not to accumulate the scoring function for this step. Defaults to False.
-
-        Returns:
-            bool: True iff the board has a match.
-        """
-        if scoring:
-            raise NotImplementedError("Scoring functionality")
-        matches = self.get_match_coords() # List of coordinates consisting a match.
-        if len(matches) > 0: # If there are matches
-            for match in matches:
-                match_type = self.get_match_type(match)
-                if match_type in self._special_match_types:
-                    self.create_special(match, match_type)
-                return True
-        else:
-            return False
+    
         
     # Happens after all effects are done, you just put the special in place.
     def create_special(self, match_coords: List[Tuple[int, int]], match_type: str, color_idx: Optional[int]=None) -> None: 
@@ -141,12 +122,10 @@ class Board:
         else:
             raise NotImplementedError(f"The special type does not exist: {match_type}")
 
-    def gravity(self, activation_queue: Optional[deque] = None) -> None:
+    def gravity(self) -> None:
         """
         Given a board with zeros, push the zeros to the top of the board.
         If an activation queue of coordinates is passed in, then the coordinates in the queue are updated as gravity pushes the coordinates down.
-        Args:
-            activation_queue: A queue of activations to be applied to the board. The coordinates in these must be updated.
         """
         board_transposed = self.board.T
         zero_mask = board_transposed == 0
@@ -159,8 +138,8 @@ class Board:
         board_transposed[zero_mask] = 0
 
         # Update coordinates in activation queue
-        if activation_queue is not None:
-            for activation in activation_queue:
+        if len(self.activation_q) != 0:
+            for activation in self.activation_q:
                 i, col = activation["coord"]
                 activation["coord"][0] += zero_counts[i, col]
         self.board = board_transposed.T
@@ -176,7 +155,9 @@ class Board:
     def apply_activation(self, coord: Tuple[int, int], activation_type: Optional[int]=None, special_coord: Optional[Tuple[int, int]]=None):
         """
         Should take a particular coordinate of the board.
-        Get the activation effect given the tile
+        Get the activation  given the tile
+        Update the activation queue if needed.
+        Eliminate ordinary tiles if they are next in activation queue.
         """
         if activation_type == None:
             activation_type = self.tile_translator.get_tile_type(self.board[coord])
@@ -198,8 +179,6 @@ class Board:
         else: 
             tile_type = self.tile_translator.get_tile_type(self.board[coord])
             tile_colour = self.tile_translator.get_tile_colour(self.board[coord])
-            print("special_coord", special_coord)
-            print("self.board[special_boy] = ", self.board[special_coord])
             tile2_type = self.tile_translator.get_tile_type(self.board[special_coord])
             tile_colour = self.tile_translator.get_tile_colour(self.board[special_coord])
             if tile_type == 4: # One cookie
@@ -258,6 +237,7 @@ class Board:
 
             else:
                 raise ValueError(f"We are ridden with bugs. candy1: {tile_type} candy2: {tile2_type}")
+
     def get_match_coords(self) -> List[List[Tuple[int, int]]]:    
         """For the current board, find the first set of matches. Go from the bottom up and find the set of matches. 
 
@@ -415,17 +395,44 @@ class Board:
             print('|')
         print(' ' + '-' * (self.width * 2 + 1))
 
-    def activation_loop(self, activation_queue: deque):
-        while activation_queue:
-            activation = activation_queue.pop()
+    def activation_loop(self):
+        while self.activation_q:
+            activation = self.activation_q.pop()
             self.apply_activation(**activation)
-            self.gravity(activation_queue)
+            self.gravity()
             self.refill()
 
         has_match = True
         while has_match:
             has_match = self.automatch()
 
+
+    def automatch(self, scoring: Optional[bool] = False) -> bool:
+        """Implements one round of automatching. Assumes and implements only one match per call.
+
+        Args:
+            scoring (Optional[bool], optional): Whether or not to accumulate the scoring function for this step. Defaults to False.
+
+        Returns:
+            bool: True iff the board has a match.
+        """
+        if scoring:
+            raise NotImplementedError("Scoring functionality")
+        matches = self.get_match_coords() # List of coordinates consisting a match.
+
+        if len(matches) == 0:
+            return False
+        
+        
+        for match in matches:
+            match_type = self.get_match_type(match)
+            for match_coord in match:
+                self.activation_q.append({"coord": match_coord})
+            self.activation_loop()
+            if match_type in self._special_match_types:
+                self.create_special(match, match_type)       
+        return True
+        
 # def apply_activation(coord, activation_type=None, special_coords=None)
 
 #     if activation_type is None:
@@ -442,7 +449,7 @@ class Board:
 #             add_h_slice_to_activation_queue
 #         elif coord == bomb:
 #             delete coord
-#             add bomb slice to activation_queue	
+#             add bomb slice to activation_q	
 
 #     # activation is cookie + special:
 #     if activation_type == cookie + v_stripe + colour:
