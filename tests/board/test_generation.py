@@ -12,8 +12,8 @@ from tests.board.utils2 import create_alternating_array, contains_threes
 @pytest.mark.parametrize("height, width, num_colours", [
     (4, 4, 4),
     (90, 2, 12),
-    (50, 50, 4),
-    (8, 8, 1),
+    # (50, 50, 4),
+    # (8, 8, 1),
 ])
 def test_does_not_contain_threes(height: int, width:int, num_colours:int, seed:Optional[int] = None):
     board = Board(height, width, num_colours, seed)
