@@ -395,7 +395,7 @@ class Board:
             print('|')
         print(' ' + '-' * (self.width * 2 + 1))
 
-    def activation_loop(self):
+    def activation_loop(self) -> None:
         while self.activation_q:
             activation = self.activation_q.pop()
             self.apply_activation(**activation)
@@ -419,11 +419,8 @@ class Board:
         if scoring:
             raise NotImplementedError("Scoring functionality")
         matches = self.get_match_coords() # List of coordinates consisting a match.
-
         if len(matches) == 0:
             return False
-        
-        
         for match in matches:
             match_type = self.get_match_type(match)
             for match_coord in match:
