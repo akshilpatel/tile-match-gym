@@ -105,7 +105,6 @@ class Board:
             self.refill()
         
     
-        
     # Happens after all effects are done, you just put the special in place.
     def create_special(self, match_coords: List[Tuple[int, int]], match_type: str, color_idx: Optional[int]=None) -> None: 
         rand_coord = self.np_random.choice(list(filter(self.tile_translator.is_tile_ordinary, match_coords)))
@@ -152,19 +151,21 @@ class Board:
             rand_vals = self.np_random.integers(1, self.num_colours + 1, size=num_zeros)
             self.board[zero_mask] = rand_vals
 
-    def apply_activation(self, coord: Tuple[int, int], activation_type: Optional[int]=None, special_coord: Optional[Tuple[int, int]]=None):
+    def apply_activation(self, coord: Tuple[int, int], activation_type: Optional[int]=None, second_special_coord: Optional[Tuple[int, int]]=None):
         """
         Should take a particular coordinate of the board.
         Get the activation  given the tile
         Update the activation queue if needed.
         Eliminate ordinary tiles if they are next in activation queue.
+        If both coordinates are specials, the second_special_coord should not be None.
         """
         if activation_type == None:
             activation_type = self.tile_translator.get_tile_type(self.board[coord])
             if self.board[coord] == 0:
                 return
         
-        if special_coord is None:
+        # Maximum one special in the move/activation.
+        if second_special_coord is None:
             self.board[coord] = 0
             if activation_type == 1: # v_stripe
                 self.activation_q += self.indices[:, coord[1]].reshape((-1,2)).tolist()
@@ -175,19 +176,23 @@ class Board:
                 min_left = max(coord[1]-1, 0) # max of 0 and topmost bomb
                 max_bottom = min(self.height, coord[0]+2) # min of rightmost and width
                 max_right = min(coord[1]+2, self.width) # min of bottommost and height
-                self.activation_q += self.indices[min_top:max_bottom, min_left:max_right].reshape((-1,2)).tolist()
+                coord_arr = self.indices[min_top:max_bottom, min_left:max_right].reshape((-1,2)).tolist()
+                self.activation_q += [{"coord": x for x in coord_arr}]
+            # TODO: Add one clause here for if a cookie is hit.
+
+        # This is for when two specials are combined.
         else: 
             tile_type = self.tile_translator.get_tile_type(self.board[coord])
             tile_colour = self.tile_translator.get_tile_colour(self.board[coord])
-            tile2_type = self.tile_translator.get_tile_type(self.board[special_coord])
-            tile_colour = self.tile_translator.get_tile_colour(self.board[special_coord])
+            tile2_type = self.tile_translator.get_tile_type(self.board[second_special_coord])
+            tile_colour = self.tile_translator.get_tile_colour(self.board[second_special_coord])
             if tile_type == 4: # One cookie
                 if tile2_type == 4: # Two cookies
                     self.activation_q += self.indices.reshape(-1, 2).tolist()
                 else: 
                     self.board[coord] = 0
                     mask = (self.board != int(self.num_colours * 4) + 1) & (self.board % self.num_colours == tile_colour) # Get same colour
-                    self.board[mask] = self.board[special_coord] # cookie
+                    self.board[mask] = self.board[second_special_coord] # cookie
 
             if tile2_type == 4: # One cookie
                 self.board[coord] = 0
@@ -197,44 +202,46 @@ class Board:
             if tile_type == 3: # Bomb
                 if tile2_type == 3: # Two bombs
                     self.board[coord] = 0
-                    self.board[special_coord] = 0
-                    if coord[0] == special_coord[0]: # Horizontal match 
-                        base_coord = coord[0], min(coord[1], special_coord[1])
+                    self.board[second_special_coord] = 0
+                    if coord[0] == second_special_coord[0]: # Horizontal match 
+                        base_coord = coord[0], min(coord[1], second_special_coord[1])
                         min_top = max(0, base_coord[0]-2) # max of 0 and leftmost bomb
                         max_bottom = min(self.height, base_coord[0]+3) # min of rightmost and width
                         min_left = max(base_coord[1]-2, 0) # max of 0 and topmost bomb
                         max_right = min(base_coord[1] + 4, self.width) # min of bottommost and height
-                        self.activation_q += self.indices[min_top:max_bottom, min_left:max_right].reshape((-1,2)).tolist()
+                        self.activation_q.extend([{"coord": x} for x in self.indices[min_top:max_bottom, min_left:max_right].reshape((-1,2))])
                     else: # Vertical match
-                        base_coord = coord[0], min(coord[1], special_coord[1])
+                        base_coord = coord[0], min(coord[1], second_special_coord[1])
                         min_top = max(0, base_coord[0]-2) # max of 0 and leftmost bomb
                         max_bottom = min(self.height, base_coord[0]+4) # min of rightmost and width
                         min_left = max(base_coord[1]-2, 0) # max of 0 and topmost bomb
                         max_right = min(base_coord[1] + 3, self.width) # min of bottommost and height
-                        self.activation_q += self.indices[min_top:max_bottom, min_left:max_right].reshape((-1,2)).tolist()
-                elif tile2_type <= 2: # Bomb + stripe
+                        self.activation_q.extend([{"coord": x} for x in self.indices[min_top:max_bottom, min_left:max_right].reshape((-1,2))])
+                elif tile2_type <= 2: # Bomb + laser
                     self.board[coord] = 0
-                    self.board[special_coord] = 0
-                    min_left = max(0, special_coord[0]-1)
-                    max_right = min(self.width, special_coord[0]+2)
-                    min_top = max(0, special_coord[1]-1)
-                    max_bottom = min(self.height, special_coord[1]+2)
-                    self.activation_q += np.intersect1d(self.indices[min_top:max_bottom, :].reshape((-1,2)), self.indices[:, min_left:max_right].reshape((-1,2))).tolist()
+                    self.board[second_special_coord] = 0
+                    min_left = max(0, second_special_coord[0]-1)
+                    max_right = min(self.width, second_special_coord[0]+2)
+                    min_top = max(0, second_special_coord[1]-1)
+                    max_bottom = min(self.height, second_special_coord[1]+2)
+                    coord_arr = np.intersect1d(self.indices[min_top:max_bottom, :].reshape((-1,2)), self.indices[:, min_left:max_right].reshape((-1,2)))
+                    self.activation_q.extend([{"coord": x} for x in coord_arr])
             
-            elif tile2_type == 3: # Bomb + stripe
+            elif tile2_type == 3: # Bomb + laser
                 self.board[coord] = 0
-                self.board[special_coord] = 0
+                self.board[second_special_coord] = 0
                 min_left = max(0, coord[0]-1)
                 max_right = min(self.width, coord[0]+2)
                 min_top = max(0, coord[1]-1)
                 max_bottom = min(self.height, coord[1]+2)
-                self.activation_q += np.intersect1d(self.indices[min_top:max_bottom, :].reshape((-1,2)), self.indices[:, min_left:max_right].reshape((-1,2))).tolist()
+                coord_arr = np.intersect1d(self.indices[min_top:max_bottom, :].reshape((-1,2)), self.indices[:, min_left:max_right].reshape((-1,2)))
+                self.activation_q.extend([{"coord": x} for x in coord_arr])
             
-            elif tile_type <= 2: # Stripe + stripe
+            elif tile_type <= 2: # laser + laser
                 self.board[coord] = 0
-                self.board[special_coord] = 0
-                self.activation_q += np.intersect1d(self.indices[special_coord[0], :].reshape((-1,2)), self.indices[:, special_coord[1]].reshape((-1,2))).tolist()
-
+                self.board[second_special_coord] = 0
+                coord_arr = np.intersect1d(self.indices[second_special_coord[0], :].reshape((-1,2)), self.indices[:, second_special_coord[1]].reshape((-1,2)))
+                self.activation_q.extend([{"coord": x} for x in coord_arr])
             else:
                 raise ValueError(f"We are ridden with bugs. candy1: {tile_type} candy2: {tile2_type}")
 
@@ -379,11 +386,16 @@ class Board:
         if not self.check_move_validity(coord1, coord2):
             return
         self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
+        
+        # If there are two special coords. Add one activation with both coords to the activation queue.
+        if not (self.tile_translator.is_tile_ordinary(self.board[coord1]) or self.tile_translator.is_tile_ordinary(self.board[coord1])):
+            self.activation_q.append({'coord': coord1, 'second_special_coord': coord2})
+            self.activation_loop()
+            return
+        
         has_match = True
         while has_match:
             has_match = self.automatch()
-            self.gravity()
-            self.refill()
 
     def print_board(self) -> None:
         get_col = lambda x: "\033[1;3{}m{}\033[0m".format(x, x)
@@ -396,12 +408,13 @@ class Board:
         print(' ' + '-' * (self.width * 2 + 1))
 
     def activation_loop(self) -> None:
-        while self.activation_q:
+        while len(self.activation_q) > 0:
             activation = self.activation_q.pop()
             self.apply_activation(**activation)
             self.gravity()
             self.refill()
 
+        # Always do at least one call to automatch.
         has_match = True
         while has_match:
             has_match = self.automatch()
@@ -451,14 +464,14 @@ class Board:
 #     # activation is cookie + special:
 #     if activation_type == cookie + v_stripe + colour:
 #         delete cookie_coord
-#         turn all same colour into v or h stripe
+#         turn all same colour into v or h laser
 #         add those coords to the activation queue in random order.
 
 #     if activation_type == v_stripe + h_stripe:
 #         delete both coords.
 #         add vslice and h_slice to activation queue
 
-#     if activation_type == stripe + bomb:
+#     if activation_type == laser + bomb:
 #         delete both coords.
 #         add 3 vslices and 3 hslices to activation_queue
 
