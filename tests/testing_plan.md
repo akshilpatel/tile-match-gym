@@ -63,7 +63,8 @@ This file documents the test cases planned for testing, sectioned out by high-le
       Given a board with one match:
 - [ ] If the match is 3+ ordinary tiles in a row or column, automatch returns True and the ordinary tiles are eliminated, and refilled and gravitied.
 - [ ] If the match is 4 tiles in a row, it creates a horizontal laser tile in one of the coordinates, the others are eliminated and refilled and gravitied.
-- [ ]
+- [ ] Bomb creation from Ls and Ts.
+- [ ] Cookie creation from 5+ matches.
 
 ## Apply activation
 
