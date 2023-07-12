@@ -9,6 +9,7 @@ class BoardMatcher:
         self.rows = len(board)
         self.cols = len(board[0])
 
+
     def get_lines(self):
         """
         Starts from the bottom and checks for 3 or more in a row vertically or horizontally.
@@ -337,8 +338,8 @@ def is_same_coords(coords1, coords2):
 
 if __name__ == "__main__":
     # utils
-    coords_match = lambda l1, l2: sorted(l1) == sorted(l2)
-    format_test = lambda r, e: "result: "+str(r)+"\nexpected: "+str(e)+"\n"
+    coords_match = lambda l1, l2: sorted([sorted(i, key=lambda x: x[1]) for i in l1]) == sorted([sorted(i, key=lambda x: x[1]) for i in l2])
+    format_test = lambda r, e: "result: \t"+str(r)+"\nexpected: \t"+str(e)+"\n"
 
     matcher = BoardMatching()
     
