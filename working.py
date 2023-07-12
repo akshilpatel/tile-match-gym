@@ -2,6 +2,51 @@ import numpy as np
 from typing import List, Tuple
 import json
 
+
+class BoardMatcher:
+    def __init__(self, board):
+        self.board = np.array(board)
+        self.rows = len(board)
+        self.cols = len(board[0])
+
+    def get_lines(self):
+        """
+        Starts from the bottom and checks for 3 or more in a row vertically or horizontally.
+        returns contiguous lines of 3 or more candies
+        """
+        lines = []
+        for row in range(self.rows):
+            for el in range(self.cols):
+                r = row + 1
+                e = el + 1
+                
+                # make sure line has not already been checked
+                if not (row > 0 and self.board[row][el] == self.board[row-1][el]):
+                    # check for vertical lines
+                    while r < self.rows:
+                        if self.board[r][el] == self.board[r-1][el]:
+                            r += 1
+                        else:
+                            break
+                    if r - row >= 3:
+                        lines.append([(row + i, el) for i in range(r - row)])
+                
+                # make sure line has not already been checked
+                if not (el > 0 and self.board[row][el] == self.board[row][el-1]):
+                    # check for horizontal lines
+                    while e < self.cols:
+                        if self.board[row][e] == self.board[row][e-1]:
+                            e += 1
+                        else:
+                            break
+                    if e - el >= 3:
+                        lines.append([(row, el + i) for i in range(e - el)])
+        
+        return lines
+
+
+################################################################################
+
 class BoardMatching:
 
     def get_lines(self, board) -> List[List[Tuple[int, int]]]:
@@ -281,9 +326,20 @@ def detect_bomb_matches(island, intersection_coords, matches, coord_to_lines: di
 
 # TODO: Change get_match_coords to check same colour instead of same number.
 
-
+# function to test if two lists of coordinates are the same regardless of order or if coordinates are tuples or lists
+def is_same_coords(coords1, coords2):
+    if len(coords1) != len(coords2):
+        return False
+    for coord in coords1:
+        if list(coord) not in coords2:
+            return False
+    return True
 
 if __name__ == "__main__":
+    # utils
+    coords_match = lambda l1, l2: sorted(l1) == sorted(l2)
+    format_test = lambda r, e: "result: "+str(r)+"\nexpected: "+str(e)+"\n"
+
     matcher = BoardMatching()
     
     boards = json.load(open("boards.json", "r"))["boards"]
@@ -293,17 +349,45 @@ if __name__ == "__main__":
     [print(line) for line in t]
     
     for board in boards:
-        bd = np.array(board['board'])
-        lns = board['matches']
-        match_coords = matcher.get_lines(bd)
-        print("matched coords = ", match_coords)
-        print("expected coords = ", board['matches'])
-        # ensure the correct number of matches are found
-        # ensure the coordinates are the same
-        r = [[list(coord) for coord in sublist] for sublist in match_coords]
-        print("bd = ", bd)
-        assert len(match_coords) == len(board['matches'])
-        for l in range(len(r)):
-            for coord in r[l]:
-                assert coord in board['matches'][l]
+        print("test:", board['name'])
+        print("board: ")
+        [print("\t",line) for line in board['board']]
+
+
+        bm = BoardMatcher(board['board'])
+        matches = bm.get_lines()
+        expected_matches = [[tuple(coord) for coord in line] for line in board['matches']]
+
+        assert len(matches) == len(board['matches']), "incorrect number of matches found\n"+format_test(matches, expected_matches)
+        assert coords_match(matches, expected_matches), "incorrect matches found\n"+format_test(matches, expected_matches)
+
+
+        # print("test:", board['name'])
+        # bd = np.array(board['board'])
+        # lns = board['matches']
+        # match_coords = matcher.get_lines(bd)
+        # print("matched coords = ", match_coords)
+        # print("expected coords = ", board['matches'])
+        # r = [[list(coord) for coord in sublist] for sublist in match_coords]
+        # # ensure the correct number of matches are found
+        # assert len(match_coords) == len(board['matches']), "incorrect number of matches found"
+        # # ensure the coordinates are the same
+        # for l in range(len(r)):
+        #     for coord in r[l]:
+        #         assert coord in board['matches'][l], f"coord {coord} not in matches {board['matches'][l]}"
+
+        # # merge matches
+        # merged_matches = merge_matches(match_coords)
+        # print("merged_matches = ", merged_matches)
+
+        # """
+        # Should first check if the identified line at the bottom is part of:
+        #     - a cookie
+        #     - a bomb
+        #     - a laser
+        #     - an ordinary match
+        # """
+
+
+
         print("----")
