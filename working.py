@@ -44,6 +44,26 @@ class BoardMatcher:
                         lines.append([(row, el + i) for i in range(e - el)])
         
         return lines
+    
+    @staticmethod
+    def get_islands(lines):
+        # This can definitely be made faster
+        islands = []
+        for line in lines:
+            # check if line is already in an island
+            in_island = False
+            for island in islands:
+                for coord in line:
+                    if coord in island:
+                        in_island = True
+                        break
+                if in_island:
+                    for coord in line:
+                        if coord not in island:
+                            island.append(coord)
+            if not in_island:
+                islands.append(line)
+        return islands
 
 
 ################################################################################
@@ -327,15 +347,6 @@ def detect_bomb_matches(island, intersection_coords, matches, coord_to_lines: di
 
 # TODO: Change get_match_coords to check same colour instead of same number.
 
-# function to test if two lists of coordinates are the same regardless of order or if coordinates are tuples or lists
-def is_same_coords(coords1, coords2):
-    if len(coords1) != len(coords2):
-        return False
-    for coord in coords1:
-        if list(coord) not in coords2:
-            return False
-    return True
-
 if __name__ == "__main__":
     # utils
     coords_match = lambda l1, l2: sorted([sorted(i, key=lambda x: x[1]) for i in l1]) == sorted([sorted(i, key=lambda x: x[1]) for i in l2])
@@ -344,25 +355,25 @@ if __name__ == "__main__":
     matcher = BoardMatching()
     
     boards = json.load(open("boards.json", "r"))["boards"]
-
-    t = [[str(x) for x in line] for line in boards[0]['board']]
-    t[2][0] = "X"
-    [print(line) for line in t]
     
     for board in boards:
         print("test:", board['name'])
-        print("board: ")
-        [print("\t",line) for line in board['board']]
+        # print("board: ")
+        # [print("\t",line) for line in board['board']]
 
 
         bm = BoardMatcher(board['board'])
         matches = bm.get_lines()
         expected_matches = [[tuple(coord) for coord in line] for line in board['matches']]
+        expected_islands = [[tuple(coord) for coord in line] for line in board['islands']]
 
         assert len(matches) == len(board['matches']), "incorrect number of matches found\n"+format_test(matches, expected_matches)
         assert coords_match(matches, expected_matches), "incorrect matches found\n"+format_test(matches, expected_matches)
-
-
+        
+        islands = bm.get_islands(matches)
+        print("islands = ", islands)
+        assert coords_match(islands, expected_islands), "incorrect islands found\n"+format_test(islands, expected_islands)
+        print("PASSED")
         # print("test:", board['name'])
         # bd = np.array(board['board'])
         # lns = board['matches']
