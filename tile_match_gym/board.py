@@ -140,22 +140,30 @@ class Board:
         Given a board with zeros, push the zeros to the top of the board.
         If an activation queue of coordinates is passed in, then the coordinates in the queue are updated as gravity pushes the coordinates down.
         """
-        board_transposed = self.board.T
-        zero_mask = board_transposed == 0
-        non_zero_mask = ~zero_mask
+        # zero_counts = np.zeros((self.height, self.width))
+        # for j, col in enumerate(self.board.T):
+        #     zero_count = 0
+        #     for i in range(len(col)-1, -1, -1):
+        #         if col[i] == 0:
+        #             zero_count += 1
+        #         elif zero_count != 0:
+        #             col[i + zero_count] = col[i]
+        #             col[i] = 0
 
-        # Compute the number of zeros pushed to the top at each position
-        zero_counts = np.cumsum(zero_mask, axis=0)
-        # Shift non-zero elements to their correct positions
-        board_transposed[non_zero_mask] = board_transposed[non_zero_mask][zero_counts[non_zero_mask] - 1]
-        board_transposed[zero_mask] = 0
+        #         zero_counts[i, j] = zero_count
+        mask_T = self.board.T==0
+        non_zero_mask_T = ~mask_T
+        zero_counts_T = np.cumsum(mask_T[:, ::-1], axis=1)[::-1]
+
+        for j, col in enumerate(self.board.T):
+            self.board[:, j] = np.concatenate([col[mask_T[j]], col[non_zero_mask_T[j]]])
 
         # Update coordinates in activation queue
         if len(self.activation_q) != 0:
             for activation in self.activation_q:
-                i, col = activation["coord"]
-                activation["coord"][0] += zero_counts[i, col]
-        self.board = board_transposed.T
+                row, col = activation["coord"]
+                activation["coord"][0] += zero_counts_T[col, row]
+                print(row, col, row + zero_counts_T[col, row])
 
     def refill(self) -> None:
         """Replace all empty tiles."""
@@ -301,40 +309,40 @@ class Board:
         else:
             return v_matches
         
-    def get_match_type(self, match_segment: List[Tuple[int, int]]) -> str:
-        """String indicator of what match has occured.
-        Args:
-            match_islands (List[Tuple[int, int]]): Coords contained within a single match.
-        Returns:
-            str: Describing the match.
-        """
-        match_len = len(match_coords)
-        if match_len == 3:
-            if match_coords[0][0] == match_coords[1][0]:
-                return "horizontal3"
-            else:
-                return "vertical3"
+    # def get_match_type(self, match_segment: List[Tuple[int, int]]) -> str:
+    #     """String indicator of what match has occured.
+    #     Args:
+    #         match_islands (List[Tuple[int, int]]): Coords contained within a single match.
+    #     Returns:
+    #         str: Describing the match.
+    #     """
+    #     match_len = len(match_coords)
+    #     if match_len == 3:
+    #         if match_coords[0][0] == match_coords[1][0]:
+    #             return "horizontal3"
+    #         else:
+    #             return "vertical3"
 
-        if match_len >= 5:
+    #     if match_len >= 5:
 
-        # Check for contiguous 5s in a line -> cookie. -> rip out the 
+    #     # Check for contiguous 5s in a line -> cookie. -> rip out the 
         
         
-        # Check for contiguous 4s in a line
+    #     # Check for contiguous 4s in a line
 
-        # Else bomb.        
-        coord_arr = np.vstack(match_coords)
-        if len(match_coords) == 4:
-            if np.all(coord_arr[:, 0] == coord_arr[0, 0]):
-                return "horizontal4"
-            elif np.all(coord_arr[:, 1] == coord_arr[0, 0]):
-                return "vertical4"
+    #     # Else bomb.        
+    #     coord_arr = np.vstack(match_coords)
+    #     if len(match_coords) == 4:
+    #         if np.all(coord_arr[:, 0] == coord_arr[0, 0]):
+    #             return "horizontal4"
+    #         elif np.all(coord_arr[:, 1] == coord_arr[0, 0]):
+    #             return "vertical4"
 
-        if match_len == 5:
-            if match_coords[0][0] == match_coords[1][0]:
-                return "horizontal5"
-            else:
-                return "vertical5"
+    #     if match_len == 5:
+    #         if match_coords[0][0] == match_coords[1][0]:
+    #             return "horizontal5"
+    #         else:
+    #             return "vertical5"
 
     # Could use a mask to fix by setting those that have been added to a match to mask.
     def get_lowest_h_match_coords(self) -> List[List[Tuple[int, int]]]:
@@ -459,7 +467,7 @@ class Board:
             self.apply_activation(**activation)
             self.gravity()
             self.refill()
-            
+
             has_match = True
             while has_match:
                 has_match = self.automatch()
