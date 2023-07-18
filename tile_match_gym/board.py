@@ -459,11 +459,10 @@ class Board:
             self.apply_activation(**activation)
             self.gravity()
             self.refill()
-
-        # Always do at least one call to automatch.
-        has_match = True
-        while has_match:
-            has_match = self.automatch()
+            
+            has_match = True
+            while has_match:
+                has_match = self.automatch()
 
     def automatch(self, scoring: Optional[bool] = False) -> bool:
         """Implements one round of automatching. Assumes and implements only one match per call.
