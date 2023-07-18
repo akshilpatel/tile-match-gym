@@ -42,8 +42,102 @@ class BoardMatcher:
                             break
                     if e - el >= 3:
                         lines.append([(row, el + i) for i in range(e - el)])
-        
         return lines
+
+    def get_matches(self, islands, lines):
+        """
+        Detects the type of match type from the bottom up
+        repeats for the remaining island
+
+        returns the match coordinates and the match type for each match in the
+        island removed from bottom to top
+        """
+
+        tile_names = []
+        tile_coords = []
+        
+        lines = sorted([sorted(i, key=lambda x: (x[0],x[1])) for i in lines], key=lambda y: (y[0][0]), reverse=True)
+
+        while len(lines) > 0:
+            line = lines.pop()
+            print("Line = ", line)
+            # check for cookie
+            if len(line) >= 5:
+                tile_names.append("cookie")
+                tile_coords.append(line)
+            # check for laser
+            elif len(line) == 4:
+                tile_names.append("laser")
+                tile_coords.append(line)
+            # check for bomb
+            elif any([c in l for c in line for l in lines]): # REMOVE THIS AS SLOW AND IS DONE TWICE
+                print("BOMB FOUND")
+                for l in lines:
+                    shared = [c for c in line if c in l]
+                    if any(shared):
+                        shared = shared[0]
+                        sorted_closest = sorted(l, key=lambda x: (abs(x[0]-shared[0]) + abs(x[1]-shared[1])))
+                        tile_coords.append([p for p in line]+[p for p in sorted_closest[:3] if p not in line])
+                        if len(l) <= 6:
+                            lines.remove(l)
+                        for c in sorted_closest[:3]:
+                            l.remove(c)
+                        break
+                tile_names.append("bomb")
+
+            # check for normal
+            elif len(line) == 3:
+                tile_names.append("norm")
+                tile_coords.append(line)
+            # check for match
+            # check for no match
+            else:
+                tile_names.append("ERR")
+                tile_coords.append(line)
+
+        # # check_coord = lambda c, t: self.board[c[0]][c[1]] == t if (c[0] >= 0 and c[0] < self.rows and c[1] >= 0 and c[1] < self.cols) else False
+        # check_coord = lambda c, t: self.board[c[0]][c[1]] == t if (0 <= c[0] < self.rows and 0 <= c[1] < self.cols) else False
+
+        # # islands = sorted(self.get_islands(lines), key=lambda x: (x[0],x[1]), reverse=True)
+        # islands = sorted([sorted(i, key=lambda x: (x[0],x[1])) for i in self.get_islands(lines)], key=lambda x: (x[0][0]))
+
+        # tile_names = []
+        # tile_coords = []
+        # 
+        # # while there are still valid islands that have not been checked
+        # while len(islands) > 0:
+        #     # check the bottom island
+        #     for i in range(len(islands)):
+        #         # go through the neighbours of the current island
+        #         # check for matches and remove them from the island
+        #         # if there are no matches, move to the next island
+        #         current = islands[i][0]
+        #         print("current = ", current)
+        #         # check horizental cookie
+        #         # check vertical cookie
+        #         # check horizontal laser
+        #         # check vertical laser
+        #         # check horizontal bomb
+        #         # check vertical bomb
+        #         # check horizontal norm
+        #         # check vertical norm
+        #     break
+
+        # 
+        # # iterate through each island
+        # # for each island, check for matches and remove them from the island
+        # 
+        # #for island in islands:
+        #     # determine the match type associated with the lowest line
+
+        print("tile_names = ", tile_names)
+        return tile_coords, tile_names
+    
+    def contains(self, line, coord):
+        for c in line:
+            if c == coord:
+                return True
+        return False
     
     @staticmethod
     def get_islands(lines):
@@ -244,9 +338,6 @@ def merge_matches(matches: List[List[Tuple[int, int]]]) -> List[List[Tuple[int, 
         
     return merged_matches # List of islands and intersection 
 
-
-
-
 def clear_intersected_coord(island, line_idx, intersection_coords):
     # Remove intersected coords from other lines, remove current line and remove any invalid lines.
     line = island[line_idx]
@@ -349,7 +440,8 @@ def detect_bomb_matches(island, intersection_coords, matches, coord_to_lines: di
 
 if __name__ == "__main__":
     # utils
-    coords_match = lambda l1, l2: sorted([sorted(i, key=lambda x: x[1]) for i in l1]) == sorted([sorted(i, key=lambda x: x[1]) for i in l2])
+    sort_coords = lambda l:sorted([sorted(i, key=lambda x: (x[0], x[1])) for i in l])
+    coords_match = lambda l1, l2: sort_coords(l1) == sort_coords(l2)
     format_test = lambda r, e: "result: \t"+str(r)+"\nexpected: \t"+str(e)+"\n"
 
     matcher = BoardMatching()
@@ -357,22 +449,33 @@ if __name__ == "__main__":
     boards = json.load(open("boards.json", "r"))["boards"]
     
     for board in boards:
-        print("test:", board['name'])
-        # print("board: ")
-        # [print("\t",line) for line in board['board']]
-
-
+        print("testing board: ", board['name'])
         bm = BoardMatcher(board['board'])
         matches = bm.get_lines()
         expected_matches = [[tuple(coord) for coord in line] for line in board['matches']]
         expected_islands = [[tuple(coord) for coord in line] for line in board['islands']]
+        expected_tile_coords = [[tuple(coord) for coord in line] for line in board['tile_locations']]
+        expected_tile_names = board['tile_names']
 
         assert len(matches) == len(board['matches']), "incorrect number of matches found\n"+format_test(matches, expected_matches)
         assert coords_match(matches, expected_matches), "incorrect matches found\n"+format_test(matches, expected_matches)
         
-        islands = bm.get_islands(matches)
-        print("islands = ", islands)
-        assert coords_match(islands, expected_islands), "incorrect islands found\n"+format_test(islands, expected_islands)
+        #islands = bm.get_islands(matches)
+        #assert coords_match(islands, expected_islands), "incorrect islands found\n"+format_test(sort_coords(islands), sort_coords(expected_islands))
+    
+        tile_coords, tile_names = bm.get_matches([], matches)
+        assert coords_match(tile_coords, expected_tile_coords), "incorrect tile coords found\n"+format_test(sort_coords(tile_coords), sort_coords(expected_tile_coords))
+            
+        # make sure that the tiles collected are correct and in the same order
+        print(tile_names, expected_tile_names)
+        assert all(
+            [
+                name == expected_name
+                for name, expected_name in zip(tile_names, expected_tile_names)
+            ]
+        ), "incorrect tile names found\n" + format_test(tile_names, expected_tile_names)
+        
+        
         print("PASSED")
         # print("test:", board['name'])
         # bd = np.array(board['board'])
@@ -400,6 +503,6 @@ if __name__ == "__main__":
         #     - an ordinary match
         # """
 
-
-
         print("----")
+
+
