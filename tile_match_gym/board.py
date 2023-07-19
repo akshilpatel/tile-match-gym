@@ -22,6 +22,11 @@ from tile_translator import TileTranslator
     }
     """
 
+# Base class that only does match 3
+# Subclasses that add on functionality - add specials.
+
+
+
 class Board:
     def __init__(
         self,
@@ -42,7 +47,7 @@ class Board:
         self.np_random = np.random.default_rng(seed)
         self.flat_size = int(self.cols * self.rows)
         self.num_actions = self.cols * (self.cols - 1) + self.rows * (self.rows - 1)
-        self._special_match_types = ["vertical4", "horizontal4", "vertical5", "horizonta5","bomb"]
+        self._special_match_types = {"horizontal_laser", "vertical_laser", "cookie", "bomb"}
         # self.generate_board()
         self.board = self.np_random.integers(1, self.num_colours + 1, size=self.flat_size).reshape(self.rows, self.cols)
         self.activation_q = []
@@ -73,11 +78,11 @@ class Board:
         rand_coord = self.np_random.choice(list(filter(self.tile_translator.is_tile_ordinary, match_coords)))
         if color_idx is None:
             color_idx = self.tile_translator.get_tile_colour(rand_coord)
-        if match_type in ["horizontal5", "vertical5"]:
+        if match_type in ["horizontal_laser", "vertical_laser"]:
             self.board[rand_coord] = int(self.num_colours * 4) + 1
-        elif match_type == "horizontal4":
+        elif match_type == "horizontal_laser":
             self.board[rand_coord] = self.num_colours + color_idx
-        elif match_type == "verticall4":
+        elif match_type == "verticall_laser":
             self.board[rand_coord] = int(2 * self.num_colours) + color_idx
         elif match_type == "bomb":
             self.board[rand_coord] = int(3 * self.num_colours) + color_idx
@@ -89,17 +94,6 @@ class Board:
         Given a board with zeros, push the zeros to the top of the board.
         If an activation queue of coordinates is passed in, then the coordinates in the queue are updated as gravity pushes the coordinates down.
         """
-        # zero_counts = np.zeros((self.rows, self.cols))
-        # for j, col in enumerate(self.board.T):
-        #     zero_count = 0
-        #     for i in range(len(col)-1, -1, -1):
-        #         if col[i] == 0:
-        #             zero_count += 1
-        #         elif zero_count != 0:
-        #             col[i + zero_count] = col[i]
-        #             col[i] = 0
-
-        #         zero_counts[i, j] = zero_count
         mask_T = self.board.T==0
         non_zero_mask_T = ~mask_T
         zero_counts_T = np.cumsum(mask_T[:, ::-1], axis=1)[::-1]
@@ -181,10 +175,10 @@ class Board:
                     self.board[second_special_coord] = 0
                     if coord[0] == second_special_coord[0]:  # Horizontal match
                         base_coord = coord[0], min(coord[1], second_special_coord[1])
-                        min_top = max(0, base_coord[0] - 2)  
-                        max_bottom = min(self.rows, base_coord[0] + 3)  
-                        min_left = max(base_coord[1] - 2, 0)  
-                        max_right = min(base_coord[1] + 4, self.cols)  
+                        min_top = max(0, base_coord[0] - 2)
+                        max_bottom = min(self.rows, base_coord[0] + 3)
+                        min_left = max(base_coord[1] - 2, 0)
+                        max_right = min(base_coord[1] + 4, self.cols)
                         self.activation_q.extend([{"coord": x} for x in self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2))])
                     else:  # Vertical match
                         base_coord = coord[0], min(coord[1], second_special_coord[1])
@@ -318,16 +312,15 @@ class Board:
         """
         if scoring:
             raise NotImplementedError("Scoring functionality")
-        matches = self.get_match_coords()  # List of coordinates consisting a match.
+        matches, match_types = self.get_matches()  # List of coordinates consisting a match.
         if len(matches) == 0:
             return False
-        for match in matches:
-            match_type = self.get_match_type(match)
+        for i, match in enumerate(matches):
             for match_coord in match:
                 self.activation_q.append({"coord": match_coord})
             self.activation_loop()
-            if match_type in self._special_match_types:
-                self.create_special(match, match_type)
+            if match_types[i] in self._special_match_types:
+                self.create_special(match, match_types[i])
         return True
 
     ## Match functions ##
@@ -339,9 +332,9 @@ class Board:
         """
         Returns the types of tiles in the board and their locations
         """
-        matches = self.get_lines()
+        lines = self.get_lines()
         # islands = self.get_islands(matches)
-        tile_coords, tile_names = self.get_matches([], matches)
+        tile_coords, tile_names = self.get_matches([], lines)
         return tile_coords, tile_names
 
     def get_lines(self) -> List[List[Tuple[int, int]]]:
@@ -385,12 +378,11 @@ class Board:
         returns the match coordinates and the match type for each match in the island removed from bottom to top
 
         TODO: make this more efficient and include the islands so that
-        concurrent groups can be matched
+        Note: concurrent groups can be matched
         """
-
         tile_names = []
         tile_coords = []
-        
+
         lines = sorted([sorted(i, key=lambda x: (x[0],x[1])) for i in lines], key=lambda y: (y[0][0]), reverse=True)
 
         while len(lines) > 0:
@@ -400,10 +392,13 @@ class Board:
                 tile_names.append("cookie")
                 tile_coords.append(line[:5])
                 if len(line[5:]) > 2:
-                    lines.append(line[5:]) # TODO - should just not pop the line rather than removing and adding again.
+                    lines.append(line[5:])  # TODO - should just not pop the line rather than removing and adding again.
             # check for laser
             elif len(line) == 4:
-                tile_names.append("laser")
+                if tile_coords[0][0] == tile_coords[1][0]:
+                    tile_names.append("horizontal_laser")
+                else:
+                    tile_names.append("vertical_laser")
                 tile_coords.append(line)
             # check for bomb
             elif any([c in l for c in line for l in lines]): # TODO - REMOVE THIS AS SLOW AND IS DONE TWICE
@@ -429,12 +424,11 @@ class Board:
                 tile_coords.append(line)
 
         return tile_coords, tile_names
-    
+
     @staticmethod
     def get_islands(lines: List[List[Tuple[int, int]]]) -> List[List[Tuple[int, int]]]:
         """
         Returns a list of islands from a list of lines
-
         TODO - Currently changes 'lines' in place. Should not do this.
         """
         # This can definitely be made faster
