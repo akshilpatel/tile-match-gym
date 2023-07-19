@@ -1,7 +1,7 @@
 
 import pytest
-from tile_match_gym.board import Board
 import numpy as np
+from tile_match_gym.board import Board
 from typing import Optional, List, Tuple
 
 # create an array of alternating 2's and 3's
@@ -12,6 +12,20 @@ def create_alternating_array(height: int, width: int) -> np.ndarray:
             arr[i, j] = (i + j) % 2 + 2
     return arr
 
+
+def create_board_from_array(arr: np.ndarray) -> Board:
+    num_colours = len(np.unique(arr))
+    height, width = arr.shape
+    seed = 1
+    board = Board(height, width, num_colours, seed)
+    return board
+
+
+def create_alternating_board(height: int, width: int) -> Board:
+    arr = create_alternating_array(height, width)
+    return create_board_from_array(arr)
+
+
 def contains_threes(arr: np.ndarray) -> bool:
     rows, cols = arr.shape
     for i in range(rows):
@@ -21,4 +35,3 @@ def contains_threes(arr: np.ndarray) -> bool:
     if i < rows - 2 and arr[i, j] == arr[i + 1, j] == arr[i + 2, j]:
         return True
     return False
-
