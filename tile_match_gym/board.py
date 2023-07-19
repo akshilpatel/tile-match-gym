@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Optional, List, Tuple, Dict
 from collections import deque
+from tile_translator import TileTranslator
 
 """
     tile_TYPES = {
