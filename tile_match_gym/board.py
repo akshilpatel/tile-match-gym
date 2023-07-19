@@ -24,38 +24,38 @@ from collections import deque
 class Board:
     def __init__(
         self,
-        height: int,
-        width: int,
+        rows: int,
+        cols: int,
         num_colours: int,
         seed: Optional[int] = None,
         board: Optional[np.ndarray] = None,
         ):
-        self.height = height
-        self.width = width
+        self.rows = rows
+        self.cols = cols
         self.num_colours = num_colours
 
-        self.tile_translator = TileTranslator(num_colours, (height, width))
+        self.tile_translator = TileTranslator(num_colours, (rows, cols))
 
         if seed is None:
             seed = np.random.randint(0, 1000000000)
         self.np_random = np.random.default_rng(seed)
-        self.flat_size = int(self.width * self.height)
-        self.num_actions = self.width * (self.width - 1) + self.height * (self.height - 1)
+        self.flat_size = int(self.cols * self.rows)
+        self.num_actions = self.cols * (self.cols - 1) + self.rows * (self.rows - 1)
         self._special_match_types = ["vertical4", "horizontal4", "vertical5", "horizonta5","bomb"]
         # self.generate_board()
-        self.board = self.np_random.integers(1, self.num_colours + 1, size=self.flat_size).reshape(self.height, self.width)
+        self.board = self.np_random.integers(1, self.num_colours + 1, size=self.flat_size).reshape(self.rows, self.cols)
         self.activation_q = []
 
-        self.indices = np.array([[(r, c) for r in range(0, width)] for c in range(0, height)])
+        self.indices = np.array([[(r, c) for r in range(0, cols)] for c in range(0, rows)])
 
         # handle the case where we are given a board
         if board is not None:
             self.board = board
-            self.height = board.shape
-            self.width = board.shape[1]
+            self.rows = len(board)
+            self.cols = len(board[0])
 
     def generate_board(self):
-        self.board = self.np_random.integers(1, self.num_colours + 1, size=self.flat_size).reshape(self.height, self.width)
+        self.board = self.np_random.integers(1, self.num_colours + 1, size=self.flat_size).reshape(self.rows, self.cols)
         has_match = True
         while has_match:
             has_match = self.automatch(scoring=False)
@@ -88,7 +88,7 @@ class Board:
         Given a board with zeros, push the zeros to the top of the board.
         If an activation queue of coordinates is passed in, then the coordinates in the queue are updated as gravity pushes the coordinates down.
         """
-        # zero_counts = np.zeros((self.height, self.width))
+        # zero_counts = np.zeros((self.rows, self.cols))
         # for j, col in enumerate(self.board.T):
         #     zero_count = 0
         #     for i in range(len(col)-1, -1, -1):
@@ -149,8 +149,8 @@ class Board:
             elif activation_type == 3:  # bomb
                 min_top = max(0, coord[0] - 1)  # max of 0 and leftmost bomb
                 min_left = max(coord[1] - 1, 0)  # max of 0 and topmost bomb
-                max_bottom = min(self.height, coord[0] + 2)  # min of rightmost and width
-                max_right = min(coord[1] + 2, self.width)  # min of bottommost and height
+                max_bottom = min(self.rows, coord[0] + 2)  # min of rightmost and cols
+                max_right = min(coord[1] + 2, self.cols)  # min of bottommost and rows
                 coord_arr = (self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2)).tolist())
                 self.activation_q += [{"coord": x for x in coord_arr}]
             # TODO: Add one clause here for if a cookie is hit.
@@ -181,24 +181,24 @@ class Board:
                     if coord[0] == second_special_coord[0]:  # Horizontal match
                         base_coord = coord[0], min(coord[1], second_special_coord[1])
                         min_top = max(0, base_coord[0] - 2)  
-                        max_bottom = min(self.height, base_coord[0] + 3)  
+                        max_bottom = min(self.rows, base_coord[0] + 3)  
                         min_left = max(base_coord[1] - 2, 0)  
-                        max_right = min(base_coord[1] + 4, self.width)  
+                        max_right = min(base_coord[1] + 4, self.cols)  
                         self.activation_q.extend([{"coord": x} for x in self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2))])
                     else:  # Vertical match
                         base_coord = coord[0], min(coord[1], second_special_coord[1])
                         min_top = max(0, base_coord[0] - 2)  # max of 0 and leftmost bomb
-                        max_bottom = min(self.height, base_coord[0] + 4)  # min of rightmost and width
+                        max_bottom = min(self.rows, base_coord[0] + 4)  # min of rightmost and cols
                         min_left = max(base_coord[1] - 2, 0)  # max of 0 and topmost bomb
-                        max_right = min(base_coord[1] + 3, self.width)  # min of bottommost and height
+                        max_right = min(base_coord[1] + 3, self.cols)  # min of bottommost and rows
                         self.activation_q.extend([{"coord": x} for x in self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2))])
                 elif tile2_type <= 2:  # Bomb + laser
                     self.board[coord] = 0
                     self.board[second_special_coord] = 0
                     min_left = max(0, second_special_coord[0] - 1)
-                    max_right = min(self.width, second_special_coord[0] + 2)
+                    max_right = min(self.cols, second_special_coord[0] + 2)
                     min_top = max(0, second_special_coord[1] - 1)
-                    max_bottom = min(self.height, second_special_coord[1] + 2)
+                    max_bottom = min(self.rows, second_special_coord[1] + 2)
                     coord_arr = np.intersect1d(
                         self.indices[min_top:max_bottom, :].reshape((-1, 2)),
                         self.indices[:, min_left:max_right].reshape((-1, 2)),
@@ -209,9 +209,9 @@ class Board:
                 self.board[coord] = 0
                 self.board[second_special_coord] = 0
                 min_left = max(0, coord[0] - 1)
-                max_right = min(self.width, coord[0] + 2)
+                max_right = min(self.cols, coord[0] + 2)
                 min_top = max(0, coord[1] - 1)
-                max_bottom = min(self.height, coord[1] + 2)
+                max_bottom = min(self.rows, coord[1] + 2)
                 coord_arr = np.intersect1d(
                     self.indices[min_top:max_bottom, :].reshape((-1, 2)),
                     self.indices[:, min_left:max_right].reshape((-1, 2)),
@@ -297,17 +297,17 @@ class Board:
         h_matches = []
         lowest_row_h = -1
         # Check all horizontal matches starting from the bottom
-        for row in range(self.height - 1, -1, -1):
+        for row in range(self.rows - 1, -1, -1):
             if lowest_row_h != -1:  # Don't need to check rows higher up.
                 break
             col = 2
-            while col < self.width:
+            while col < self.cols:
                 # If the current and previous 2 are matched
                 if self.board[row, col - 2] == self.board[row, col - 1] == self.board[row, col]:
                     lowest_row_h = max(row, lowest_row_h)
                     start = (row, col - 2)
                     # Iterate through to find the full number of matched candies.
-                    while col < self.width and self.board[row, col] == self.board[row, col - 1]:
+                    while col < self.cols and self.board[row, col] == self.board[row, col - 1]:
                         col += 1
                     match = [(start[0], i) for i in range(start[1], col)]
                     h_matches.append(match)
@@ -327,11 +327,11 @@ class Board:
         v_matches = []
         lowest_row_v = -1
         # Bottom left to top right
-        row = self.height - 3
+        row = self.rows - 3
         while row >= 0:
             if lowest_row_v != -1:
                 break
-            for col in range(self.width):
+            for col in range(self.cols):
                 if self.board[row, col] == self.board[row + 1, col] == self.board[row + 2, col]:  # Found a match
                     lowest_row_v = max(row + 2, lowest_row_v)
                     match = [(row + 2, col), (row + 1, col), (row, col)]
@@ -362,14 +362,14 @@ class Board:
             bool: True iff action has an effect on the environment.
         """
         ## Check both coords are on the board. ##
-        if not (0 <= coord1[0] < self.height and 0 <= coord1[1] < self.width):
+        if not (0 <= coord1[0] < self.rows and 0 <= coord1[1] < self.cols):
             return False, None
-        if not (0 <= coord2[0] < self.height and 0 <= coord2[1] < self.width):
+        if not (0 <= coord2[0] < self.rows and 0 <= coord2[1] < self.cols):
             return False, None
 
         # Extract a 6x6 grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
-        y_ranges = max(0, coord1[0] - 2), min(self.height, coord2[0] + 3)
-        x_ranges = max(0, coord1[1] - 2), min(self.width, coord2[1] + 3)
+        y_ranges = max(0, coord1[0] - 2), min(self.rows, coord2[0] + 3)
+        x_ranges = max(0, coord1[1] - 2), min(self.cols, coord2[1] + 3)
         surround_grid = self.board[y_ranges[0] : y_ranges[1]][x_ranges[0] : x_ranges[1]][:]
 
         # Swap the coordinates to see what happens.
@@ -401,13 +401,13 @@ class Board:
 
     def print_board(self) -> None:
         get_col = lambda x: "\033[1;3{}m{}\033[0m".format(x, x)
-        print(" " + "-" * (self.width * 2 + 1))
+        print(" " + "-" * (self.cols * 2 + 1))
         for row in self.board:
             print("| ", end="")
             for tile in row:
                 print(get_col(tile), end=" ")
             print("|")
-        print(" " + "-" * (self.width * 2 + 1))
+        print(" " + "-" * (self.cols * 2 + 1))
 
     def activation_loop(self) -> None:
         while len(self.activation_q) > 0:
@@ -443,74 +443,200 @@ class Board:
                 self.create_special(match, match_type)
         return True
 
+    ## Match functions ##
+
+    def _sort_coords(self,l: List[List[Tuple[int, int]]]) -> List[List[Tuple[int, int]]]:
+        return sorted([sorted(i, key=lambda x: (x[0], x[1])) for i in l])
+
+    def get_tiles(self) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
+        """
+        Returns the types of tiles in the board and their locations
+        """
+        matches = self.get_lines()
+        # islands = self.get_islands(matches)
+        tile_coords, tile_names = self.get_matches([], matches)
+        return tile_coords, tile_names
+
+    def get_lines(self) -> List[List[Tuple[int, int]]]:
+        """
+        Starts from the bottom and checks for 3 or more in a row vertically or horizontally.
+        returns contiguous lines of 3 or more candies
+        """
+        lines = []
+        for row in range(self.rows):
+            for el in range(self.cols):
+                r = row + 1
+                e = el + 1
+                
+                # make sure line has not already been checked
+                if not (row > 0 and self.board[row][el] == self.board[row-1][el]):
+                    # check for vertical lines
+                    while r < self.rows:
+                        if self.board[r][el] == self.board[r-1][el]:
+                            r += 1
+                        else:
+                            break
+                    if r - row >= 3:
+                        lines.append([(row + i, el) for i in range(r - row)])
+                
+                # make sure line has not already been checked
+                if not (el > 0 and self.board[row][el] == self.board[row][el-1]):
+                    # check for horizontal lines
+                    while e < self.cols:
+                        if self.board[row][e] == self.board[row][e-1]:
+                            e += 1
+                        else:
+                            break
+                    if e - el >= 3:
+                        lines.append([(row, el + i) for i in range(e - el)])
+        return lines
+
+    def get_matches(self, islands: List[List[Tuple[int, int]]], lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
+        """
+        Detects the match type from the bottom up
+
+        returns the match coordinates and the match type for each match in the
+        island removed from bottom to top
+
+        TODO: make this more efficient and include the islands so that
+        concurrent groups can be matched
+        """
+
+        tile_names = []
+        tile_coords = []
+        
+        lines = sorted([sorted(i, key=lambda x: (x[0],x[1])) for i in lines], key=lambda y: (y[0][0]), reverse=True)
+
+        while len(lines) > 0:
+            line = lines.pop()
+            # check for cookie
+            if len(line) >= 5:
+                tile_names.append("cookie")
+                tile_coords.append(line[:5])
+                if len(line[5:]) > 2:
+                    lines.append(line[5:]) # TODO - should just not pop the line rather than removing and adding again.
+            # check for laser
+            elif len(line) == 4:
+                tile_names.append("laser")
+                tile_coords.append(line)
+            # check for bomb
+            elif any([c in l for c in line for l in lines]): # TODO - REMOVE THIS AS SLOW AND IS DONE TWICE
+                for l in lines:
+                    shared = [c for c in line if c in l]
+                    if any(shared):
+                        shared = shared[0]
+                        sorted_closest = sorted(l, key=lambda x: (abs(x[0]-shared[0]) + abs(x[1]-shared[1])))
+                        tile_coords.append([p for p in line]+[p for p in sorted_closest[:3] if p not in line])
+                        if len(l) <= 6:
+                            lines.remove(l)
+                        for c in sorted_closest[:3]:
+                            l.remove(c)
+                        break
+                tile_names.append("bomb")
+            # check for normal
+            elif len(line) == 3:
+                tile_names.append("norm")
+                tile_coords.append(line)
+            # check for no match
+            else:
+                tile_names.append("ERR")
+                tile_coords.append(line)
+
+        return tile_coords, tile_names
+    
+    @staticmethod
+    def get_islands(lines: List[List[Tuple[int, int]]]) -> List[List[Tuple[int, int]]]:
+        """
+        Returns a list of islands from a list of lines
+
+        TODO - Currently changes 'lines' in place. Should not do this.
+        """
+        # This can definitely be made faster
+        islands = []
+        for line in lines:
+            # check if line is already in an island
+            in_island = False
+            for island in islands:
+                for coord in line:
+                    if coord in island:
+                        in_island = True
+                        break
+                if in_island:
+                    for coord in line:
+                        if coord not in island:
+                            island.append(coord)
+            if not in_island:
+                islands.append(line)
+        return islands
+
 
 if __name__ == "__main__":
-    board = Board(8, 7, 4)
-    board.board = board.np_random.integers(
-        1, board.num_colours + 1, size=board.flat_size
-    ).reshape(board.height, board.width)
+    # board = Board(8, 7, 4)
+    # board.board = board.np_random.integers(
+    #     1, board.num_colours + 1, size=board.flat_size
+    # ).reshape(board.rows, board.cols)
 
-    board.board = np.array(
-        [
-            [4, 4, 2, 1, 3, 2, 3],  # 0
-            [3, 1, 1, 1, 2, 3, 4],  # 1
-            [4, 4, 2, 1, 3, 2, 3],  # 2
-            [2, 3, 2, 2, 2, 3, 2],  # 3
-            [1, 1, 2, 3, 3, 3, 4],  # 4
-            [1, 3, 2, 4, 1, 2, 4],  # 5
-            [4, 3, 1, 3, 1, 4, 4],  # 6
-            [3, 3, 3, 1, 1, 1, 4],  # 7
-        ]
-    )
-    print(board.get_lowest_v_match_coords())
-    assert board.get_lowest_h_match_coords() == [
-        [(7, 0), (7, 1), (7, 2)],
-        [(7, 3), (7, 4), (7, 5)],
-    ]
-    print("hi")
+    # board.board = np.array(
+    #     [
+    #         [4, 4, 2, 1, 3, 2, 3],  # 0
+    #         [3, 1, 1, 1, 2, 3, 4],  # 1
+    #         [4, 4, 2, 1, 3, 2, 3],  # 2
+    #         [2, 3, 2, 2, 2, 3, 2],  # 3
+    #         [1, 1, 2, 3, 3, 3, 4],  # 4
+    #         [1, 3, 2, 4, 1, 2, 4],  # 5
+    #         [4, 3, 1, 3, 1, 4, 4],  # 6
+    #         [3, 3, 3, 1, 1, 1, 4],  # 7
+    #     ]
+    # )
+    # print(board.get_lowest_v_match_coords())
+    # assert board.get_lowest_h_match_coords() == [
+    #     [(7, 0), (7, 1), (7, 2)],
+    #     [(7, 3), (7, 4), (7, 5)],
+    # ]
+    # print("hi")
 
-    board.board = np.array(
-        [
-            [4, 4, 2, 2, 2, 2, 3],  # 0
-            [3, 1, 1, 2, 2, 3, 4],  # 1
-            [4, 4, 2, 1, 3, 2, 3],  # 2
-            [2, 3, 2, 2, 1, 3, 2],  # 3
-            [1, 1, 2, 3, 2, 3, 3],  # 4
-            [1, 3, 2, 4, 1, 2, 4],  # 5
-            [4, 3, 1, 3, 1, 4, 4],  # 6
-            [3, 2, 3, 2, 1, 1, 4],  # 7
-        ]
-    )
+    # board.board = np.array(
+    #     [
+    #         [4, 4, 2, 2, 2, 2, 3],  # 0
+    #         [3, 1, 1, 2, 2, 3, 4],  # 1
+    #         [4, 4, 2, 1, 3, 2, 3],  # 2
+    #         [2, 3, 2, 2, 1, 3, 2],  # 3
+    #         [1, 1, 2, 3, 2, 3, 3],  # 4
+    #         [1, 3, 2, 4, 1, 2, 4],  # 5
+    #         [4, 3, 1, 3, 1, 4, 4],  # 6
+    #         [3, 2, 3, 2, 1, 1, 4],  # 7
+    #     ]
+    # )
 
-    print(board.get_lowest_h_match_coords())
+    # print(board.get_lowest_h_match_coords())
 
-    board.board = np.array(
-        [
-            [4, 4, 4, 3, 2, 2, 2],  # 0
-            [3, 1, 1, 2, 2, 3, 4],  # 1
-            [4, 4, 2, 1, 3, 2, 3],  # 2
-            [2, 3, 2, 2, 1, 3, 2],  # 3
-            [1, 1, 2, 3, 2, 3, 3],  # 4
-            [1, 3, 2, 4, 1, 2, 4],  # 5
-            [4, 3, 1, 3, 1, 4, 4],  # 6
-            [3, 2, 3, 2, 1, 1, 4],  # 7
-        ]
-    )
+    # board.board = np.array(
+    #     [
+    #         [4, 4, 4, 3, 2, 2, 2],  # 0
+    #         [3, 1, 1, 2, 2, 3, 4],  # 1
+    #         [4, 4, 2, 1, 3, 2, 3],  # 2
+    #         [2, 3, 2, 2, 1, 3, 2],  # 3
+    #         [1, 1, 2, 3, 2, 3, 3],  # 4
+    #         [1, 3, 2, 4, 1, 2, 4],  # 5
+    #         [4, 3, 1, 3, 1, 4, 4],  # 6
+    #         [3, 2, 3, 2, 1, 1, 4],  # 7
+    #     ]
+    # )
 
-    print(board.get_lowest_h_match_coords())
+    # print(board.get_lowest_h_match_coords())
 
-    print("original")
-    board.print_board()
-
-    # board.apply_activation((1, 1), 0)
-
-    # print("normal activation at (1,1)")
+    # print("original")
     # board.print_board()
 
-    board.apply_activation((1, 1), 1)
-    print("v_stripe activation at (1,1)")
-    board.print_board()
-    print("board activation q = ", board.activation_q)
+    # # board.apply_activation((1, 1), 0)
+
+    # # print("normal activation at (1,1)")
+    # # board.print_board()
+
+    # board.apply_activation((1, 1), 1)
+    # print("v_stripe activation at (1,1)")
+    # board.print_board()
+    # print("board activation q = ", board.activation_q)
 
     # board.apply_activation((1, 1), 2)
 
@@ -520,3 +646,46 @@ if __name__ == "__main__":
     # board.apply_activation((2,2), 3)
     # print("bomb activation at (2,2)")
     # board.print_board()
+    import json
+
+    sort_coords = lambda l:sorted([sorted(i, key=lambda x: (x[0], x[1])) for i in l])
+    coords_match = lambda l1, l2: sort_coords(l1) == sort_coords(l2)
+    format_test = lambda r, e: "result: \t"+str(r)+"\nexpected: \t"+str(e)+"\n"
+
+    boards = json.load(open("boards.json", "r"))["boards"]
+    
+    for board in boards:
+        print("testing board: ", board['name'])
+        bm = Board(0,0,0, board=np.array(board['board']))
+        matches = bm.get_lines()
+        expected_matches = [[tuple(coord) for coord in line] for line in board['matches']]
+        expected_islands = [[tuple(coord) for coord in line] for line in board['islands']]
+        expected_tile_coords = [[tuple(coord) for coord in line] for line in board['tile_locations']]
+        expected_tile_names = board['tile_names']
+
+        assert len(matches) == len(board['matches']), "incorrect number of matches found\n"+format_test(matches, expected_matches)
+        assert coords_match(matches, expected_matches), "incorrect matches found\n"+format_test(matches, expected_matches)
+        
+        #islands = bm.get_islands(matches)
+        #assert coords_match(islands, expected_islands), "incorrect islands found\n"+format_test(sort_coords(islands), sort_coords(expected_islands))
+    
+        tile_coords, tile_names = bm.get_matches([], matches)
+        assert coords_match(tile_coords, expected_tile_coords), "incorrect tile coords found\n"+format_test(sort_coords(tile_coords), sort_coords(expected_tile_coords))
+            
+        # make sure that the tiles collected are correct and in the same order
+        print(tile_names, expected_tile_names)
+        assert all(
+            [
+                name == expected_name
+                for name, expected_name in zip(tile_names, expected_tile_names)
+            ]
+        ), "incorrect tile names found\n" + format_test(tile_names, expected_tile_names)
+        
+        print("tile_coords = ", tile_coords)
+        print("tile_names = ", tile_names)
+        print("PASSED")
+        print("get_tiles = ", bm.get_tiles())
+
+        print("----")
+
+
