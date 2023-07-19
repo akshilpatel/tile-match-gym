@@ -227,121 +227,7 @@ class Board:
                 )
                 self.activation_q.extend([{"coord": x} for x in coord_arr])
             else:
-                raise ValueError(
-                    f"We are ridden with bugs. candy1: {tile_type} candy2: {tile2_type}"
-                )
-
-    def get_match_coords(self) -> List[List[Tuple[int, int]]]:
-        """For the current board, find the first set of matches. Go from the bottom up and find the set of matches.
-        Returns:
-            List[List[Tuple[int, int]]]: List of matches. Each match is specified by a list.
-
-        # Look through the matches from bottom up and stop when you've checked the lowest row that has a match.
-        # Do the same thing for vertical.
-        # This currently only works for lines in one axis, i.e. we cannot detect Ls or Ts
-        """
-        h_matches, lowest_row_h = self.get_lowest_h_match_coords()
-        v_matches, lowest_row_v = self.get_lowest_v_match_coords()
-        if lowest_row_h == lowest_row_v == -1:
-            return []
-        # Check which matches are lowest and only return those.
-        if lowest_row_h == lowest_row_v:
-            # Check for bombs:
-            for i, h_match in enumerate(h_matches):
-                for j, v_match in enumerate(v_matches):
-                    set_h_match = set(h_match)
-                    set_v_match = set(v_match)            
-            return h_matches + v_matches
-        elif lowest_row_h > lowest_row_v:
-            return h_matches
-        else:
-            return v_matches
-        
-    # def get_match_type(self, match_segment: List[Tuple[int, int]]) -> str:
-    #     """String indicator of what match has occured.
-    #     Args:
-    #         match_islands (List[Tuple[int, int]]): Coords contained within a single match.
-    #     Returns:
-    #         str: Describing the match.
-    #     """
-    #     match_len = len(match_coords)
-    #     if match_len == 3:
-    #         if match_coords[0][0] == match_coords[1][0]:
-    #             return "horizontal3"
-    #         else:
-    #             return "vertical3"
-
-    #     if match_len >= 5:
-
-    #     # Check for contiguous 5s in a line -> cookie. -> rip out the 
-        
-        
-    #     # Check for contiguous 4s in a line
-
-    #     # Else bomb.        
-    #     coord_arr = np.vstack(match_coords)
-    #     if len(match_coords) == 4:
-    #         if np.all(coord_arr[:, 0] == coord_arr[0, 0]):
-    #             return "horizontal4"
-    #         elif np.all(coord_arr[:, 1] == coord_arr[0, 0]):
-    #             return "vertical4"
-
-    #     if match_len == 5:
-    #         if match_coords[0][0] == match_coords[1][0]:
-    #             return "horizontal5"
-    #         else:
-    #             return "vertical5"
-
-    # Could use a mask to fix by setting those that have been added to a match to mask.
-    def get_lowest_h_match_coords(self) -> List[List[Tuple[int, int]]]:
-        h_matches = []
-        lowest_row_h = -1
-        # Check all horizontal matches starting from the bottom
-        for row in range(self.rows - 1, -1, -1):
-            if lowest_row_h != -1:  # Don't need to check rows higher up.
-                break
-            col = 2
-            while col < self.cols:
-                # If the current and previous 2 are matched
-                if self.board[row, col - 2] == self.board[row, col - 1] == self.board[row, col]:
-                    lowest_row_h = max(row, lowest_row_h)
-                    start = (row, col - 2)
-                    # Iterate through to find the full number of matched candies.
-                    while col < self.cols and self.board[row, col] == self.board[row, col - 1]:
-                        col += 1
-                    match = [(start[0], i) for i in range(start[1], col)]
-                    h_matches.append(match)
-                    col += 2
-                else:
-                    col += 1
-        return h_matches, lowest_row_h
-
-    # Could use a mask to fix by setting those that have been added to a match to mask.
-    def get_lowest_v_match_coords(self) -> List[List[Tuple[int, int]]]:
-        """
-        Find the lowest vertical matches on the board starting from the bottom up.
-
-        Returns:
-            List[List[Tuple[int, int]]]: List of coordinates defining the vertical matches.
-        """
-        v_matches = []
-        lowest_row_v = -1
-        # Bottom left to top right
-        row = self.rows - 3
-        while row >= 0:
-            if lowest_row_v != -1:
-                break
-            for col in range(self.cols):
-                if self.board[row, col] == self.board[row + 1, col] == self.board[row + 2, col]:  # Found a match
-                    lowest_row_v = max(row + 2, lowest_row_v)
-                    match = [(row + 2, col), (row + 1, col), (row, col)]
-                    m_search_row = row
-                    while m_search_row > 0 and self.board[m_search_row, col] == self.board[m_search_row - 1, col]:
-                        m_search_row -= 1
-                        match.append((m_search_row, col))
-                    v_matches.append(match)
-            row -= 1
-        return v_matches, lowest_row_v
+                raise ValueError(f"We are ridden with bugs. candy1: {tile_type} candy2: {tile2_type}")
 
     def _check_same_colour(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
         tile1 = self.board[coord1]
@@ -495,8 +381,7 @@ class Board:
         """
         Detects the match type from the bottom up
 
-        returns the match coordinates and the match type for each match in the
-        island removed from bottom to top
+        returns the match coordinates and the match type for each match in the island removed from bottom to top
 
         TODO: make this more efficient and include the islands so that
         concurrent groups can be matched
