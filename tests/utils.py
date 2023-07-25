@@ -1,10 +1,10 @@
-
 import pytest
 import numpy as np
 from tile_match_gym.board import Board
-from typing import Optional, List, Tuple
+
 
 # create an array of alternating 2's and 3's
+@pytest.fixture
 def create_alternating_array(height: int, width: int) -> np.ndarray:
     arr = np.zeros((height, width), dtype=int)
     for i in range(height):
@@ -12,7 +12,7 @@ def create_alternating_array(height: int, width: int) -> np.ndarray:
             arr[i, j] = (i + j) % 2 + 2
     return arr
 
-
+@pytest.fixture
 def create_board_from_array(arr: np.ndarray) -> Board:
     num_colours = len(np.unique(arr))
     height, width = arr.shape
@@ -20,12 +20,12 @@ def create_board_from_array(arr: np.ndarray) -> Board:
     board = Board(height, width, num_colours, seed)
     return board
 
-
+@pytest.fixture
 def create_alternating_board(height: int, width: int) -> Board:
     arr = create_alternating_array(height, width)
     return create_board_from_array(arr)
 
-
+@pytest.fixture
 def contains_threes(arr: np.ndarray) -> bool:
     rows, cols = arr.shape
     for i in range(rows):

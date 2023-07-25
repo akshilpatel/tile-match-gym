@@ -1,6 +1,6 @@
 import pytest
 from tile_match_gym.board import Board
-from tests.board.utils2 import create_alternating_array, contains_threes
+from tests.utils import create_alternating_array, contains_threes
 import json
 
 ################################################################################

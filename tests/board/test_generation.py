@@ -2,7 +2,7 @@ import pytest
 from tile_match_gym.board import Board
 import numpy as np
 from typing import Optional, List, Tuple
-from tests.board.utils2 import create_alternating_array, contains_threes
+from tests.utils import create_alternating_array, contains_threes
 
 ################################################################################
 ################## This is just templating - needs to be changed ###############

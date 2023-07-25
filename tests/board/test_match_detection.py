@@ -4,7 +4,7 @@ import pytest
 from tile_match_gym.board import Board
 
 
-@pytest.fixture
+@pytest.fixture()
 def board():
     board = Board(8, 7, 4)
 

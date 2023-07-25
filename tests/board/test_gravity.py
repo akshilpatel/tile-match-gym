@@ -1,10 +1,11 @@
-from .utils2 import create_alternating_array
-from tile_match_gym.board import Board
+import pytest
+from tests.utils import create_board_from_array, create_alternating_array
 import numpy as np
 
 # Test that gravity pushes down tiles
 def test_gravity():
-    board = create_alternating_array(4, 3)
+    arr = create_alternating_array(4, 3)
+    board = create_board_from_array(arr)
     board.board[0, 0] = 0
     board.board[2, 0] = 0
     board.board[2, 2] = 0
