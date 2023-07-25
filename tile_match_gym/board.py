@@ -339,10 +339,14 @@ class Board:
         """
         if len(coords) == 3:
             for coord in coords:
+                # TODO: Need to check this isnt special - if it is add to activation q
                 self.board[coord] = 0
         elif len(coords) == 4:
             for coord in coords:
+                # TODO: Need to check this isnt special - if it is add to activation q
                 self.board[coord] = 0
+
+            # TODO: this just selects the first coordinate but need to choose randomly that is not already special
             self.board[coords[0]] = self.tile_translator.get_tile_number(name, self.board[coords[0]])
 
     ############################################################################
