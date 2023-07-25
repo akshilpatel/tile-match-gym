@@ -395,7 +395,7 @@ class Board:
                     lines.append(line[5:])  # TODO - should just not pop the line rather than removing and adding again.
             # check for laser
             elif len(line) == 4:
-                if tile_coords[0][0] == tile_coords[1][0]:
+                if line[0][0] == line[1][0]:
                     tile_names.append("horizontal_laser")
                 else:
                     tile_names.append("vertical_laser")
@@ -451,81 +451,6 @@ class Board:
 
 
 if __name__ == "__main__":
-    # board = Board(8, 7, 4)
-    # board.board = board.np_random.integers(
-    #     1, board.num_colours + 1, size=board.flat_size
-    # ).reshape(board.rows, board.cols)
-
-    # board.board = np.array(
-    #     [
-    #         [4, 4, 2, 1, 3, 2, 3],  # 0
-    #         [3, 1, 1, 1, 2, 3, 4],  # 1
-    #         [4, 4, 2, 1, 3, 2, 3],  # 2
-    #         [2, 3, 2, 2, 2, 3, 2],  # 3
-    #         [1, 1, 2, 3, 3, 3, 4],  # 4
-    #         [1, 3, 2, 4, 1, 2, 4],  # 5
-    #         [4, 3, 1, 3, 1, 4, 4],  # 6
-    #         [3, 3, 3, 1, 1, 1, 4],  # 7
-    #     ]
-    # )
-    # print(board.get_lowest_v_match_coords())
-    # assert board.get_lowest_h_match_coords() == [
-    #     [(7, 0), (7, 1), (7, 2)],
-    #     [(7, 3), (7, 4), (7, 5)],
-    # ]
-    # print("hi")
-
-    # board.board = np.array(
-    #     [
-    #         [4, 4, 2, 2, 2, 2, 3],  # 0
-    #         [3, 1, 1, 2, 2, 3, 4],  # 1
-    #         [4, 4, 2, 1, 3, 2, 3],  # 2
-    #         [2, 3, 2, 2, 1, 3, 2],  # 3
-    #         [1, 1, 2, 3, 2, 3, 3],  # 4
-    #         [1, 3, 2, 4, 1, 2, 4],  # 5
-    #         [4, 3, 1, 3, 1, 4, 4],  # 6
-    #         [3, 2, 3, 2, 1, 1, 4],  # 7
-    #     ]
-    # )
-
-    # print(board.get_lowest_h_match_coords())
-
-    # board.board = np.array(
-    #     [
-    #         [4, 4, 4, 3, 2, 2, 2],  # 0
-    #         [3, 1, 1, 2, 2, 3, 4],  # 1
-    #         [4, 4, 2, 1, 3, 2, 3],  # 2
-    #         [2, 3, 2, 2, 1, 3, 2],  # 3
-    #         [1, 1, 2, 3, 2, 3, 3],  # 4
-    #         [1, 3, 2, 4, 1, 2, 4],  # 5
-    #         [4, 3, 1, 3, 1, 4, 4],  # 6
-    #         [3, 2, 3, 2, 1, 1, 4],  # 7
-    #     ]
-    # )
-
-    # print(board.get_lowest_h_match_coords())
-
-    # print("original")
-    # board.print_board()
-
-    # # board.apply_activation((1, 1), 0)
-
-    # # print("normal activation at (1,1)")
-    # # board.print_board()
-
-    # board.apply_activation((1, 1), 1)
-    # print("v_stripe activation at (1,1)")
-    # board.print_board()
-    # print("board activation q = ", board.activation_q)
-
-    # board.apply_activation((1, 1), 2)
-
-    # print("h_stripe activation at (1,1)")
-    # board.print_board()
-
-    # board.apply_activation((2,2), 3)
-    # print("bomb activation at (2,2)")
-    # board.print_board()
     import json
 
     sort_coords = lambda l:sorted([sorted(i, key=lambda x: (x[0], x[1])) for i in l])
@@ -553,7 +478,7 @@ if __name__ == "__main__":
         assert coords_match(tile_coords, expected_tile_coords), "incorrect tile coords found\n"+format_test(sort_coords(tile_coords), sort_coords(expected_tile_coords))
             
         # make sure that the tiles collected are correct and in the same order
-        print(tile_names, expected_tile_names)
+        # print(tile_names, expected_tile_names)
         assert all(
             [
                 name == expected_name
@@ -561,10 +486,10 @@ if __name__ == "__main__":
             ]
         ), "incorrect tile names found\n" + format_test(tile_names, expected_tile_names)
         
-        print("tile_coords = ", tile_coords)
-        print("tile_names = ", tile_names)
+        # print("tile_coords = ", tile_coords)
+        # print("tile_names = ", tile_names)
         print("PASSED")
-        print("get_tiles = ", bm.get_tiles())
+        # print("get_tiles = ", bm.get_tiles())
 
         print("----")
 
