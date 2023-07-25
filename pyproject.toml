@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tile_match_gym"
+description = "A set of reinforcement learning environments for tile matching games, consistent with the gymnasium/gym API."
+readme = "README.md"
+authors = [{name = "Akshil Patel", email = "akshilpatel11@gmail.com"} , {name = "James Elson"}]
+license = {text = "BSD-3-Clause"}
+version = "0.0.1"
+dependencies = [
+    "gymnasium",
+    "numpy",
+]
+requires-python = ">=3.8"
+keywords = ["AI", "RL", "Reinforcement Learning", "Tile Matching", "Match 3", "Gym", "Gymnasium", "OpenAI Gym", "OpenAI Gymnasium", "Reinforcement Learning environment"]
+
+[project.urls]
+Repository = "https://www.github.com/akshilpatel/tile_match_gym"
+
+[tool.setuptools]
+package-dir = {"" = "tile_match_gym"}
+
+
+[project.optional-dependencies]
+testing = ["pytest"]
