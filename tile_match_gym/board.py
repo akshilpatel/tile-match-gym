@@ -3,6 +3,7 @@ from typing import Optional, List, Tuple, Dict
 from collections import deque
 # from tile_match_gym.tile_translator import TileTranslator
 from tile_translator import TileTranslator # temp while testing
+from utils.print_board_diffs import highlight_board_diff
 
 """
     tile_TYPES = {
@@ -21,7 +22,7 @@ from tile_translator import TileTranslator # temp while testing
         4n:     bomb_tilen,
         4n+1:   cookie
     }
-    """
+"""
 
 # Base class that only does match 3
 # Subclasses that add on functionality - add specials.
@@ -475,6 +476,7 @@ if __name__ == "__main__":
         expected_matches = [[tuple(coord) for coord in line] for line in board['matches']]
         expected_tile_coords = [[tuple(coord) for coord in line] for line in board['tile_locations']]
         expected_tile_names = board['tile_names']
+        expected_cleared_board = np.array(board['cleared_board'])
 
         assert len(matches) == len(board['matches']), "incorrect number of matches found\n"+format_test(matches, expected_matches)
         assert coords_match(matches, expected_matches), "incorrect matches found\n"+format_test(sort_coords(matches), sort_coords(expected_matches))
@@ -504,6 +506,7 @@ if __name__ == "__main__":
         if len(tile_coords) > 0:
             bm.activate_match(tile_coords[0], tile_names[0])
             bm.print_board()
+            assert np.array_equal(bm.board, expected_cleared_board), "incorrect board after activation\n"+highlight_board_diff(bm.board, expected_cleared_board)
 
         print("PASSED")
 
