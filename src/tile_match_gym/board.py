@@ -283,8 +283,10 @@ class Board:
 
     def print_board(self) -> None:
         # 2-5 is color1, 6-9 is color2, 10-13 is color3, 14-17 is color4, 18-21 is color5, 22-25 is color6
-        get_color = lambda number, tile: (number - tile - 2) // self.tile_translator.num_specials + 1
+        # get_color = lambda number, tile: (number - tile - 2) // self.tile_translator.num_specials + 1
+        get_color = lambda number, tile: self.tile_translator.get_type_color(number)[1]
         print_tile = lambda x, tile_type: "\033[1;3{}m{:>2}\033[0m".format(get_color(x, tile_type), self.tile_translator.get_char(x))
+
         print(" " + "-" * (self.cols * 2 + 1))
         for row in self.board:
             print("| ", end="")
@@ -295,7 +297,7 @@ class Board:
 
     def color_check(self) -> None:
         get_char = lambda number: self.tile_translator.get_char(number)
-        get_color = lambda number, tile: (number - tile - 2) // self.tile_translator.num_specials + 1
+        get_color = lambda number, tile: self.tile_translator.get_type_color(number)[1]
         print_tile = lambda x, tile_type: "\033[1;3{}m{:2}\033[0m".format(get_color(x, tile_type), get_char(x))
         for i in range(25):
             print(print_tile(i, 0), end=" ")
