@@ -28,8 +28,6 @@ from utils.print_board_diffs import highlight_board_diff
 # Base class that only does match 3
 # Subclasses that add on functionality - add specials.
 
-
-
 class Board:
     def __init__(
         self,
