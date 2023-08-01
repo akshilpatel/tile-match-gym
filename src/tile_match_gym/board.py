@@ -2,7 +2,7 @@ import numpy as np
 from typing import Optional, List, Tuple, Dict
 from collections import deque
 # from tile_match_gym.tile_translator import TileTranslator
-from tile_translator import TileTranslator # temp while testing
+from tile_match_gym.tile_translator import TileTranslator # temp while testing
 
 """
     tile_TYPES = {
@@ -282,7 +282,7 @@ class Board:
             has_match = self.automatch()
 
     def print_board(self) -> None:
-        get_col = lambda x: "\033[1;3{}m{}\033[0m".format(x, x)
+        get_col = lambda x: f"\033[1;3{x}m{x}\033[0m"
         print(" " + "-" * (self.cols * 2 + 1))
         for row in self.board:
             print("| ", end="")
@@ -326,7 +326,7 @@ class Board:
 
     ## Match functions ##
 
-    def _sort_coords(self,l: List[List[Tuple[int, int]]]) -> List[List[Tuple[int, int]]]:
+    def _sort_coords(self, l: List[List[Tuple[int, int]]]) -> List[List[Tuple[int, int]]]:
         return sorted([sorted(i, key=lambda x: (x[0], x[1])) for i in l])
 
     def get_tiles(self) -> Tuple[List[List[Tuple[int, int]]], List[str]]:

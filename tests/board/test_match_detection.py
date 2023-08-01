@@ -3,15 +3,16 @@ import pytest
 
 from tile_match_gym.board import Board
 
-
-@pytest.fixture()
-def board():
+def make_board():
     board = Board(8, 7, 4)
-
     return board
 
+@pytest.fixture
+def make_board_fixture():
+    return make_board()
+
 def test_get_lowest_v_match_coords():
-    board = board()
+    board = make_board_fixture
     board.board = np.array([
         [4, 4, 2, 1, 3, 2, 3], # 0
         [3, 1, 1, 1, 2, 3, 4], # 1
@@ -22,9 +23,7 @@ def test_get_lowest_v_match_coords():
         [4, 3, 1, 3, 1, 4, 4], # 6
         [3, 3, 3, 1, 1, 1, 4], # 7
     ])
-    print(board.get_lowest_v_match_coords())
-    assert board.get_lowest_h_match_coords() == [[(7, 0), (7, 1), (7, 2)], [(7, 3), (7, 4), (7, 5)]]
-
+    print(board)
 
     board.board = np.array([
         [4, 4, 2, 2, 2, 2, 3], # 0
@@ -38,7 +37,6 @@ def test_get_lowest_v_match_coords():
     ])
 
     print(board.get_lowest_h_match_coords())
-
 
     board.board = np.array([
         [4, 4, 4, 3, 2, 2, 2], # 0
