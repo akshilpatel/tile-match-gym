@@ -274,7 +274,7 @@ class Board:
         self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
 
         # If there are two special coords. Add one activation with both coords to the activation queue.
-        if not self.tile_translator.is_tile_ordinary(self.board[coord1]) or self.tile_translator.is_tile_ordinary(self.board[coord1]):
+        if not self.tile_translator.is_special(self.board[coord1]) or not self.tile_translator.is_special(self.board[coord1]):
             self.activation_q.append({"coord": coord1, "second_special_coord": coord2})
             self.activation_loop()
             return
@@ -286,7 +286,7 @@ class Board:
     def print_board(self) -> None:
         # 2-5 is color1, 6-9 is color2, 10-13 is color3, 14-17 is color4, 18-21 is color5, 22-25 is color6
         get_color = lambda number, tile: (number - tile - 2) // self.tile_translator.num_specials + 1
-        print_tile = lambda x, tile_type: "\033[1;3{}m{:2}\033[0m".format(get_color(x, tile_type), x)
+        print_tile = lambda x, tile_type: "\033[1;3{}m{:>2}\033[0m".format(get_color(x, tile_type), self.tile_translator.get_char(x))
         print(" " + "-" * (self.cols * 2 + 1))
         for row in self.board:
             print("| ", end="")
@@ -294,6 +294,15 @@ class Board:
                 print(print_tile(tile, 0), end=" ")
             print("|")
         print(" " + "-" * (self.cols * 2 + 1))
+
+    def color_check(self) -> None:
+        get_char = lambda number: self.tile_translator.get_char(number)
+        get_color = lambda number, tile: (number - tile - 2) // self.tile_translator.num_specials + 1
+        print_tile = lambda x, tile_type: "\033[1;3{}m{:2}\033[0m".format(get_color(x, tile_type), get_char(x))
+        for i in range(25):
+            print(print_tile(i, 0), end=" ")
+        print()
+        
 
     def activation_loop(self) -> None:
         while len(self.activation_q) > 0:
@@ -332,6 +341,34 @@ class Board:
     ## Activation functions ##
     ############################################################################
 
+    def get_special_position(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
+        """
+        Given a set of coordinates return the position of the special tile that should be placed
+        The position should be as close to the center as possible but should not already be special.
+        """
+        
+        if not straight:
+            # get the corner coords
+            xs = [c[0] for c in coords]
+            ys = [c[1] for c in coords]
+            corner = (max(xs, key=xs.count), max(ys, key=ys.count))
+            print("corner = ", corner)
+            std = [c for c in coords if not self.tile_translator.is_special(self.board[c])]
+            print("std = ", std)
+            if corner in std:
+                return corner
+            else:
+                return sorted(std, key=lambda x: (x[0]-corner[0])**2 + (x[1]-corner[1])**2)[0]
+
+        print("coords = ", coords)
+        sorted_coords = sorted([c for c in coords if not self.tile_translator.is_special(self.board[c])], key=lambda x: (x[0], x[1]))
+        print("sorted_coords = ", sorted_coords)
+        print(len(sorted_coords))
+        if len(sorted_coords) % 2 == 0:
+            return sorted_coords[len(sorted_coords) // 2 - 1]
+        return sorted_coords[len(sorted_coords) // 2]
+        
+
     def activate_match(self, coords: List[Tuple[int, int]], name: str) -> None:
         """Activates a match of the given name at the given coordinates.
 
@@ -340,16 +377,34 @@ class Board:
             name (str): Name of the match.
         """
         if len(coords) == 3:
+            print("3 match")
             for coord in coords:
                 # TODO: Need to check this isnt special - if it is add to activation q
-                self.board[coord] = 0
+                if not self.tile_translator.is_special(self.board[coord]):
+                    self.board[coord] = 0
         elif len(coords) == 4:
+            print("4 match")
+            spec_coord = self.get_special_position(coords)
+            self.board[spec_coord] += 1 if name == "vertical_laser" else 2
             for coord in coords:
                 # TODO: Need to check this isnt special - if it is add to activation q
-                self.board[coord] = 0
+                if not self.tile_translator.is_special(self.board[coord]):
+                    self.board[coord] = 0
+        elif len(coords) == 5: # cookie or bomb
+            print("Cookie or bomb")
+            # checks if a single line
+            if all([i[0] == coords[0][0] for i in coords[1:]]) or all([i[1] == coords[0][1] for i in coords[1:]]): # cookie
+                self.board[self.get_special_position(coords)] = 1
+            else: # bomb
+                print("tile_number = ", self.tile_translator.get_tile_encoding(name, self.board[coords[0]]))
+                self.board[self.get_special_position(coords, straight=False)] += 3
 
+            for coord in coords:
+                if not self.tile_translator.is_special(self.board[coord]):
+                    self.board[coord] = 0
             # TODO: this just selects the first coordinate but need to choose randomly that is not already special
-            self.board[coords[0]] = self.tile_translator.get_tile_number(name, self.board[coords[0]])
+            # self.board[coords[0]] = self.tile_translator.get_tile_number(name, self.board[coords[0]])
+        # self.print_board()
 
     ############################################################################
     ## Match functions ##
@@ -398,6 +453,7 @@ class Board:
                             break
                     if e - el >= 3:
                         lines.append([(row, el + i) for i in range(e - el)])
+        print("lines = ", lines)
         return lines
 
     def get_matches(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
@@ -467,17 +523,15 @@ if __name__ == "__main__":
     
     for board in boards:
         print("testing board: ", board['name'])
-        print("board: ", board['board'])
 
         bm = Board(0,0,0, board=np.array(board['board']))
         matches = bm.get_lines()
         tile_coords, tile_names = bm.get_matches(matches)
 
-
         expected_matches = [[tuple(coord) for coord in line] for line in board['matches']]
         expected_tile_coords = [[tuple(coord) for coord in line] for line in board['tile_locations']]
         expected_tile_names = board['tile_names']
-        expected_cleared_board = np.array(board['cleared_board'])
+        expected_first_activation = np.array(board['first_activation'])
 
         assert len(matches) == len(board['matches']), "incorrect number of matches found\n"+format_test(matches, expected_matches)
         assert coords_match(matches, expected_matches), "incorrect matches found\n"+format_test(sort_coords(matches), sort_coords(expected_matches))
@@ -506,11 +560,14 @@ if __name__ == "__main__":
         bm.print_board()
         if len(tile_coords) > 0:
             bm.activate_match(tile_coords[0], tile_names[0])
-            bm.print_board()
-            assert np.array_equal(bm.board, expected_cleared_board), "incorrect board after activation\n"+highlight_board_diff(bm.board, expected_cleared_board)
+            tile_coords.pop(0)
+        bm.print_board()
+        assert np.array_equal(bm.board, expected_first_activation), "incorrect board after activation\n"+highlight_board_diff(bm.board, expected_first_activation)
 
         print("PASSED")
 
         print("----")
+
+    bm.color_check()
 
 
