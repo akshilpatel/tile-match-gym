@@ -2,7 +2,9 @@ import numpy as np
 from typing import Optional, List, Tuple, Dict
 from collections import deque
 # from tile_match_gym.tile_translator import TileTranslator
-from tile_match_gym.tile_translator import TileTranslator # temp while testing
+# temp while testing
+from tile_translator import TileTranslator # temp while testing
+from utils.print_board_diffs import highlight_board_diff
 
 """
     tile_TYPES = {
@@ -21,7 +23,7 @@ from tile_match_gym.tile_translator import TileTranslator # temp while testing
         4n:     bomb_tilen,
         4n+1:   cookie
     }
-    """
+"""
 
 # Base class that only does match 3
 # Subclasses that add on functionality - add specials.
@@ -83,7 +85,7 @@ class Board:
             self.board[rand_coord] = int(self.num_colours * 4) + 1
         elif match_type == "horizontal_laser":
             self.board[rand_coord] = self.num_colours + color_idx
-        elif match_type == "verticall_laser":
+        elif match_type == "vertical_laser":
             self.board[rand_coord] = int(2 * self.num_colours) + color_idx
         elif match_type == "bomb":
             self.board[rand_coord] = int(3 * self.num_colours) + color_idx
@@ -282,12 +284,14 @@ class Board:
             has_match = self.automatch()
 
     def print_board(self) -> None:
-        get_col = lambda x: f"\033[1;3{x}m{x}\033[0m"
+        # 2-5 is color1, 6-9 is color2, 10-13 is color3, 14-17 is color4, 18-21 is color5, 22-25 is color6
+        get_color = lambda number, tile: (number - tile - 2) // self.tile_translator.num_specials + 1
+        print_tile = lambda x, tile_type: "\033[1;3{}m{:2}\033[0m".format(get_color(x, tile_type), x)
         print(" " + "-" * (self.cols * 2 + 1))
         for row in self.board:
             print("| ", end="")
             for tile in row:
-                print(get_col(tile), end=" ")
+                print(print_tile(tile, 0), end=" ")
             print("|")
         print(" " + "-" * (self.cols * 2 + 1))
 
@@ -323,8 +327,33 @@ class Board:
             if match_types[i] in self._special_match_types:
                 self.create_special(match, match_types[i])
         return True
+    
+    ############################################################################
+    ## Activation functions ##
+    ############################################################################
 
+    def activate_match(self, coords: List[Tuple[int, int]], name: str) -> None:
+        """Activates a match of the given name at the given coordinates.
+
+        Args:
+            coords (Tuple[int, int]): Coordinates of the match.
+            name (str): Name of the match.
+        """
+        if len(coords) == 3:
+            for coord in coords:
+                # TODO: Need to check this isnt special - if it is add to activation q
+                self.board[coord] = 0
+        elif len(coords) == 4:
+            for coord in coords:
+                # TODO: Need to check this isnt special - if it is add to activation q
+                self.board[coord] = 0
+
+            # TODO: this just selects the first coordinate but need to choose randomly that is not already special
+            self.board[coords[0]] = self.tile_translator.get_tile_number(name, self.board[coords[0]])
+
+    ############################################################################
     ## Match functions ##
+    ############################################################################
 
     def _sort_coords(self, l: List[List[Tuple[int, int]]]) -> List[List[Tuple[int, int]]]:
         return sorted([sorted(i, key=lambda x: (x[0], x[1])) for i in l])
@@ -334,8 +363,7 @@ class Board:
         Returns the types of tiles in the board and their locations
         """
         lines = self.get_lines()
-        # islands = self.get_islands(matches)
-        tile_coords, tile_names = self.get_matches([], lines)
+        tile_coords, tile_names = self.get_matches(lines)
         return tile_coords, tile_names
 
     def get_lines(self) -> List[List[Tuple[int, int]]]:
@@ -372,13 +400,12 @@ class Board:
                         lines.append([(row, el + i) for i in range(e - el)])
         return lines
 
-    def get_matches(self, islands: List[List[Tuple[int, int]]], lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
+    def get_matches(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
         """
         Detects the match type from the bottom up
 
         returns the match coordinates and the match type for each match in the island removed from bottom to top
 
-        TODO: make this more efficient and include the islands so that
         Note: concurrent groups can be matched
         """
         tile_names = []
@@ -428,31 +455,6 @@ class Board:
 
         return tile_coords, tile_names
 
-    @staticmethod
-    def get_islands(lines: List[List[Tuple[int, int]]]) -> List[List[Tuple[int, int]]]:
-        """
-        Returns a list of islands from a list of lines
-        TODO - Currently changes 'lines' in place. Should not do this.
-        """
-        # This can definitely be made faster
-        islands = []
-        for line in lines:
-            # check if line is already in an island
-            in_island = False
-            for island in islands:
-                for coord in line:
-                    if coord in island:
-                        in_island = True
-                        break
-                if in_island:
-                    for coord in line:
-                        if coord not in island:
-                            island.append(coord)
-            if not in_island:
-                islands.append(line)
-        return islands
-
-
 if __name__ == "__main__":
     import json
     
@@ -465,20 +467,21 @@ if __name__ == "__main__":
     
     for board in boards:
         print("testing board: ", board['name'])
+        print("board: ", board['board'])
+
         bm = Board(0,0,0, board=np.array(board['board']))
         matches = bm.get_lines()
+        tile_coords, tile_names = bm.get_matches(matches)
+
+
         expected_matches = [[tuple(coord) for coord in line] for line in board['matches']]
-        expected_islands = [[tuple(coord) for coord in line] for line in board['islands']]
         expected_tile_coords = [[tuple(coord) for coord in line] for line in board['tile_locations']]
         expected_tile_names = board['tile_names']
+        expected_cleared_board = np.array(board['cleared_board'])
 
         assert len(matches) == len(board['matches']), "incorrect number of matches found\n"+format_test(matches, expected_matches)
         assert coords_match(matches, expected_matches), "incorrect matches found\n"+format_test(sort_coords(matches), sort_coords(expected_matches))
         
-        #islands = bm.get_islands(matches)
-        #assert coords_match(islands, expected_islands), "incorrect islands found\n"+format_test(sort_coords(islands), sort_coords(expected_islands))
-    
-        tile_coords, tile_names = bm.get_matches([], matches)
         assert coords_match(tile_coords, expected_tile_coords), "incorrect tile coords found\n"+format_test(sort_coords(tile_coords), sort_coords(expected_tile_coords))
         
         # make sure that the tiles collected are in the same order
@@ -499,10 +502,14 @@ if __name__ == "__main__":
             ]
         ), "incorrect tile names found\n" + format_test(tile_names, expected_tile_names)
         
-        # print("tile_coords = ", tile_coords)
-        # print("tile_names = ", tile_names)
+        # activation tests
+        bm.print_board()
+        if len(tile_coords) > 0:
+            bm.activate_match(tile_coords[0], tile_names[0])
+            bm.print_board()
+            assert np.array_equal(bm.board, expected_cleared_board), "incorrect board after activation\n"+highlight_board_diff(bm.board, expected_cleared_board)
+
         print("PASSED")
-        # print("get_tiles = ", bm.get_tiles())
 
         print("----")
 
