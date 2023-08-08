@@ -1,10 +1,13 @@
 import numpy as np
 from typing import Optional, List, Tuple, Dict
 from collections import deque
-# from tile_match_gym.tile_translator import TileTranslator
+
+from tile_match_gym.tile_translator import TileTranslator
+
 # temp while testing
-from tile_translator import TileTranslator # temp while testing
-from utils.print_board_diffs import highlight_board_diff
+# from tile_translator import TileTranslator  # temp while testing
+from tile_match_gym.utils.print_board_diffs import highlight_board_diff
+
 
 """
     tile_TYPES = {
@@ -17,7 +20,7 @@ from utils.print_board_diffs import highlight_board_diff
         2n:     vlaser_tilen,
         2n+1:   hlaser_tile1,
         ...,
-        3n:     hstripe_tilen,
+        3n:     hlaser_tilen,
         3n+1:   bomb_tile1,
         ...,
         4n:     bomb_tilen,
@@ -29,7 +32,6 @@ from utils.print_board_diffs import highlight_board_diff
 # Subclasses that add on functionality - add specials.
 
 
-
 class Board:
     def __init__(
         self,
@@ -38,7 +40,7 @@ class Board:
         num_colours: int,
         seed: Optional[int] = None,
         board: Optional[np.ndarray] = None,
-        ):
+    ):
         self.rows = rows
         self.cols = cols
         self.num_colours = num_colours
@@ -63,7 +65,7 @@ class Board:
             self.rows = len(board)
             self.cols = len(board[0])
 
-    def generate_board(self):
+    def generate_board(self) -> None:
         self.board = self.np_random.integers(1, self.num_colours + 1, size=self.flat_size).reshape(self.rows, self.cols)
         has_match = True
         while has_match:
@@ -77,7 +79,7 @@ class Board:
         match_coords: List[Tuple[int, int]],
         match_type: str,
         color_idx: Optional[int] = None,
-        ) -> None:
+    ) -> None:
         rand_coord = self.np_random.choice(list(filter(self.tile_translator.is_tile_ordinary, match_coords)))
         if color_idx is None:
             color_idx = self.tile_translator.get_tile_colour(rand_coord)
@@ -97,10 +99,10 @@ class Board:
         Given a board with zeros, push the zeros to the top of the board.
         If an activation queue of coordinates is passed in, then the coordinates in the queue are updated as gravity pushes the coordinates down.
         """
-        mask_T = self.board.T==0
+        # Everything is done using the transpose since numpy indexing is faster row-wise
+        mask_T = self.board.T == 0
         non_zero_mask_T = ~mask_T
-        zero_counts_T = np.cumsum(mask_T[:, ::-1], axis=1)[::-1]
-
+        zero_counts_T = np.cumsum(mask_T[:, ::-1], axis=1)[:, ::-1]
         for j, col in enumerate(self.board.T):
             self.board[:, j] = np.concatenate([col[mask_T[j]], col[non_zero_mask_T[j]]])
 
@@ -108,7 +110,8 @@ class Board:
         if len(self.activation_q) != 0:
             for activation in self.activation_q:
                 row, col = activation["coord"]
-                activation["coord"][0] += zero_counts_T[col, row]
+
+                activation["coord"] = (row + zero_counts_T[col, row], col)
                 print(row, col, row + zero_counts_T[col, row])
 
     def refill(self) -> None:
@@ -124,14 +127,19 @@ class Board:
         coord: Tuple[int, int],
         activation_type: Optional[int] = None,
         second_special_coord: Optional[Tuple[int, int]] = None,
-        ):
+    ) -> None:
         """
-        Should take a particular coordinate of the board.
-        Get the activation  given the tile
-        Update the activation queue if needed.
-        Eliminate ordinary tiles if they are next in activation queue.
-        If both coordinates are specials, the second_special_coord should not be None.
+        Should take a particular coordinate of the board, get the activation given the tile, resolve activating the coordinate and update the activation queue if needed.
+        For efficiency, the method elminates ordinary tiles if they are next in activation queue.
+        For now we also deal with the special case of if both coordinates are specials. This happens only when two specials are swiped together.
+
+        Args:
+            coord (Tuple[int, int]): The coordinate of the tile to activate.
+            activation_type (Optional[int], optional): The type of activation. We could infer this by looking at the board, but this is faster.
+                                                       Also, it allows us to apply an activation in a cell when the cell no longer contains the special item. Defaults to None.
+            second_special_coord (Optional[Tuple[int, int]], optional): The coordinate of the second special tile. Defaults to None.
         """
+
         if activation_type == None:
             activation_type = self.tile_translator.get_tile_type(self.board[coord])
             if self.board[coord] == 0:
@@ -140,16 +148,16 @@ class Board:
         # Maximum one special in the move/activation.
         if second_special_coord is None:
             self.board[coord] = 0
-            if activation_type == 1:  # v_stripe
+            if activation_type == 1:  # v_laser
                 self.activation_q += self.indices[:, coord[1]].reshape((-1, 2)).tolist()
-            elif activation_type == 2:  # h_stripe
+            elif activation_type == 2:  # h_laser
                 self.activation_q += self.indices[coord[0], :].reshape((-1, 2)).tolist()
             elif activation_type == 3:  # bomb
                 min_top = max(0, coord[0] - 1)  # max of 0 and leftmost bomb
                 min_left = max(coord[1] - 1, 0)  # max of 0 and topmost bomb
                 max_bottom = min(self.rows, coord[0] + 2)  # min of rightmost and cols
                 max_right = min(coord[1] + 2, self.cols)  # min of bottommost and rows
-                coord_arr = (self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2)).tolist())
+                coord_arr = self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2)).tolist()
                 self.activation_q += [{"coord": x for x in coord_arr}]
             # TODO: Add one clause here for if a cookie is hit.
 
@@ -232,8 +240,7 @@ class Board:
         tile2 = self.board[coord2]
         return self.tile_translator.get_tile_colour(tile1) == self.tile_translator.get_tile_colour(tile2)
 
-    def check_move_validity(
-        self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
+    def check_move_validity(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
         """
         This function checks if the action actually does anything.
         First it checks if both coordinates are on the board. Then it checks if the action achieves some form of matching.
@@ -327,7 +334,7 @@ class Board:
             if match_types[i] in self._special_match_types:
                 self.create_special(match, match_types[i])
         return True
-    
+
     ############################################################################
     ## Activation functions ##
     ############################################################################
@@ -376,23 +383,23 @@ class Board:
             for el in range(self.cols):
                 r = row + 1
                 e = el + 1
-                
+
                 # make sure line has not already been checked
-                if not (row > 0 and self.board[row][el] == self.board[row-1][el]):
+                if not (row > 0 and self.board[row][el] == self.board[row - 1][el]):
                     # check for vertical lines
                     while r < self.rows:
-                        if self.board[r][el] == self.board[r-1][el]:
+                        if self.board[r][el] == self.board[r - 1][el]:
                             r += 1
                         else:
                             break
                     if r - row >= 3:
                         lines.append([(row + i, el) for i in range(r - row)])
-                
+
                 # make sure line has not already been checked
-                if not (el > 0 and self.board[row][el] == self.board[row][el-1]):
+                if not (el > 0 and self.board[row][el] == self.board[row][el - 1]):
                     # check for horizontal lines
                     while e < self.cols:
-                        if self.board[row][e] == self.board[row][e-1]:
+                        if self.board[row][e] == self.board[row][e - 1]:
                             e += 1
                         else:
                             break
@@ -412,7 +419,7 @@ class Board:
         tile_coords = []
 
         # lines = sorted([sorted(i, key=lambda x: (x[0],x[1])) for i in lines], key=lambda y: (y[0][0]), reverse=True)
-        lines = sorted([sorted(i, key=lambda x: (x[0],x[1])) for i in lines], key=lambda y: (y[0][0]), reverse=False)
+        lines = sorted([sorted(i, key=lambda x: (x[0], x[1])) for i in lines], key=lambda y: (y[0][0]), reverse=False)
 
         while len(lines) > 0:
             line = lines.pop(0)
@@ -431,13 +438,13 @@ class Board:
                 tile_coords.append(line)
             # check for bomb
             elif any([coord in l for coord in line for l in lines]):
-            # elif any([c in l for c in line for l in lines]): # TODO - REMOVE THIS AS SLOW AND IS DONE TWICE
+                # elif any([c in l for c in line for l in lines]): # TODO - REMOVE THIS AS SLOW AND IS DONE TWICE
                 for l in lines:
                     shared = [c for c in line if c in l]
                     if any(shared):
                         shared = shared[0]
-                        sorted_closest = sorted(l, key=lambda x: (abs(x[0]-shared[0]) + abs(x[1]-shared[1])))
-                        tile_coords.append([p for p in line]+[p for p in sorted_closest[:3] if p not in line])
+                        sorted_closest = sorted(l, key=lambda x: (abs(x[0] - shared[0]) + abs(x[1] - shared[1])))
+                        tile_coords.append([p for p in line] + [p for p in sorted_closest[:3] if p not in line])
                         if len(l) <= 6:
                             lines.remove(l)
                         for c in sorted_closest[:3]:
@@ -455,62 +462,58 @@ class Board:
 
         return tile_coords, tile_names
 
+
 if __name__ == "__main__":
     import json
-    
+
     sort_l1 = lambda l: sorted(l, key=lambda x: (x[0], x[1]))
-    sort_coords = lambda l:sorted([sort_l1(i) for i in l])
+    sort_coords = lambda l: sorted([sort_l1(i) for i in l])
     coords_match = lambda l1, l2: sort_coords(l1) == sort_coords(l2)
-    format_test = lambda r, e: "result: \t"+str(r)+"\nexpected: \t"+str(e)+"\n"
+    format_test = lambda r, e: "result: \t" + str(r) + "\nexpected: \t" + str(e) + "\n"
 
     boards = json.load(open("boards.json", "r"))["boards"]
-    
-    for board in boards:
-        print("testing board: ", board['name'])
-        print("board: ", board['board'])
 
-        bm = Board(0,0,0, board=np.array(board['board']))
+    for board in boards:
+        print("testing board: ", board["name"])
+        print("board: ", board["board"])
+
+        bm = Board(0, 0, 0, board=np.array(board["board"]))
         matches = bm.get_lines()
         tile_coords, tile_names = bm.get_matches(matches)
 
+        expected_matches = [[tuple(coord) for coord in line] for line in board["matches"]]
+        expected_tile_coords = [[tuple(coord) for coord in line] for line in board["tile_locations"]]
+        expected_tile_names = board["tile_names"]
+        expected_cleared_board = np.array(board["cleared_board"])
 
-        expected_matches = [[tuple(coord) for coord in line] for line in board['matches']]
-        expected_tile_coords = [[tuple(coord) for coord in line] for line in board['tile_locations']]
-        expected_tile_names = board['tile_names']
-        expected_cleared_board = np.array(board['cleared_board'])
+        assert len(matches) == len(board["matches"]), "incorrect number of matches found\n" + format_test(matches, expected_matches)
+        assert coords_match(matches, expected_matches), "incorrect matches found\n" + format_test(sort_coords(matches), sort_coords(expected_matches))
 
-        assert len(matches) == len(board['matches']), "incorrect number of matches found\n"+format_test(matches, expected_matches)
-        assert coords_match(matches, expected_matches), "incorrect matches found\n"+format_test(sort_coords(matches), sort_coords(expected_matches))
-        
-        assert coords_match(tile_coords, expected_tile_coords), "incorrect tile coords found\n"+format_test(sort_coords(tile_coords), sort_coords(expected_tile_coords))
-        
+        assert coords_match(tile_coords, expected_tile_coords), "incorrect tile coords found\n" + format_test(
+            sort_coords(tile_coords), sort_coords(expected_tile_coords)
+        )
+
         # make sure that the tiles collected are in the same order
         ordered_matches1 = [sort_l1(t) for t in tile_coords]
         ordered_matches2 = [sort_l1(t) for t in expected_tile_coords]
-        assert all(
-                [
-                    c1 == c2
-                    for c1, c2 in zip(ordered_matches1, ordered_matches2)
-                ]
-        ), "incorrect match order found\n"+format_test(ordered_matches1, ordered_matches2)
+        assert all([c1 == c2 for c1, c2 in zip(ordered_matches1, ordered_matches2)]), "incorrect match order found\n" + format_test(
+            ordered_matches1, ordered_matches2
+        )
         # make sure that the tiles collected are correct and in the same order
         # print(tile_names, expected_tile_names)
-        assert all(
-            [
-                name == expected_name
-                for name, expected_name in zip(tile_names, expected_tile_names)
-            ]
-        ), "incorrect tile names found\n" + format_test(tile_names, expected_tile_names)
-        
+        assert all([name == expected_name for name, expected_name in zip(tile_names, expected_tile_names)]), "incorrect tile names found\n" + format_test(
+            tile_names, expected_tile_names
+        )
+
         # activation tests
         bm.print_board()
         if len(tile_coords) > 0:
             bm.activate_match(tile_coords[0], tile_names[0])
             bm.print_board()
-            assert np.array_equal(bm.board, expected_cleared_board), "incorrect board after activation\n"+highlight_board_diff(bm.board, expected_cleared_board)
+            assert np.array_equal(bm.board, expected_cleared_board), "incorrect board after activation\n" + highlight_board_diff(
+                bm.board, expected_cleared_board
+            )
 
         print("PASSED")
 
         print("----")
-
-
