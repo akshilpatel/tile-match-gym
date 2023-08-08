@@ -391,21 +391,29 @@ class Board:
             spec_coord = self.get_special_position(coords)
             self.board[spec_coord] += 1 if name == "vertical_laser" else 2
             for coord in coords:
-                # TODO: Need to check this isnt special - if it is add to activation q
-                if not self.tile_translator.is_special(self.board[coord]):
-                    self.board[coord] = 0
+                if coord != spec_coord:
+                    # TODO: Need to check this isnt special - if it is add to activation q
+                    if not self.tile_translator.is_special(self.board[coord]):
+                        self.board[coord] = 0
+                    else:
+                        self.activation_q.append(coord)
         elif len(coords) == 5:  # cookie or bomb
             print("Cookie or bomb")
             # checks if a single line
             if all([i[0] == coords[0][0] for i in coords[1:]]) or all([i[1] == coords[0][1] for i in coords[1:]]):  # cookie
-                self.board[self.get_special_position(coords)] = 1
+                new_spec_location = self.get_special_position(coords)
+                self.board[new_spec_location] = 1
             else:  # bomb
                 print("tile_number = ", self.tile_translator.get_tile_encoding(name, self.board[coords[0]]))
-                self.board[self.get_special_position(coords, straight=False)] += 3
+                new_spec_location = self.get_special_position(coords, straight=False)
+                self.board[new_spec_location] += 3
 
             for coord in coords:
-                if not self.tile_translator.is_special(self.board[coord]):
-                    self.board[coord] = 0
+                if coord != new_spec_location:
+                    if not self.tile_translator.is_special(self.board[coord]):
+                        self.board[coord] = 0
+                    else:
+                        self.activation_q.append(coord)
             # TODO: this just selects the first coordinate but need to choose randomly that is not already special
             # self.board[coords[0]] = self.tile_translator.get_tile_number(name, self.board[coords[0]])
         # self.print_board()
