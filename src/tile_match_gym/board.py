@@ -3,26 +3,29 @@ from typing import Optional, List, Tuple, Dict
 from collections import deque
 
 # from tile_match_gym.tile_translator import TileTranslator
+# from tile_match_gym.utils.print_board_diffs import highlight_board_diff
+
 # temp while testing
 from tile_translator import TileTranslator  # temp while testing
 from utils.print_board_diffs import highlight_board_diff
 
 """
     tile_TYPES = {
-        1:      tile1 
+        1:      cookie,
+        2:      tile1 
         2:      tile2,
         ...
-        n:      tilen,
-        n+1:    vlaser_tile1,
+        n+1:      tilen,
+        n+2:    vlaser_tile1,
         ...,
-        2n:     vlaser_tilen,
-        2n+1:   hlaser_tile1,
+        2n+1:     vlaser_tilen,
+        2n+2:   hlaser_tile1,
         ...,
-        3n:     hstripe_tilen,
-        3n+1:   bomb_tile1,
+        3n+1:     hstripe_tilen,
+        3n+2:   bomb_tile1,
         ...,
-        4n:     bomb_tilen,
-        4n+1:   cookie
+        4n+1:     bomb_tilen,
+        
     }
 """
 
@@ -99,7 +102,7 @@ class Board:
         """
         mask_T = self.board.T == 0
         non_zero_mask_T = ~mask_T
-        zero_counts_T = np.cumsum(mask_T[:, ::-1], axis=1)[::-1]
+        zero_counts_T = np.cumsum(mask_T[:, ::-1], axis=1)[:, ::-1]
 
         for j, col in enumerate(self.board.T):
             self.board[:, j] = np.concatenate([col[mask_T[j]], col[non_zero_mask_T[j]]])
@@ -108,7 +111,7 @@ class Board:
         if len(self.activation_q) != 0:
             for activation in self.activation_q:
                 row, col = activation["coord"]
-                activation["coord"][0] += zero_counts_T[col, row]
+                activation["coord"] = (row + zero_counts_T[col, row], col)
                 print(row, col, row + zero_counts_T[col, row])
 
     def refill(self) -> None:
@@ -116,7 +119,7 @@ class Board:
         zero_mask = self.board == 0
         num_zeros = zero_mask.sum()
         if num_zeros > 0:
-            rand_vals = self.np_random.integers(1, self.num_colours + 1, size=num_zeros)
+            rand_vals = self.np_random.integers(2, self.num_colours + 2, size=num_zeros)  # Skip 1 since it is a cookie.
             self.board[zero_mask] = rand_vals
 
     def apply_activation(
