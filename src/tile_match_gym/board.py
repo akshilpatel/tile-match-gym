@@ -384,6 +384,8 @@ class Board:
                 # TODO: Need to check this isnt special - if it is add to activation q
                 if not self.tile_translator.is_special(self.board[coord]):
                     self.board[coord] = 0
+                else:
+                    self.activation_q.append(coord)
         elif len(coords) == 4:
             print("4 match")
             spec_coord = self.get_special_position(coords)
@@ -435,10 +437,13 @@ class Board:
                 e = el + 1
 
                 # make sure line has not already been checked
-                if not (row > 0 and self.board[row][el] == self.board[row - 1][el]):
+                # if not (row > 0 and self.board[row][el] == self.board[row-1][el]):
+                if not (row > 0 and self.tile_translator.is_same_color(self.board[row][el], self.board[row-1][el]) or self.board[row][el] == 1):
                     # check for vertical lines
                     while r < self.rows:
-                        if self.board[r][el] == self.board[r - 1][el]:
+                        # if self.board[r][el] == self.board[r-1][el]:
+                        # if same color or cookie
+                        if self.tile_translator.is_same_color(self.board[r][el], self.board[r-1][el]) or self.board[r][el] == 1:
                             r += 1
                         else:
                             break
@@ -446,10 +451,12 @@ class Board:
                         lines.append([(row + i, el) for i in range(r - row)])
 
                 # make sure line has not already been checked
-                if not (el > 0 and self.board[row][el] == self.board[row][el - 1]):
+                # if not (el > 0 and self.board[row][el] == self.board[row][el-1]):
+                if not (el > 0 and self.tile_translator.is_same_color(self.board[row][el], self.board[row][el-1]) or self.board[row][el] == 1):
                     # check for horizontal lines
                     while e < self.cols:
-                        if self.board[row][e] == self.board[row][e - 1]:
+                        #if self.board[row][e] == self.board[row][e-1]:
+                        if self.tile_translator.is_same_color(self.board[row][e], self.board[row][e-1]) or self.board[row][e] == 1 or self.board[row][e-1] == 1:
                             e += 1
                         else:
                             break
@@ -533,6 +540,7 @@ if __name__ == "__main__":
 
         expected_matches = [[tuple(coord) for coord in line] for line in board["matches"]]
         expected_tile_coords = [[tuple(coord) for coord in line] for line in board["tile_locations"]]
+        expected_activation_q = [tuple(coord) for coord in board['activation_q']]
         expected_tile_names = board["tile_names"]
         expected_first_activation = np.array(board["first_activation"])
 
@@ -564,6 +572,12 @@ if __name__ == "__main__":
         assert np.array_equal(bm.board, expected_first_activation), "incorrect board after activation\n" + highlight_board_diff(
             bm.board, expected_first_activation
         )
+
+        # activation queue tests
+        print("Activation Queue", bm.activation_q)
+
+        assert len(bm.activation_q) == len(expected_activation_q), "incorrect activation queue length\n"+format_test(bm.activation_q, expected_activation_q)
+        assert all([bm.activation_q[i] == a for i, a in enumerate(expected_activation_q)]), "incorrect activation queue\n"+format_test(bm.activation_q, expected_activation_q)
 
         print("PASSED")
 
