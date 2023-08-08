@@ -56,6 +56,14 @@ class TileTranslator:
         else:
             return (encoding - 2) % self.num_specials + 2, (encoding - 2) // self.num_specials + 1
 
+    def is_same_color(self, encoding1: int, encoding2: int) -> bool:
+        """
+        Check if the two encodings are the same colour.
+        """
+        _, c1 = self.get_type_color(encoding1)
+        _, c2 = self.get_type_color(encoding2)
+        return c1 == c2
+
     def get_str(self, encoding: int) -> str:
         """
         Convert the encoding to a string.
