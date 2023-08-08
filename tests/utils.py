@@ -10,7 +10,7 @@ def create_alternating_array(height: int, width: int) -> np.ndarray:
     for i in range(height):
         for j in range(width):
             arr[i, j] = 2 - int((i % 2) == (j % 2))
-    return arr
+    return arr + 1  # Make sure there are no 1s as they signify cookies
 
 
 def create_board_from_array(arr: np.ndarray) -> Board:
