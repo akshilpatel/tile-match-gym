@@ -8,59 +8,13 @@ class TileTranslator:
         self.num_colours = num_colours
         self.num_specials = num_specials
         self.board_shape = board_shape
-
-    def _tile_type_str(self, tile_idx: int):
-        tile_type = self.get_tile_type(tile_idx)
-        if tile_type == 0:
-            return "ordinary"
-        elif tile_type == 1:
-            return "vertical_stripe"
-        elif tile_type == 2:
-            return "horizontal_stripe"
-        elif tile_type == 3:
-            return "bomb"
-        elif tile_type == 4:
-            return "cookie"
-        else:
-            raise ValueError("Invalid tile type.")
-
-    def tile_to_id(self, tile_type: str):
-        if tile_type == "norm":
-            return 1
-        elif tile_type == "vertical_laser":
-            return 2
-        elif tile_type == "horizontal_laser":
-            return 3
-        elif tile_type == "bomb":
-            return 4
-        elif tile_type == "cookie":
-            return 0
-        else:
-            raise ValueError("Invalid tile type.")
-
-    def is_tile_ordinary(self, tile_idx: int) -> bool:
-        return (tile_idx - 1) < self.num_colours
-
-    def get_tile_type(self, tile_idx: int) -> int:
-        """
-        Convert the tile index to whether the tile is ordinary, or which type of special it is.
-
-        Args:
-            tile_idx (int): Raw tile encoding.
-
-        Returns:
-            int: Index of tile type
-        """
-        return tile_idx // self.num_colours
-
-    def get_tile_colour(self, tile_idx: int):
-        return (tile_idx - 1) % self.num_colours
-
-    def get_tile_number(self, tile: str, colour: int):
+        self.type_names = ["none", "cookie", "norm", "vertical_laser", "horizontal_laser", "bomb"]
+    
+    def get_tile_encoding(self, tile: str, colour: int):
         """
         Convert the tile type and colour to the tile index.
 
-        0 = empty
+        0 = none
         1 = cookie
         2 = color1 norm
         3 = color1 vertical laser
@@ -73,12 +27,81 @@ class TileTranslator:
 
         equation -> color * num_specials + tile_type + 2
         """
-
-        print("tile: ", tile)
-        type_encoding = self.tile_to_id(tile)
-
-        if tile == "cookie":
+        type_encoding = self.type_names.index(tile)
+        if tile == "none":
+            return 0
+        elif tile == "cookie":
             return 1
         else:
-            return colour * self.num_specials + type_encoding + 1
+            return colour * self.num_specials + type_encoding - 4
+
+
+    def get_type_color(self, encoding: int) -> Tuple[int, int]:
+        """
+        Convert the encoding to a tile type and colour.
+
+        types:
+            0 = none
+            1 = cookie
+            2 = norm
+            3 = vertical laser
+            4 = horizontal laser
+            5 = bomb
+        """
+
+        if encoding == 0:
+            return 0, 0
+        elif encoding == 1:
+            return 1, 20
+        else:
+            return (encoding - 2) % self.num_specials + 2, (encoding - 2) // self.num_specials + 1
+
+    def get_str(self, encoding: int) -> str:
+        """
+        Convert the encoding to a string.
+        """
+        t, c = self.get_type_color(encoding)
+
+        if t == 0:
+            return "none"
+        elif t == 1:
+            return "cookie"
+        elif t == 2:
+            return "color{} norm".format(c)
+        elif t == 3:
+            return "color{} vertical laser".format(c)
+        elif t == 4:
+            return "color{} horizontal laser".format(c)
+        elif t == 5:
+            return "color{} bomb".format(c)
+        
+        return "?"
+
+    def get_char(self, encoding: int) -> str:
+        """
+        Convert the encoding to a character.
+        """
+        t, _ = self.get_type_color(encoding)
+
+        if t == 0:
+            return "0"
+        elif t == 1:
+            return "o"
+        elif t == 2:
+            return str(encoding)
+        elif t == 3:
+            return "|"
+        elif t == 4:
+            return "-"
+        elif t == 5:
+            return "*"
+        
+        return "?"
+
+    def is_special(self, encoding: int) -> bool:
+        """
+        Check if the encoding is a special tile.
+        """
+        t, _ = self.get_type_color(encoding)
+        return t != 2 and t != 0
 
