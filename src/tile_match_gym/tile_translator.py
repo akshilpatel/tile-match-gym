@@ -96,13 +96,14 @@ class TileTranslator:
             tile_type = (recentered_encoding // self.num_colours) + self.num_colourless_specials + 1
             return tile_type, tile_colour
 
-    def is_same_colour(self, encoding1: int, encoding2: int) -> bool:
+    def is_same_colour(self, *args) -> bool:
         """
-        Check if the two encodings are the same colour.
+        Check if the n encodings are the same colour.
         """
-        _, c1 = self.get_type_colour(encoding1)
-        _, c2 = self.get_type_colour(encoding2)
-        return c1 == c2
+        colours = [self.get_type_colour(encoding)[1] for encoding in args]
+
+        is_same = len(set(colours)) == 1 and colours[0] != 0
+        return is_same
 
     def get_str(self, encoding: int) -> str:
         """
