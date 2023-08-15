@@ -2,12 +2,12 @@ import numpy as np
 from typing import Optional, List, Tuple, Dict
 from collections import deque
 
-# from tile_match_gym.tile_translator import TileTranslator
-# from tile_match_gym.utils.print_board_diffs import highlight_board_diff
+from tile_match_gym.tile_translator import TileTranslator
+from tile_match_gym.utils.print_board_diffs import highlight_board_diff
 
 # temp while testing
-from tile_translator import TileTranslator  # temp while testing
-from utils.print_board_diffs import highlight_board_diff
+# from tile_translator import TileTranslator  # temp while testing
+# from utils.print_board_diffs import highlight_board_diff
 
 """
     tile_TYPES = {
@@ -46,14 +46,13 @@ class Board:
         self.cols = cols
         self.num_colours = num_colours
 
-        self.tile_translator = TileTranslator(num_colours, (rows, cols))
-
         if seed is None:
             seed = np.random.randint(0, 1000000000)
         self.np_random = np.random.default_rng(seed)
         self.flat_size = int(self.cols * self.rows)
         self.num_actions = self.cols * (self.cols - 1) + self.rows * (self.rows - 1)
         self._special_match_types = {"horizontal_laser", "vertical_laser", "cookie", "bomb"}
+        self.tile_translator = TileTranslator(num_colours, (rows, cols), 4)
         # self.generate_board()
         self.board = self.np_random.integers(1, self.num_colours + 1, size=self.flat_size).reshape(self.rows, self.cols)
         self.activation_q = []
@@ -79,19 +78,19 @@ class Board:
         self,
         match_coords: List[Tuple[int, int]],
         match_type: str,
-        color_idx: Optional[int] = None,
+        colour_idx: Optional[int] = None,
     ) -> None:
         rand_coord = self.np_random.choice(list(filter(self.tile_translator.is_tile_ordinary, match_coords)))
-        if color_idx is None:
-            color_idx = self.tile_translator.get_tile_colour(rand_coord)
+        if colour_idx is None:
+            colour_idx = self.tile_translator.get_tile_colour(rand_coord)
         if match_type in ["horizontal_laser", "vertical_laser"]:
             self.board[rand_coord] = int(self.num_colours * 4) + 1
         elif match_type == "horizontal_laser":
-            self.board[rand_coord] = self.num_colours + color_idx
+            self.board[rand_coord] = self.num_colours + colour_idx
         elif match_type == "vertical_laser":
-            self.board[rand_coord] = int(2 * self.num_colours) + color_idx
+            self.board[rand_coord] = int(2 * self.num_colours) + colour_idx
         elif match_type == "bomb":
-            self.board[rand_coord] = int(3 * self.num_colours) + color_idx
+            self.board[rand_coord] = int(3 * self.num_colours) + colour_idx
         else:
             raise NotImplementedError(f"The special type does not exist: {match_type}")
 
@@ -235,6 +234,7 @@ class Board:
         tile2 = self.board[coord2]
         return self.tile_translator.get_tile_colour(tile1) == self.tile_translator.get_tile_colour(tile2)
 
+    # TODO: Make this faster.
     def check_move_validity(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
         """
         This function checks if the action actually does anything.
@@ -249,25 +249,49 @@ class Board:
         """
         ## Check both coords are on the board. ##
         if not (0 <= coord1[0] < self.rows and 0 <= coord1[1] < self.cols):
-            return False, None
+            return False
         if not (0 <= coord2[0] < self.rows and 0 <= coord2[1] < self.cols):
-            return False, None
+            return False
+        # Check coords are next to each other.
+        if not (coord1[0] == coord2[0] or coord1[1] == coord2[1]):
+            return False
+
+        print(self.num_colours)
+        # Checks if both are special.
+        if self.tile_translator.is_special(self.board[coord1]) and self.tile_translator.is_special(self.board[coord2]):
+            print("both special")
+            return True
 
         # Extract a 6x6 grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
-        y_ranges = max(0, coord1[0] - 2), min(self.rows, coord2[0] + 3)
-        x_ranges = max(0, coord1[1] - 2), min(self.cols, coord2[1] + 3)
-        surround_grid = self.board[y_ranges[0] : y_ranges[1]][x_ranges[0] : x_ranges[1]][:]
+        r_min = max(0, min(coord1[0] - 2, coord2[0] - 2))
+        r_max = min(self.rows, max(coord1[0] + 3, coord2[0] + 3))
+        c_min = max(0, min(coord1[1] - 2, coord2[1] - 2))
+        c_max = min(self.cols, max(coord1[1] + 3, coord2[1] + 3))
+        # print(r_min, r_max, c_min, c_max, coord1, coord2)
+
+        surround_grid = self.board[r_min:r_max][c_min:c_max]
 
         # Swap the coordinates to see what happens.
-        surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], self.board[coord1]
-        # Doesn't matter what type of tile it is, if the colours match then its a match
-        surround_grid %= self.num_colours
+        surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
+
+        print(surround_grid, "here")
+
         for sg in [surround_grid, surround_grid.T]:
-            for j in range(sg.shape[0]):
-                for i in range(2, sg.shape[1]):
+            for r in range(sg.shape[0]):
+                for c in range(2, sg.shape[1]):
                     # If the current and previous 2 are matched and that they are not cookies.
-                    if sg[j, i - 2] == sg[j, i - 1] == sg[j, i]:
-                        return True, 0
+                    if sg[r, c] == 1 or sg[r, c - 1] == 1 or sg[r, c - 2] == 1:
+                        continue
+                    elif self.tile_translator.is_same_colour(sg[r, c - 2], sg[r, c - 1]):
+                        print("hi")
+                        if self.tile_translator.is_same_colour(sg[r, c - 1], sg[r, c]):
+                            surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
+                            return True
+                    # elif (sg[r, c - 2] % self.num_colours) == (sg[r, c - 1] % self.num_colours) == (sg[r, c] % self.num_colours):
+                    #     surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
+                    #     return True
+
+        surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
         return False
 
     def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
@@ -286,10 +310,10 @@ class Board:
             has_match = self.automatch()
 
     def print_board(self) -> None:
-        # 2-5 is color1, 6-9 is color2, 10-13 is color3, 14-17 is color4, 18-21 is color5, 22-25 is color6
-        # get_color = lambda number, tile: (number - tile - 2) // self.tile_translator.num_specials + 1
-        get_color = lambda number, tile: self.tile_translator.get_type_color(number)[1]
-        print_tile = lambda x, tile_type: "\033[1;3{}m{:>2}\033[0m".format(get_color(x, tile_type), self.tile_translator.get_char(x))
+        # 2-5 is colour1, 6-9 is colour2, 10-13 is colour3, 14-17 is colour4, 18-21 is colour5, 22-25 is colour6
+        # get_colour = lambda number, tile: (number - tile - 2) // self.tile_translator.num_specials + 1
+        get_colour = lambda number, tile: self.tile_translator.get_type_colour(number)[1]
+        print_tile = lambda x, tile_type: "\033[1;3{}m{:>2}\033[0m".format(get_colour(x, tile_type), self.tile_translator.get_char(x))
 
         print(" " + "-" * (self.cols * 2 + 1))
         for row in self.board:
@@ -299,10 +323,10 @@ class Board:
             print("|")
         print(" " + "-" * (self.cols * 2 + 1))
 
-    def color_check(self) -> None:
+    def colour_check(self) -> None:
         get_char = lambda number: self.tile_translator.get_char(number)
-        get_color = lambda number, tile: self.tile_translator.get_type_color(number)[1]
-        print_tile = lambda x, tile_type: "\033[1;3{}m{:2}\033[0m".format(get_color(x, tile_type), get_char(x))
+        get_colour = lambda number, tile: self.tile_translator.get_type_colour(number)[1]
+        print_tile = lambda x, tile_type: "\033[1;3{}m{:2}\033[0m".format(get_colour(x, tile_type), get_char(x))
         for i in range(25):
             print(print_tile(i, 0), end=" ")
         print()
@@ -446,12 +470,12 @@ class Board:
 
                 # make sure line has not already been checked
                 # if not (row > 0 and self.board[row][el] == self.board[row-1][el]):
-                if not (row > 0 and self.tile_translator.is_same_color(self.board[row][el], self.board[row-1][el]) or self.board[row][el] == 1):
+                if not (row > 0 and self.tile_translator.is_same_colour(self.board[row][el], self.board[row - 1][el]) or self.board[row][el] == 1):
                     # check for vertical lines
                     while r < self.rows:
                         # if self.board[r][el] == self.board[r-1][el]:
-                        # if same color or cookie
-                        if self.tile_translator.is_same_color(self.board[r][el], self.board[r-1][el]) or self.board[r][el] == 1:
+                        # if same colour or cookie
+                        if self.tile_translator.is_same_colour(self.board[r][el], self.board[r - 1][el]) or self.board[r][el] == 1:
                             r += 1
                         else:
                             break
@@ -460,11 +484,15 @@ class Board:
 
                 # make sure line has not already been checked
                 # if not (el > 0 and self.board[row][el] == self.board[row][el-1]):
-                if not (el > 0 and self.tile_translator.is_same_color(self.board[row][el], self.board[row][el-1]) or self.board[row][el] == 1):
+                if not (el > 0 and self.tile_translator.is_same_colour(self.board[row][el], self.board[row][el - 1]) or self.board[row][el] == 1):
                     # check for horizontal lines
                     while e < self.cols:
-                        #if self.board[row][e] == self.board[row][e-1]:
-                        if self.tile_translator.is_same_color(self.board[row][e], self.board[row][e-1]) or self.board[row][e] == 1 or self.board[row][e-1] == 1:
+                        # if self.board[row][e] == self.board[row][e-1]:
+                        if (
+                            self.tile_translator.is_same_colour(self.board[row][e], self.board[row][e - 1])
+                            or self.board[row][e] == 1
+                            or self.board[row][e - 1] == 1
+                        ):
                             e += 1
                         else:
                             break
@@ -548,7 +576,7 @@ if __name__ == "__main__":
 
         expected_matches = [[tuple(coord) for coord in line] for line in board["matches"]]
         expected_tile_coords = [[tuple(coord) for coord in line] for line in board["tile_locations"]]
-        expected_activation_q = [tuple(coord) for coord in board['activation_q']]
+        expected_activation_q = [tuple(coord) for coord in board["activation_q"]]
         expected_tile_names = board["tile_names"]
         expected_first_activation = np.array(board["first_activation"])
 
@@ -584,11 +612,13 @@ if __name__ == "__main__":
         # activation queue tests
         print("Activation Queue", bm.activation_q)
 
-        assert len(bm.activation_q) == len(expected_activation_q), "incorrect activation queue length\n"+format_test(bm.activation_q, expected_activation_q)
-        assert all([bm.activation_q[i] == a for i, a in enumerate(expected_activation_q)]), "incorrect activation queue\n"+format_test(bm.activation_q, expected_activation_q)
+        assert len(bm.activation_q) == len(expected_activation_q), "incorrect activation queue length\n" + format_test(bm.activation_q, expected_activation_q)
+        assert all([bm.activation_q[i] == a for i, a in enumerate(expected_activation_q)]), "incorrect activation queue\n" + format_test(
+            bm.activation_q, expected_activation_q
+        )
 
         print("PASSED")
 
         print("----")
 
-    bm.color_check()
+    bm.colour_check()
