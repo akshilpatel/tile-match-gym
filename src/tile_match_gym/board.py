@@ -292,7 +292,7 @@ class Board:
         print_tile = lambda x, tile_type: "\033[1;3{}m{:>2}\033[0m".format(get_color(x, tile_type), self.tile_translator.get_char(x))
 
         print(" " + "-" * (self.cols * 2 + 1))
-        for row in self.board:
+        for row in reversed(self.board):
             print("| ", end="")
             for tile in row:
                 print(print_tile(tile, 0), end=" ")
@@ -607,9 +607,15 @@ if __name__ == "__main__":
     for board in boards:
         print("testing board: ", board["name"])
 
+
         bm = Board(0, 0, 0, board=np.array(board["board"]))
         matches = bm.get_lines()
         tile_coords, tile_names = bm.get_matches(matches)
+    
+        
+        print("BOARD::::::")
+        bm.print_board()
+
 
         expected_matches = [[tuple(coord) for coord in line] for line in board["matches"]]
         expected_tile_coords = [[tuple(coord) for coord in line] for line in board["tile_locations"]]
