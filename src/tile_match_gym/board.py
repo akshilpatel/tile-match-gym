@@ -39,6 +39,8 @@ class Board:
         rows: int,
         cols: int,
         num_colours: int,
+        colourless_specials: List[str] = ["cookie"],
+        colour_specials: List[str] = ["vertical_laser", "horizontal_laser", "bomb"],
         seed: Optional[int] = None,
         board: Optional[np.ndarray] = None,
     ):
@@ -46,24 +48,29 @@ class Board:
         self.cols = cols
         self.num_colours = num_colours
 
+        self.flat_size = int(self.cols * self.rows)
+        self.num_actions = self.cols * (self.cols - 1) + self.rows * (self.rows - 1)
+
+        self.colourless_specials = colourless_specials
+        self.colour_specials = colour_specials
+        self.specials = set(self.colourless_specials + self.colour_specials)
+
+        self.tile_translator = TileTranslator(num_colours, (rows, cols), self.colourless_specials, self.colour_specials)
+
         if seed is None:
             seed = np.random.randint(0, 1000000000)
         self.np_random = np.random.default_rng(seed)
-        self.flat_size = int(self.cols * self.rows)
-        self.num_actions = self.cols * (self.cols - 1) + self.rows * (self.rows - 1)
-        self._special_match_types = {"horizontal_laser", "vertical_laser", "cookie", "bomb"}
-        self.tile_translator = TileTranslator(num_colours, (rows, cols), 4)
-        # self.generate_board()
-        self.board = self.np_random.integers(1, self.num_colours + 1, size=self.flat_size).reshape(self.rows, self.cols)
-        self.activation_q = []
 
-        self.indices = np.array([[(r, c) for r in range(0, cols)] for c in range(0, rows)])
+        self.board = self.np_random.integers(1, self.num_colours + 1, size=self.flat_size).reshape(self.rows, self.cols)
 
         # handle the case where we are given a board
         if board is not None:
             self.board = board
             self.rows = len(board)
             self.cols = len(board[0])
+
+        self.indices = np.array([[(r, c) for r in range(self.cols)] for c in range(self.rows)])
+        self.activation_q = []
 
     def generate_board(self):
         self.board = self.np_random.integers(1, self.num_colours + 1, size=self.flat_size).reshape(self.rows, self.cols)
@@ -256,7 +263,6 @@ class Board:
         if not (coord1[0] == coord2[0] or coord1[1] == coord2[1]):
             return False
 
-        print(self.num_colours)
         # Checks if both are special.
         if self.tile_translator.is_special(self.board[coord1]) and self.tile_translator.is_special(self.board[coord2]):
             print("both special")
@@ -280,16 +286,9 @@ class Board:
             for r in range(sg.shape[0]):
                 for c in range(2, sg.shape[1]):
                     # If the current and previous 2 are matched and that they are not cookies.
-                    if sg[r, c] == 1 or sg[r, c - 1] == 1 or sg[r, c - 2] == 1:
-                        continue
-                    elif self.tile_translator.is_same_colour(sg[r, c - 2], sg[r, c - 1]):
-                        print("hi")
-                        if self.tile_translator.is_same_colour(sg[r, c - 1], sg[r, c]):
-                            surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
-                            return True
-                    # elif (sg[r, c - 2] % self.num_colours) == (sg[r, c - 1] % self.num_colours) == (sg[r, c] % self.num_colours):
-                    #     surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
-                    #     return True
+                    if self.tile_translator.is_same_colour(sg[r, c - 2], sg[r, c - 1], sg[r, c]):
+                        surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
+                        return True
 
         surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
         return False
@@ -360,7 +359,7 @@ class Board:
             for match_coord in match:
                 self.activation_q.append({"coord": match_coord})
             self.activation_loop()
-            if match_types[i] in self._special_match_types:
+            if match_types[i] in self.specials:
                 self.create_special(match, match_types[i])
         return True
 
