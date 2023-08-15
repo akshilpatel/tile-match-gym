@@ -401,13 +401,10 @@ class Board:
     def handle_activations(self):
         while len(self.activation_q) > 0:
             activation = self.activation_q.pop()
-            print("activation = ", activation)
             self.apply_activation(activation)
-            print("POST ACTIVATION")
             self.print_board()
-            # self.gravity()
-            break
-            # self.refill()
+            self.gravity()
+            self.refill()
 
     def get_special_position(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
         """
@@ -620,6 +617,8 @@ if __name__ == "__main__":
         expected_tile_names = board["tile_names"]
         expected_first_activation = np.array(board["first_activation"])
         expected_post_activation = np.array(board["post_activation"])
+        expected_post_gravity = np.array(board["post_gravity"])
+        expected_post_refill = np.array(board["post_refill"])
 
         assert len(matches) == len(board["matches"]), "incorrect number of matches found\n" + format_test(matches, expected_matches)
         assert coords_match(matches, expected_matches), "incorrect matches found\n" + format_test(sort_coords(matches), sort_coords(expected_matches))
@@ -667,6 +666,19 @@ if __name__ == "__main__":
         assert np.array_equal(bm.board, expected_post_activation), "incorrect board after activation\n" + highlight_board_diff(
             bm.board, expected_post_activation
         )
+
+        # Gravity test
+        bm.gravity()
+        assert np.array_equal(bm.board, expected_post_gravity), "incorrect board after gravity\n" + highlight_board_diff(
+            bm.board, expected_post_gravity
+        )
+            
+        # # Refill test
+        # bm.refill()
+        # assert np.array_equal(bm.board, expected_post_refill), "incorrect board after gravity\n" + highlight_board_diff(
+        #     bm.board, expected_post_refill
+        # )
+
 
         print("PASSED")
 
