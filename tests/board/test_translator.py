@@ -1,8 +1,5 @@
 import pytest
-from tile_match_gym.board import Board, TileTranslator
-import numpy as np
-from typing import Optional, List, Tuple
-from tests.utils import create_alternating_array, contains_threes
+from tile_match_gym.board import TileTranslator
 
 ################################################################################
 ################## This is just templating - needs to be changed ###############

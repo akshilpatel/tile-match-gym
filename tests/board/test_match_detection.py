@@ -3,13 +3,16 @@ import pytest
 
 from tile_match_gym.board import Board
 
+
 def make_board():
-    board = Board(8, 7, 4)
+    board = Board(8, 7, ["cookie"], ["vertical_laser", "horizontal_laser", "bomb"], 4)
     return board
+
 
 @pytest.fixture
 def make_board_fixture():
     return make_board()
+
 
 # def test_get_lowest_v_match_coords():
 #     board = make_board_fixture

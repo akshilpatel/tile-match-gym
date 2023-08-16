@@ -374,24 +374,24 @@ class Board:
             coords (Tuple[int, int]): Coordinates of the activation.
             second_special_coord (Optional[Tuple[int, int]], optional): If the activation is a special tile, the second special tile's coordinates. Defaults to None.
         """
-        ttype, _ = self.tile_translator.get_type_color(self.board[coord]) 
+        ttype, _ = self.tile_translator.get_type_color(self.board[coord])
         # set the activated tile to 0
         self.board[coord] = 0
-        if ttype == 3: # vertical stripe
+        if ttype == 3:  # vertical stripe
             # go through each coordinate in the column and set it to 0
             for i in range(self.rows):
                 if self.tile_translator.is_special(self.board[i, coord[1]]):
                     self.activation_q.append((i, coord[1]))
                 else:
                     self.board[i, coord[1]] = 0
-        elif ttype == 4: # horizontal stripe
+        elif ttype == 4:  # horizontal stripe
             # go through each coordinate in the row and set it to 0
             for i in range(self.cols):
                 if self.tile_translator.is_special(self.board[coord[0], i]):
                     self.activation_q.append((coord[0], i))
                 else:
                     self.board[coord[0], i] = 0
-        elif ttype == 5: # bomb
+        elif ttype == 5:  # bomb
             # go through each coordinate in the 3x3 square and set it to 0
             for i in range(coord[0] - 1, coord[0] + 2):
                 for j in range(coord[1] - 1, coord[1] + 2):
@@ -399,13 +399,15 @@ class Board:
                         self.activation_q.append((i, j))
                     else:
                         self.board[i, j] = 0
-        elif ttype == 1: # cookie
+        elif ttype == 1:  # cookie
             # choose most common neighbour (else random) and remove all variants of that tile
             # get the neighbours
-            neighbours = [self.board[(coord[0]+i, coord[1]+j)] for i in range(-1, 2) for j
-                          in range(-1, 2) if i != 0 or j != 0 and 0 <=
-                          coord[0]+i < self.rows and 0 <= coord[1]+j <
-                          self.cols]
+            neighbours = [
+                self.board[(coord[0] + i, coord[1] + j)]
+                for i in range(-1, 2)
+                for j in range(-1, 2)
+                if i != 0 or j != 0 and 0 <= coord[0] + i < self.rows and 0 <= coord[1] + j < self.cols
+            ]
             cols = [self.tile_translator.get_type_color(n)[1] for n in neighbours]
             most_common_col = max(set(cols), key=cols.count)
             print("MOST COMMON COL = ", most_common_col)
@@ -455,7 +457,6 @@ class Board:
         if len(sorted_coords) % 2 == 0:
             return sorted_coords[len(sorted_coords) // 2 - 1]
         return sorted_coords[len(sorted_coords) // 2]
-
 
     def activate_match(self, coords: List[Tuple[int, int]], name: str) -> None:
         """Activates a match of the given name at the given coordinates.
@@ -634,15 +635,12 @@ if __name__ == "__main__":
     for board in boards:
         print("testing board: ", board["name"])
 
-
         bm = Board(0, 0, 0, board=np.array(board["board"]))
         matches = bm.get_lines()
         tile_coords, tile_names = bm.get_matches(matches)
-    
-        
+
         print("BOARD::::::")
         bm.print_board()
-
 
         expected_matches = [[tuple(coord) for coord in line] for line in board["matches"]]
         expected_tile_coords = [[tuple(coord) for coord in line] for line in board["tile_locations"]]
@@ -704,16 +702,13 @@ if __name__ == "__main__":
 
         # Gravity test
         bm.gravity()
-        assert np.array_equal(bm.board, expected_post_gravity), "incorrect board after gravity\n" + highlight_board_diff(
-            bm.board, expected_post_gravity
-        )
-            
+        assert np.array_equal(bm.board, expected_post_gravity), "incorrect board after gravity\n" + highlight_board_diff(bm.board, expected_post_gravity)
+
         # # Refill test
         # bm.refill()
         # assert np.array_equal(bm.board, expected_post_refill), "incorrect board after gravity\n" + highlight_board_diff(
         #     bm.board, expected_post_refill
         # )
-
 
         print("PASSED")
 

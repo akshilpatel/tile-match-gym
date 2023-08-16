@@ -1,7 +1,6 @@
 import numpy as np
 
 from tests.utils import create_board_from_array, create_alternating_array, wipe_coords
-from tile_match_gym.utils import print_boards
 from copy import deepcopy
 
 
