@@ -17,7 +17,7 @@ def create_board_from_array(arr: np.ndarray) -> Board:
     num_colours = len(np.unique(arr))
     height, width = arr.shape
     seed = 1
-    board = Board(height, width, num_colours, seed)
+    board = Board(height, width, num_colours, ["cookie"], ["vertical_laser", "horizontal_laser", "bomb"], seed)
     board.board = deepcopy(arr)
     return board
 
