@@ -315,7 +315,7 @@ class Board:
         print_tile = lambda x, tile_type: "\033[1;3{}m{:>2}\033[0m".format(get_colour(x, tile_type), self.tile_translator.get_char(x))
 
         print(" " + "-" * (self.cols * 2 + 1))
-        for row in self.board:
+        for row in reversed(self.board):
             print("| ", end="")
             for tile in row:
                 print(print_tile(tile, 0), end=" ")
@@ -367,6 +367,68 @@ class Board:
     ## Activation functions ##
     ############################################################################
 
+    def apply_activation(self, coord: Tuple[int, int]) -> None:
+        """Applies the activation at the given coordinates.
+
+        Args:
+            coords (Tuple[int, int]): Coordinates of the activation.
+            second_special_coord (Optional[Tuple[int, int]], optional): If the activation is a special tile, the second special tile's coordinates. Defaults to None.
+        """
+        ttype, _ = self.tile_translator.get_type_color(self.board[coord]) 
+        # set the activated tile to 0
+        self.board[coord] = 0
+        if ttype == 3: # vertical stripe
+            # go through each coordinate in the column and set it to 0
+            for i in range(self.rows):
+                if self.tile_translator.is_special(self.board[i, coord[1]]):
+                    self.activation_q.append((i, coord[1]))
+                else:
+                    self.board[i, coord[1]] = 0
+        elif ttype == 4: # horizontal stripe
+            # go through each coordinate in the row and set it to 0
+            for i in range(self.cols):
+                if self.tile_translator.is_special(self.board[coord[0], i]):
+                    self.activation_q.append((coord[0], i))
+                else:
+                    self.board[coord[0], i] = 0
+        elif ttype == 5: # bomb
+            # go through each coordinate in the 3x3 square and set it to 0
+            for i in range(coord[0] - 1, coord[0] + 2):
+                for j in range(coord[1] - 1, coord[1] + 2):
+                    if self.tile_translator.is_special(self.board[i, j]):
+                        self.activation_q.append((i, j))
+                    else:
+                        self.board[i, j] = 0
+        elif ttype == 1: # cookie
+            # choose most common neighbour (else random) and remove all variants of that tile
+            # get the neighbours
+            neighbours = [self.board[(coord[0]+i, coord[1]+j)] for i in range(-1, 2) for j
+                          in range(-1, 2) if i != 0 or j != 0 and 0 <=
+                          coord[0]+i < self.rows and 0 <= coord[1]+j <
+                          self.cols]
+            cols = [self.tile_translator.get_type_color(n)[1] for n in neighbours]
+            most_common_col = max(set(cols), key=cols.count)
+            print("MOST COMMON COL = ", most_common_col)
+            # get the most common neighbour
+            most_common = max(set(neighbours), key=neighbours.count)
+            # remove all variants of that tile
+            for i in range(self.rows):
+                for j in range(self.cols):
+                    col = self.tile_translator.get_type_color(self.board[i, j])[1]
+                    if col == most_common:
+                        if self.tile_translator.is_special(self.board[i, j]):
+                            self.activation_q.append((i, j))
+                        else:
+                            self.board[i, j] = 0
+
+    def handle_activations(self):
+        while len(self.activation_q) > 0:
+            activation = self.activation_q.pop()
+            self.apply_activation(activation)
+            self.print_board()
+            self.gravity()
+            self.refill()
+
     def get_special_position(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
         """
         Given a set of coordinates return the position of the special tile that should be placed
@@ -394,12 +456,15 @@ class Board:
             return sorted_coords[len(sorted_coords) // 2 - 1]
         return sorted_coords[len(sorted_coords) // 2]
 
+
     def activate_match(self, coords: List[Tuple[int, int]], name: str) -> None:
         """Activates a match of the given name at the given coordinates.
 
         Args:
             coords (Tuple[int, int]): Coordinates of the match.
             name (str): Name of the match.
+
+        Don't add normal tiles to the activation queue.
         """
         if len(coords) == 3:
             print("3 match")
@@ -569,15 +634,24 @@ if __name__ == "__main__":
     for board in boards:
         print("testing board: ", board["name"])
 
+
         bm = Board(0, 0, 0, board=np.array(board["board"]))
         matches = bm.get_lines()
         tile_coords, tile_names = bm.get_matches(matches)
+    
+        
+        print("BOARD::::::")
+        bm.print_board()
+
 
         expected_matches = [[tuple(coord) for coord in line] for line in board["matches"]]
         expected_tile_coords = [[tuple(coord) for coord in line] for line in board["tile_locations"]]
         expected_activation_q = [tuple(coord) for coord in board["activation_q"]]
         expected_tile_names = board["tile_names"]
         expected_first_activation = np.array(board["first_activation"])
+        expected_post_activation = np.array(board["post_activation"])
+        expected_post_gravity = np.array(board["post_gravity"])
+        expected_post_refill = np.array(board["post_refill"])
 
         assert len(matches) == len(board["matches"]), "incorrect number of matches found\n" + format_test(matches, expected_matches)
         assert coords_match(matches, expected_matches), "incorrect matches found\n" + format_test(sort_coords(matches), sort_coords(expected_matches))
@@ -615,6 +689,31 @@ if __name__ == "__main__":
         assert all([bm.activation_q[i] == a for i, a in enumerate(expected_activation_q)]), "incorrect activation queue\n" + format_test(
             bm.activation_q, expected_activation_q
         )
+
+        # handle activations test
+        if len(bm.activation_q) > 0:
+            activation = bm.activation_q.pop()
+            print("activation = ", activation)
+            bm.apply_activation(activation)
+            print("POST ACTIVATION")
+            bm.print_board()
+
+        assert np.array_equal(bm.board, expected_post_activation), "incorrect board after activation\n" + highlight_board_diff(
+            bm.board, expected_post_activation
+        )
+
+        # Gravity test
+        bm.gravity()
+        assert np.array_equal(bm.board, expected_post_gravity), "incorrect board after gravity\n" + highlight_board_diff(
+            bm.board, expected_post_gravity
+        )
+            
+        # # Refill test
+        # bm.refill()
+        # assert np.array_equal(bm.board, expected_post_refill), "incorrect board after gravity\n" + highlight_board_diff(
+        #     bm.board, expected_post_refill
+        # )
+
 
         print("PASSED")
 

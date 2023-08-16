@@ -78,7 +78,7 @@ def highlight_board_diff(board: np.ndarray, expected: np.ndarray, gap=5, prnt=Fa
     if prnt:
         print("\n".join(lines))
 
-    return "\n".join(lines)
+    return "\n".join(reversed(lines))
 
 
 if __name__ == "__main__":
