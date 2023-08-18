@@ -1,6 +1,6 @@
 import numpy as np
 
-from tests.utils import create_board_from_array, create_alternating_array, wipe_coords
+from tests.utils import create_alternating_board, wipe_coords
 from copy import deepcopy
 
 
@@ -8,20 +8,18 @@ from copy import deepcopy
 def test_gravity_falls():
     # Case 1
 
-    arr = create_alternating_array(4, 3)
-    board = create_board_from_array(arr)
+    board = create_alternating_board(4, 3)
     board.board = wipe_coords(board, [(0, 0), (2, 0), (2, 2), (2, 1), (3, 2)])
 
     board.gravity()
-    assert np.array_equal(board.board, np.array([[0, 0, 0], [0, 3, 0], [3, 2, 2], [3, 2, 3]])), board.board
+    assert np.array_equal(board.board, np.array([[0, 0, 0], [0, 3, 0], [3, 2, 2], [3, 2, 3]]))
 
     # Case 2
-    arr = create_alternating_array(height=8, width=7)
-    board = create_board_from_array(arr)
+    board = create_alternating_board(height=8, width=7)
     old_board = deepcopy(board.board)
     board.gravity()
     # Board should be unchanged
-    assert np.array_equal(board.board, old_board), (arr, old_board.board)
+    assert np.array_equal(board.board, old_board)
 
     board.board = wipe_coords(board, [(0, 0), (1, 0), (3, 4), (4, 4), (5, 4), (3, 2), *[(7, i) for i in range(7)]])
 
@@ -48,8 +46,7 @@ def test_gravity_updates_activation_queue():
     # The corresponding activation would happen immediately and so gravity would not be called with this type of activation in it.
 
     # Case 1
-    arr = create_alternating_array(4, 3)
-    board = create_board_from_array(arr)
+    board = create_alternating_board(4, 3)
     board.board = wipe_coords(board, [(0, 0), (2, 0), (2, 2), (2, 1), (3, 2)])
 
     board.board[(0, 1)] = 3
@@ -70,8 +67,7 @@ def test_gravity_updates_activation_queue():
     assert activation2 == {"coord": (3, 1), "activation_type": 1}, activation2
 
     # Case 2
-    arr = create_alternating_array(5, 6)
-    board = create_board_from_array(arr)
+    board = create_alternating_board(5, 6)
     board.board = wipe_coords(board, [(1, 0), (2, 2), (3, 1), (4, 3), (3, 5), (3, 3), (2, 3)])
 
     board.activation_q.append({"coord": (4, 2), "activation_type": None})
