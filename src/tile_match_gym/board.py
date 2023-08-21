@@ -268,29 +268,29 @@ class Board:
             print("both special")
             return True
 
-        # Extract a 6x6 grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
+        # Extract a minimal grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
         r_min = max(0, min(coord1[0] - 2, coord2[0] - 2))
         r_max = min(self.rows, max(coord1[0] + 3, coord2[0] + 3))
         c_min = max(0, min(coord1[1] - 2, coord2[1] - 2))
         c_max = min(self.cols, max(coord1[1] + 3, coord2[1] + 3))
-        # print(r_min, r_max, c_min, c_max, coord1, coord2)
-
-        surround_grid = self.board[r_min:r_max][c_min:c_max]
+        print(r_min, r_max, c_min, c_max, coord1, coord2)
 
         # Swap the coordinates to see what happens.
-        surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
 
-        print(surround_grid, "here")
+        self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
+        print("SWITCHED \n", self.board)
+        for r in range(r_min, r_max):
+            for c in range(c_min, c_max):
+                # If the current and previous 2 are matched and that they are not cookies.
+                if self.tile_translator.is_same_colour(self.board[r, c - 2], self.board[r, c - 1], self.board[r, c]):
+                    self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
+                    return True
+                elif self.tile_translator.is_same_colour(self.board[r - 2, c], self.board[r - 1, c], self.board[r, c]):
+                    self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
+                    print("MATCHED \n", self.board)
+                    return True
 
-        for sg in [surround_grid, surround_grid.T]:
-            for r in range(sg.shape[0]):
-                for c in range(2, sg.shape[1]):
-                    # If the current and previous 2 are matched and that they are not cookies.
-                    if self.tile_translator.is_same_colour(sg[r, c - 2], sg[r, c - 1], sg[r, c]):
-                        surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
-                        return True
-
-        surround_grid[coord1], surround_grid[coord2] = surround_grid[coord2], surround_grid[coord1]
+        self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
         return False
 
     def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
