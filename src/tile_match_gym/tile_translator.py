@@ -100,9 +100,13 @@ class TileTranslator:
         """
         Check if the n encodings are the same colour.
         """
-        colours = [self.get_type_colour(encoding)[1] for encoding in args]
-
-        is_same = len(set(colours)) == 1 and colours[0] != 0
+        min_type = self.num_colour_specials + self.num_colourless_specials + 1
+        colours = [None] * len(args)
+        for i, encoding in enumerate(args):
+            t, c = self.get_type_colour(encoding)
+            min_type = min(min_type, t)
+            colours[i] = c
+        is_same = len(set(colours)) == 1 and min_type > self.num_colourless_specials
         return is_same
 
     def get_str(self, encoding: int) -> str:
