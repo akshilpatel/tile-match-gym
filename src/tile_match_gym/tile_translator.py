@@ -157,3 +157,10 @@ class TileTranslator:
         """
         t, _ = self.get_type_colour(encoding)
         return not (t == 0 or t == self.num_colourless_specials + 1)
+
+    def is_colourless_special(self, encoding: int) -> bool:
+        """
+        Check if the encoding is a colourless special tile.
+        """
+        t, _ = self.get_type_colour(encoding)
+        return 0 < t <= self.num_colourless_specials

@@ -265,7 +265,9 @@ class Board:
 
         # Checks if both are special.
         if self.tile_translator.is_special(self.board[coord1]) and self.tile_translator.is_special(self.board[coord2]):
-            print("both special")
+            return True
+
+        if self.tile_translator.is_colourless_special(self.board[coord1]) or self.tile_translator.is_colourless_special(self.board[coord2]):
             return True
 
         # Extract a minimal grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
@@ -273,21 +275,20 @@ class Board:
         r_max = min(self.rows, max(coord1[0] + 3, coord2[0] + 3))
         c_min = max(0, min(coord1[1] - 2, coord2[1] - 2))
         c_max = min(self.cols, max(coord1[1] + 3, coord2[1] + 3))
-        print(r_min, r_max, c_min, c_max, coord1, coord2)
 
         # Swap the coordinates to see what happens.
-
         self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
-        print("SWITCHED \n", self.board)
         for r in range(r_min, r_max):
-            for c in range(c_min, c_max):
+            for c in range(c_min + 2, c_max):
                 # If the current and previous 2 are matched and that they are not cookies.
                 if self.tile_translator.is_same_colour(self.board[r, c - 2], self.board[r, c - 1], self.board[r, c]):
                     self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
                     return True
-                elif self.tile_translator.is_same_colour(self.board[r - 2, c], self.board[r - 1, c], self.board[r, c]):
+
+        for r in range(r_min + 2, r_max):
+            for c in range(c_min, c_max):
+                if self.tile_translator.is_same_colour(self.board[r - 2, c], self.board[r - 1, c], self.board[r, c]):
                     self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
-                    print("MATCHED \n", self.board)
                     return True
 
         self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
