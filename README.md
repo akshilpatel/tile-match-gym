@@ -10,6 +10,7 @@ This genre of games is characterised by the following features which we find use
 - Structured complex stochasticity in transition dynamics
 
 **Work in Progress - Pre-release**
+
 Please note that this project is a work in progress, and while many exciting features are on the roadmap, they might not all be fully implemented at this time.
 
 ## Installation
