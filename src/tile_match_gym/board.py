@@ -415,7 +415,7 @@ class Board:
                         else:
                             self.board[i, j] = 0
 
-    def handle_activations(self):
+    def handle_activations(self): # Used only for testing.
         while len(self.activation_q) > 0:
             activation = self.activation_q.pop()
             self.apply_activation(activation)
