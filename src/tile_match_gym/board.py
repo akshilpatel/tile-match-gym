@@ -2,12 +2,12 @@ import numpy as np
 from typing import Optional, List, Tuple, Dict
 from collections import deque
 
-from tile_match_gym.tile_translator import TileTranslator
-from tile_match_gym.utils.print_board_diffs import highlight_board_diff
+# from tile_match_gym.tile_translator import TileTranslator
+# from tile_match_gym.utils.print_board_diffs import highlight_board_diff
 
 # temp while testing
-# from tile_translator import TileTranslator  # temp while testing
-# from utils.print_board_diffs import highlight_board_diff
+from tile_translator import TileTranslator  # temp while testing
+from utils.print_board_diffs import highlight_board_diff
 
 """
     tile_TYPES = {
@@ -313,7 +313,7 @@ class Board:
         # 2-5 is colour1, 6-9 is colour2, 10-13 is colour3, 14-17 is colour4, 18-21 is colour5, 22-25 is colour6
         # get_colour = lambda number, tile: (number - tile - 2) // self.tile_translator.num_specials + 1
         get_colour = lambda number, tile: self.tile_translator.get_type_colour(number)[1]
-        print_tile = lambda x, tile_type: "\033[1;3{}m{:>2}\033[0m".format(get_colour(x, tile_type), self.tile_translator.get_char(x))
+        print_tile = lambda x, tile_type: "\033[1;3{}m{:>2}\033[0m".format(get_colour(x, tile_type)+1, self.tile_translator._get_char(x))
 
         print(" " + "-" * (self.cols * 2 + 1))
         for row in reversed(self.board):
@@ -324,10 +324,10 @@ class Board:
         print(" " + "-" * (self.cols * 2 + 1))
 
     def colour_check(self) -> None:
-        get_char = lambda number: self.tile_translator.get_char(number)
+        get_char = lambda number: self.tile_translator._get_char(number)
         get_colour = lambda number, tile: self.tile_translator.get_type_colour(number)[1]
         print_tile = lambda x, tile_type: "\033[1;3{}m{:2}\033[0m".format(get_colour(x, tile_type), get_char(x))
-        for i in range(25):
+        for i in range(0, self.num_colours + len(self.colour_specials)*self.num_colours + len(self.colourless_specials)):
             print(print_tile(i, 0), end=" ")
         print()
 
@@ -375,7 +375,7 @@ class Board:
             coords (Tuple[int, int]): Coordinates of the activation.
             second_special_coord (Optional[Tuple[int, int]], optional): If the activation is a special tile, the second special tile's coordinates. Defaults to None.
         """
-        ttype, _ = self.tile_translator.get_type_color(self.board[coord])
+        ttype, _ = self.tile_translator.get_type_colour(self.board[coord])
         # set the activated tile to 0
         self.board[coord] = 0
         if ttype == 3:  # vertical stripe
@@ -401,24 +401,15 @@ class Board:
                     else:
                         self.board[i, j] = 0
         elif ttype == 1:  # cookie
-            # choose most common neighbour (else random) and remove all variants of that tile
-            # get the neighbours
-            neighbours = [
-                self.board[(coord[0] + i, coord[1] + j)]
-                for i in range(-1, 2)
-                for j in range(-1, 2)
-                if i != 0 or j != 0 and 0 <= coord[0] + i < self.rows and 0 <= coord[1] + j < self.cols
-            ]
-            cols = [self.tile_translator.get_type_color(n)[1] for n in neighbours]
+            neighbours = [self.board[(coord[0] + i, coord[1] +j)] for i,j in [(0, 1), (0, -1), (1, 0), (-1, 0)]]
+            cols = [self.tile_translator.get_type_colour(n)[1] for n in neighbours if n != 0]
             most_common_col = max(set(cols), key=cols.count)
-            print("MOST COMMON COL = ", most_common_col)
             # get the most common neighbour
-            most_common = max(set(neighbours), key=neighbours.count)
             # remove all variants of that tile
             for i in range(self.rows):
                 for j in range(self.cols):
-                    col = self.tile_translator.get_type_color(self.board[i, j])[1]
-                    if col == most_common:
+                    col = self.tile_translator.get_type_colour(self.board[i, j])[1]
+                    if col == most_common_col:
                         if self.tile_translator.is_special(self.board[i, j]):
                             self.activation_q.append((i, j))
                         else:
@@ -494,9 +485,8 @@ class Board:
                 new_spec_location = self.get_special_position(coords)
                 self.board[new_spec_location] = 1
             else:  # bomb
-                print("tile_number = ", self.tile_translator.get_tile_encoding(name, self.board[coords[0]]))
                 new_spec_location = self.get_special_position(coords, straight=False)
-                self.board[new_spec_location] += 3
+                self.board[new_spec_location] = 3 * self.board[new_spec_location] + 1
 
             for coord in coords:
                 if coord != new_spec_location:
@@ -636,7 +626,7 @@ if __name__ == "__main__":
     for board in boards:
         print("testing board: ", board["name"])
 
-        bm = Board(0, 0, 0, board=np.array(board["board"]))
+        bm = Board(0, 0, 3, board=np.array(board["board"]))
         matches = bm.get_lines()
         tile_coords, tile_names = bm.get_matches(matches)
 
@@ -692,9 +682,7 @@ if __name__ == "__main__":
         # handle activations test
         if len(bm.activation_q) > 0:
             activation = bm.activation_q.pop()
-            print("activation = ", activation)
             bm.apply_activation(activation)
-            print("POST ACTIVATION")
             bm.print_board()
 
         assert np.array_equal(bm.board, expected_post_activation), "incorrect board after activation\n" + highlight_board_diff(

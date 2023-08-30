@@ -83,8 +83,6 @@ class TileTranslator:
             horizontal laser: k+3
             bomb: k+4
         """
-        if not 0 <= encoding <= self.max_tile_encoding:
-            raise ValueError(f"The encoding {encoding} is not valid.")
 
         if encoding == 0:
             return 0, 0
@@ -117,37 +115,37 @@ class TileTranslator:
 
         if t == 0:
             return "none"
-        elif 0 < t <= self.num_colourless_specials:
-            return f"Colourless special: {self.num_colourless_specials[t - 1]}"
-        elif t == self.num_colour_specials + 1:
+        elif 0 < t <= len(self.colourless_specials):
+            return f"Colourless special: {self.colourless_specials[t - 1]}"
+        elif t == 2:
             return f"Colour{c} norm"
-        elif t == self.num_colour_specials + 2:
+        elif t == 3:
             return f"Colour{c} vertical laser"
-        elif t == self.num_colour_specials + 3:
+        elif t == 4:
             return f"Colour{c} horizontal laser"
-        elif t == self.num_colour_specials + 4:
+        elif t == 5:
             return f"Colour{c} bomb"
         else:
             raise NotImplementedError(f"The encoding {encoding} is not valid.")
 
-    def get_char(self, encoding: int) -> str:
+    def _get_char(self, encoding: int) -> str:
         """
         Convert the encoding to a character.
         """
-        # t, _ = self.get_type_colour(encoding)
+        t, _ = self.get_type_colour(encoding)
 
-        # if t == 0:
-        #     return "0"
-        # elif t == 1:
-        #     return "o"
-        # elif t == 2:
-        #     return str(encoding)
-        # elif t == 3:
-        #     return "|"
-        # elif t == 4:
-        #     return "-"
-        # elif t == 5:
-        #     return "*"
+        if t == 0:
+            return "0"
+        elif t == 1:
+            return "o"
+        elif t == 2:
+            return str(encoding)
+        elif t == 3:
+            return "|"
+        elif t == 4:
+            return "-"
+        elif t == 5:
+            return "*"
 
         raise NotImplementedError("This method should not exist.")
 
