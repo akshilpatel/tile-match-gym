@@ -8,8 +8,10 @@ def test_refill():
     wipe_coords(board, [(0, 0), (0, 1), (0, 3), (0, 6)])
     board.refill()
     assert 0 not in board.board
-    assert set(board.board.flatten().tolist()).issubset(set(range(2, board.num_colours + 2))), board.board
-    assert len(get_special_locations(board)) == 0 # make sure there are no specials
+    assert set(board.board.flatten().tolist()).issubset(
+        set(range(board.num_colourless_specials + 1, board.num_colourless_specials + board.num_colours))
+    ), board.board
+    assert len(get_special_locations(board)) == 0  # make sure there are no specials
 
     arr = create_alternating_array(5, 7)
     board = create_board_from_array(arr)
@@ -17,7 +19,9 @@ def test_refill():
     wipe_coords(board, [(0, 0), (0, 1), (0, 2), (0, 5), (1, 5), (2, 5)])
     board.refill()
     assert 0 not in board.board
-    assert set(board.board.flatten().tolist()).issubset(set(range(2, board.num_colours + 2))), board.board
+    assert set(board.board.flatten().tolist()).issubset(
+        set(range(board.num_colourless_specials + 1, board.num_colourless_specials + board.num_colours))
+    ), board.board
 
     arr = create_alternating_array(5, 7)
     board = create_board_from_array(arr)  #
@@ -25,4 +29,6 @@ def test_refill():
     wipe_coords(board, [(0, 6), (1, 6), (2, 6), (3, 6), (4, 6)])
     board.refill()
     assert 0 not in board.board
-    assert set(board.board.flatten().tolist()).issubset(set(range(2, board.num_colours + 2))), board.board
+    assert set(board.board.flatten().tolist()).issubset(
+        set(range(board.num_colourless_specials + 1, board.num_colourless_specials + board.num_colours))
+    ), board.board

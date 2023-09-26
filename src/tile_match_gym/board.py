@@ -53,6 +53,8 @@ class Board:
 
         self.colourless_specials = colourless_specials
         self.colour_specials = colour_specials
+        self.num_colour_specials = len(self.colour_specials)
+        self.num_colourless_specials = len(self.colourless_specials)
         self.specials = set(self.colourless_specials + self.colour_specials)
 
         self.tile_translator = TileTranslator(num_colours, (rows, cols), self.colourless_specials, self.colour_specials)
@@ -125,7 +127,7 @@ class Board:
         zero_mask = self.board == 0
         num_zeros = zero_mask.sum()
         if num_zeros > 0:
-            rand_vals = self.np_random.integers(len(self.colourless_specials), self.num_colours + len(self.colourless_specials), size=num_zeros)  # Skip 1 since it is a cookie.
+            rand_vals = self.np_random.integers(len(self.colourless_specials) + 1, self.num_colours + len(self.colourless_specials) + 1, size=num_zeros)
             self.board[zero_mask] = rand_vals
 
     def apply_activation(
@@ -313,7 +315,7 @@ class Board:
         # 2-5 is colour1, 6-9 is colour2, 10-13 is colour3, 14-17 is colour4, 18-21 is colour5, 22-25 is colour6
         # get_colour = lambda number, tile: (number - tile - 2) // self.tile_translator.num_specials + 1
         get_colour = lambda number, tile: self.tile_translator.get_type_colour(number)[1]
-        print_tile = lambda x, tile_type: "\033[1;3{}m{:>2}\033[0m".format(get_colour(x, tile_type)+1, self.tile_translator._get_char(x))
+        print_tile = lambda x, tile_type: "\033[1;3{}m{:>2}\033[0m".format(get_colour(x, tile_type) + 1, self.tile_translator._get_char(x))
 
         print(" " + "-" * (self.cols * 2 + 1))
         for row in reversed(self.board):
@@ -327,7 +329,7 @@ class Board:
         get_char = lambda number: self.tile_translator._get_char(number)
         get_colour = lambda number, tile: self.tile_translator.get_type_colour(number)[1]
         print_tile = lambda x, tile_type: "\033[1;3{}m{:2}\033[0m".format(get_colour(x, tile_type), get_char(x))
-        for i in range(0, self.num_colours + len(self.colour_specials)*self.num_colours + len(self.colourless_specials)):
+        for i in range(0, self.num_colours + len(self.colour_specials) * self.num_colours + len(self.colourless_specials)):
             print(print_tile(i, 0), end=" ")
         print()
 
@@ -401,7 +403,7 @@ class Board:
                     else:
                         self.board[i, j] = 0
         elif ttype == 1:  # cookie
-            neighbours = [self.board[(coord[0] + i, coord[1] +j)] for i,j in [(0, 1), (0, -1), (1, 0), (-1, 0)]]
+            neighbours = [self.board[(coord[0] + i, coord[1] + j)] for i, j in [(0, 1), (0, -1), (1, 0), (-1, 0)]]
             cols = [self.tile_translator.get_type_colour(n)[1] for n in neighbours if n != 0]
             most_common_col = max(set(cols), key=cols.count)
             # get the most common neighbour
@@ -415,7 +417,7 @@ class Board:
                         else:
                             self.board[i, j] = 0
 
-    def handle_activations(self): # Used only for testing.
+    def handle_activations(self):  # Used only for testing.
         while len(self.activation_q) > 0:
             activation = self.activation_q.pop()
             self.apply_activation(activation)
@@ -623,10 +625,11 @@ if __name__ == "__main__":
 
     boards = json.load(open("boards.json", "r"))["boards"]
 
-    for board in boards:
+    for i, board in enumerate(boards):
         print("testing board: ", board["name"])
 
-        bm = Board(0, 0, 3, board=np.array(board["board"]), seed=0)
+        bm = Board(0, 0, 3, board=np.array(board["board"]), seed=i)
+        # bm.rows, bm.cols = np.array(board["board"]).shape
         matches = bm.get_lines()
         tile_coords, tile_names = bm.get_matches(matches)
 
@@ -693,14 +696,18 @@ if __name__ == "__main__":
         bm.gravity()
         assert np.array_equal(bm.board, expected_post_gravity), "incorrect board after gravity\n" + highlight_board_diff(bm.board, expected_post_gravity)
 
+        non_zero_mask = bm.board != 0
+        zero_mask = ~non_zero_mask
+        old_board = bm.board[non_zero_mask]
         # Refill test
         bm.refill()
-        assert np.array_equal(bm.board, expected_post_refill), "incorrect board after refill\n" + highlight_board_diff(
-            bm.board, expected_post_refill
-        )
+
+        assert np.all(bm.board > 0)
+        assert np.all(bm.board[non_zero_mask] == old_board), (bm.board, old_board)
+        assert np.all(bm.board[zero_mask] > bm.num_colourless_specials) and np.all(bm.board[zero_mask] <= (bm.num_colourless_specials + bm.num_colours))
+        assert np.array_equal(bm.board, expected_post_refill), "incorrect board after refill\n" + highlight_board_diff(bm.board, expected_post_refill)
 
         print("PASSED")
-
         print("----")
 
     bm.colour_check()

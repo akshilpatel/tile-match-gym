@@ -26,6 +26,8 @@ def test_does_not_contain_threes(height: int, width: int, num_colours: int, seed
 
 def test_correct_numbers():
     board = Board(4, 4, 4, ["cookie"], ["vertical_laser", "horizontal_laser", "bomb"])
-
-    print()
     assert set(board.board.flatten()).issubset(set(range(1, 5)))
+
+
+def test_no_matches():
+    assert False
