@@ -1,4 +1,4 @@
-from tests.utils import create_alternating_array, wipe_coords, create_board_from_array
+from tests.utils import create_alternating_array, wipe_coords, create_board_from_array, get_special_locations
 
 
 def test_refill():
@@ -9,6 +9,7 @@ def test_refill():
     board.refill()
     assert 0 not in board.board
     assert set(board.board.flatten().tolist()).issubset(set(range(2, board.num_colours + 2))), board.board
+    assert len(get_special_locations(board)) == 0 # make sure there are no specials
 
     arr = create_alternating_array(5, 7)
     board = create_board_from_array(arr)

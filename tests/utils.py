@@ -43,3 +43,11 @@ def wipe_coords(board: Board, coords: List[Tuple[int, int]]) -> np.ndarray:
     for coord in coords:
         b[coord] = 0
     return b
+
+def get_special_locations(board: Board) -> List[Tuple[int, int]]:
+    locations = []
+    for i in range(board.rows):
+        for j in range(board.cols):
+            if board.tile_translator.is_special(board.board[i, j]):
+                locations.append((i, j))
+    return locations

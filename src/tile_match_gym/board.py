@@ -120,12 +120,12 @@ class Board:
                 activation["coord"] = (row + zero_counts_T[col, row], col)
                 print(row, col, row + zero_counts_T[col, row])
 
-    def refill(self) -> None:
+    def refill(self, fixed=False) -> None:
         """Replace all empty tiles."""
         zero_mask = self.board == 0
         num_zeros = zero_mask.sum()
         if num_zeros > 0:
-            rand_vals = self.np_random.integers(2, self.num_colours + 2, size=num_zeros)  # Skip 1 since it is a cookie.
+            rand_vals = self.np_random.integers(len(self.colourless_specials), self.num_colours + len(self.colourless_specials), size=num_zeros)  # Skip 1 since it is a cookie.
             self.board[zero_mask] = rand_vals
 
     def apply_activation(
@@ -626,7 +626,7 @@ if __name__ == "__main__":
     for board in boards:
         print("testing board: ", board["name"])
 
-        bm = Board(0, 0, 3, board=np.array(board["board"]))
+        bm = Board(0, 0, 3, board=np.array(board["board"]), seed=0)
         matches = bm.get_lines()
         tile_coords, tile_names = bm.get_matches(matches)
 
@@ -693,11 +693,11 @@ if __name__ == "__main__":
         bm.gravity()
         assert np.array_equal(bm.board, expected_post_gravity), "incorrect board after gravity\n" + highlight_board_diff(bm.board, expected_post_gravity)
 
-        # # Refill test
-        # bm.refill()
-        # assert np.array_equal(bm.board, expected_post_refill), "incorrect board after gravity\n" + highlight_board_diff(
-        #     bm.board, expected_post_refill
-        # )
+        # Refill test
+        bm.refill()
+        assert np.array_equal(bm.board, expected_post_refill), "incorrect board after refill\n" + highlight_board_diff(
+            bm.board, expected_post_refill
+        )
 
         print("PASSED")
 
