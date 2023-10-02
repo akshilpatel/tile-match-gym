@@ -120,7 +120,6 @@ class Board:
             for activation in self.activation_q:
                 row, col = activation["coord"]
                 activation["coord"] = (row + zero_counts_T[col, row], col)
-                print(row, col, row + zero_counts_T[col, row])
 
     def refill(self, fixed=False) -> None:
         """Replace all empty tiles."""
@@ -130,114 +129,7 @@ class Board:
             rand_vals = self.np_random.integers(len(self.colourless_specials) + 1, self.num_colours + len(self.colourless_specials) + 1, size=num_zeros)
             self.board[zero_mask] = rand_vals
 
-    def apply_activation(
-        self,
-        coord: Tuple[int, int],
-        activation_type: Optional[int] = None,
-        second_special_coord: Optional[Tuple[int, int]] = None,
-    ):
-        """
-        Should take a particular coordinate of the board.
-        Get the activation  given the tile
-        Update the activation queue if needed.
-        Eliminate ordinary tiles if they are next in activation queue.
-        If both coordinates are specials, the second_special_coord should not be None.
-        """
-        if activation_type == None:
-            activation_type = self.tile_translator.get_tile_type(self.board[coord])
-            if self.board[coord] == 0:
-                return
-
-        # Maximum one special in the move/activation.
-        if second_special_coord is None:
-            self.board[coord] = 0
-            if activation_type == 1:  # v_stripe
-                self.activation_q += self.indices[:, coord[1]].reshape((-1, 2)).tolist()
-            elif activation_type == 2:  # h_stripe
-                self.activation_q += self.indices[coord[0], :].reshape((-1, 2)).tolist()
-            elif activation_type == 3:  # bomb
-                min_top = max(0, coord[0] - 1)  # max of 0 and leftmost bomb
-                min_left = max(coord[1] - 1, 0)  # max of 0 and topmost bomb
-                max_bottom = min(self.rows, coord[0] + 2)  # min of rightmost and cols
-                max_right = min(coord[1] + 2, self.cols)  # min of bottommost and rows
-                coord_arr = self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2)).tolist()
-                self.activation_q += [{"coord": x for x in coord_arr}]
-            # TODO: Add one clause here for if a cookie is hit.
-
-        # This is for when two specials are combined.
-        else:
-            tile_type = self.tile_translator.get_tile_type(self.board[coord])
-            tile_colour = self.tile_translator.get_tile_colour(self.board[coord])
-            tile2_type = self.tile_translator.get_tile_type(self.board[second_special_coord])
-            tile_colour = self.tile_translator.get_tile_colour(self.board[second_special_coord])
-            if tile_type == 4:  # One cookie
-                if tile2_type == 4:  # Two cookies
-                    self.activation_q += self.indices.reshape(-1, 2).tolist()
-                else:
-                    self.board[coord] = 0
-                    mask = (self.board != int(self.num_colours * 4) + 1) & (self.board % self.num_colours == tile_colour)  # Get same colour
-                    self.board[mask] = self.board[second_special_coord]  # cookie
-
-            if tile2_type == 4:  # One cookie
-                self.board[coord] = 0
-                mask = (self.board != int(self.num_colours * 4) + 1) & (self.board % self.num_colours == tile_colour)  # Get same colour
-                self.board[mask] = self.board[coord]  # cookie
-
-            if tile_type == 3:  # Bomb
-                if tile2_type == 3:  # Two bombs
-                    self.board[coord] = 0
-                    self.board[second_special_coord] = 0
-                    if coord[0] == second_special_coord[0]:  # Horizontal match
-                        base_coord = coord[0], min(coord[1], second_special_coord[1])
-                        min_top = max(0, base_coord[0] - 2)
-                        max_bottom = min(self.rows, base_coord[0] + 3)
-                        min_left = max(base_coord[1] - 2, 0)
-                        max_right = min(base_coord[1] + 4, self.cols)
-                        self.activation_q.extend([{"coord": x} for x in self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2))])
-                    else:  # Vertical match
-                        base_coord = coord[0], min(coord[1], second_special_coord[1])
-                        min_top = max(0, base_coord[0] - 2)  # max of 0 and leftmost bomb
-                        max_bottom = min(self.rows, base_coord[0] + 4)  # min of rightmost and cols
-                        min_left = max(base_coord[1] - 2, 0)  # max of 0 and topmost bomb
-                        max_right = min(base_coord[1] + 3, self.cols)  # min of bottommost and rows
-                        self.activation_q.extend([{"coord": x} for x in self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2))])
-                elif tile2_type <= 2:  # Bomb + laser
-                    self.board[coord] = 0
-                    self.board[second_special_coord] = 0
-                    min_left = max(0, second_special_coord[0] - 1)
-                    max_right = min(self.cols, second_special_coord[0] + 2)
-                    min_top = max(0, second_special_coord[1] - 1)
-                    max_bottom = min(self.rows, second_special_coord[1] + 2)
-                    coord_arr = np.intersect1d(
-                        self.indices[min_top:max_bottom, :].reshape((-1, 2)),
-                        self.indices[:, min_left:max_right].reshape((-1, 2)),
-                    )
-                    self.activation_q.extend([{"coord": x} for x in coord_arr])
-
-            elif tile2_type == 3:  # Bomb + laser
-                self.board[coord] = 0
-                self.board[second_special_coord] = 0
-                min_left = max(0, coord[0] - 1)
-                max_right = min(self.cols, coord[0] + 2)
-                min_top = max(0, coord[1] - 1)
-                max_bottom = min(self.rows, coord[1] + 2)
-                coord_arr = np.intersect1d(
-                    self.indices[min_top:max_bottom, :].reshape((-1, 2)),
-                    self.indices[:, min_left:max_right].reshape((-1, 2)),
-                )
-                self.activation_q.extend([{"coord": x} for x in coord_arr])
-
-            elif tile_type <= 2:  # laser + laser
-                self.board[coord] = 0
-                self.board[second_special_coord] = 0
-                coord_arr = np.intersect1d(
-                    self.indices[second_special_coord[0], :].reshape((-1, 2)),
-                    self.indices[:, second_special_coord[1]].reshape((-1, 2)),
-                )
-                self.activation_q.extend([{"coord": x} for x in coord_arr])
-            else:
-                raise ValueError(f"We are ridden with bugs. candy1: {tile_type} candy2: {tile2_type}")
-
+    
     def _check_same_colour(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
         tile1 = self.board[coord1]
         tile2 = self.board[coord2]
@@ -302,8 +194,14 @@ class Board:
         self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
 
         # If there are two special coords. Add one activation with both coords to the activation queue.
-        if not self.tile_translator.is_special(self.board[coord1]) or not self.tile_translator.is_special(self.board[coord1]):
-            self.activation_q.append({"coord": coord1, "second_special_coord": coord2})
+        coord1_special = self.tile_translator.is_special(self.board[coord1])
+        coord2_special = self.tile_translator.is_special(self.board[coord2])
+
+
+        # Combination match of two specials or one colourless special and any other tile.
+        if coord1_special or coord2_special:
+            if (coord1_special and coord2_special) or self.tile_translator.is_colourless_special(self.board[coord1]) or self.tile_translator.is_colourless_special(self.board[coord1]):
+                self.activation_q.append({"coord": coord1, "second_special_coord": coord2})
             self.activation_loop()
             return
 
@@ -370,12 +268,154 @@ class Board:
     ## Activation functions ##
     ############################################################################
 
+    def apply_activation(
+        self,
+        coord: Tuple[int, int],
+        activation_type: Optional[int] = None,
+        second_special_coord: Optional[Tuple[int, int]] = None,
+    ):
+        """
+        Should take a particular coordinate of the board.
+        Get the activation  given the tile
+        Update the activation queue if needed.
+        Eliminate ordinary tiles if they are next in activation queue.
+        If both coordinates are specials, the second_special_coord should not be None.
+
+
+
+        ---
+        If activation type is given with coord, then activate that activation type at that coord. 
+
+
+        Otherwise, we have the following cases:
+         
+          1. Two special coords are present
+          2. One colourless special is present.
+          3. One coloured special coord is present.
+          4. No special coords are present.
+
+
+        # These first two only happen on taking a move.
+        In case 1 we activate the special combination match according to which specials are present.
+        In case 2, we combine the colourless special with ordinary tile and activate the combination match.
+
+        # These last two happen either on taking a move or through automatch.
+        In case 3, we activate the special coordinate and delete the rest. 
+        In case 4, we delete the ordinary tiles.
+
+        """
+
+
+
+        # Unless a specific activation is wanted, we infer it from the existing tile, unless two special tiles are given.
+        if activation_type is None:
+            if second_special_coord is None:
+                activation_type, _ = self.tile_translator.get_type_colour(self.board[coord])
+                if self.board[coord] == 0:
+                    return
+                
+            else:
+
+
+        # Maximum one special in the move/activation.
+        if second_special_coord is None:
+            self.board[coord] = 0
+            if activation_type == 1:  # v_stripe
+                self.activation_q += self.indices[:, coord[1]].reshape((-1, 2)).tolist()
+            elif activation_type == 2:  # h_stripe
+                self.activation_q += self.indices[coord[0], :].reshape((-1, 2)).tolist()
+            elif activation_type == 3:  # bomb
+                min_top = max(0, coord[0] - 1)  # max of 0 and leftmost bomb
+                min_left = max(coord[1] - 1, 0)  # max of 0 and topmost bomb
+                max_bottom = min(self.rows, coord[0] + 2)  # min of rightmost and cols
+                max_right = min(coord[1] + 2, self.cols)  # min of bottommost and rows
+                coord_arr = self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2)).tolist()
+                self.activation_q += [{"coord": x for x in coord_arr}]
+            # TODO: Add one clause here for if a cookie is hit.
+
+        # This is for when two specials are combined.
+        else:
+            tile_type, tile_colour = self.tile_translator.get_type_colour(self.board[coord])            
+            tile2_type, tile2_colour = self.tile_translator.get_type_colour(self.board[second_special_coord])
+            
+
+            if tile_type == 4:  # One cookie
+                if tile2_type == 4:  # Two cookies
+                    self.activation_q += self.indices.reshape(-1, 2).tolist()
+                else:
+                    self.board[coord] = 0
+                    mask = (self.board != int(self.num_colours * 4) + 1) & (self.board % self.num_colours == tile_colour)  # Get same colour
+                    self.board[mask] = self.board[second_special_coord]  # cookie
+
+            if tile2_type == 4:  # One cookie
+                self.board[coord] = 0
+                mask = (self.board != int(self.num_colours * 4) + 1) & (self.board % self.num_colours == tile_colour)  # Get same colour
+                self.board[mask] = self.board[coord]  # cookie
+
+            # At least 1 bomb
+            if tile_type == 3:
+                # 2 bombs
+                if tile2_type == 3:
+                    self.board[coord] = 0
+                    self.board[second_special_coord] = 0
+                    if coord[0] == second_special_coord[0]:  # Horizontal match
+                        base_coord = coord[0], min(coord[1], second_special_coord[1])
+                        min_top = max(0, base_coord[0] - 2)
+                        max_bottom = min(self.rows, base_coord[0] + 3)
+                        min_left = max(base_coord[1] - 2, 0)
+                        max_right = min(base_coord[1] + 4, self.cols)
+                        self.activation_q.extend([{"coord": x} for x in self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2))])
+                    else:  # Vertical match
+                        base_coord = coord[0], min(coord[1], second_special_coord[1])
+                        min_top = max(0, base_coord[0] - 2)  # max of 0 and leftmost bomb
+                        max_bottom = min(self.rows, base_coord[0] + 4)  # min of rightmost and cols
+                        min_left = max(base_coord[1] - 2, 0)  # max of 0 and topmost bomb
+                        max_right = min(base_coord[1] + 3, self.cols)  # min of bottommost and rows
+                        self.activation_q.extend([{"coord": x} for x in self.indices[min_top:max_bottom, min_left:max_right].reshape((-1, 2))])
+                elif tile2_type <= 2:  # Bomb + laser
+                    self.board[coord] = 0
+                    self.board[second_special_coord] = 0
+                    min_left = max(0, second_special_coord[0] - 1)
+                    max_right = min(self.cols, second_special_coord[0] + 2)
+                    min_top = max(0, second_special_coord[1] - 1)
+                    max_bottom = min(self.rows, second_special_coord[1] + 2)
+                    coord_arr = np.intersect1d(
+                        self.indices[min_top:max_bottom, :].reshape((-1, 2)),
+                        self.indices[:, min_left:max_right].reshape((-1, 2)),
+                    )
+                    self.activation_q.extend([{"coord": x} for x in coord_arr])
+
+            elif tile2_type == 3:  # Bomb + laser
+                self.board[coord] = 0
+                self.board[second_special_coord] = 0
+                min_left = max(0, coord[0] - 1)
+                max_right = min(self.cols, coord[0] + 2)
+                min_top = max(0, coord[1] - 1)
+                max_bottom = min(self.rows, coord[1] + 2)
+                coord_arr = np.intersect1d(
+                    self.indices[min_top:max_bottom, :].reshape((-1, 2)),
+                    self.indices[:, min_left:max_right].reshape((-1, 2)),
+                )
+                self.activation_q.extend([{"coord": x} for x in coord_arr])
+
+            elif tile_type <= 2:  # laser + laser
+                self.board[coord] = 0
+                self.board[second_special_coord] = 0
+                coord_arr = np.intersect1d(
+                    self.indices[second_special_coord[0], :].reshape((-1, 2)),
+                    self.indices[:, second_special_coord[1]].reshape((-1, 2)),
+                )
+                self.activation_q.extend([{"coord": x} for x in coord_arr])
+            else:
+                raise ValueError(f"We are ridden with bugs. candy1: {tile_type} candy2: {tile2_type}")
+
     def apply_activation(self, coord: Tuple[int, int]) -> None:
         """Applies the activation at the given coordinates.
 
         Args:
             coords (Tuple[int, int]): Coordinates of the activation.
             second_special_coord (Optional[Tuple[int, int]], optional): If the activation is a special tile, the second special tile's coordinates. Defaults to None.
+            
         """
         ttype, _ = self.tile_translator.get_type_colour(self.board[coord])
         # set the activated tile to 0
@@ -425,7 +465,7 @@ class Board:
             self.gravity()
             self.refill()
 
-    def get_special_position(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
+    def get_special_creation_pos(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
         """
         Given a set of coordinates return the position of the special tile that should be placed
         The position should be as close to the center as possible but should not already be special.
@@ -471,7 +511,7 @@ class Board:
                     self.activation_q.append(coord)
         elif len(coords) == 4:
             print("4 match")
-            spec_coord = self.get_special_position(coords)
+            spec_coord = self.get_special_creation_pos(coords)
             self.board[spec_coord] += 1 if name == "vertical_laser" else 2
             for coord in coords:
                 if coord != spec_coord:
@@ -484,10 +524,10 @@ class Board:
             print("Cookie or bomb")
             # checks if a single line
             if all([i[0] == coords[0][0] for i in coords[1:]]) or all([i[1] == coords[0][1] for i in coords[1:]]):  # cookie
-                new_spec_location = self.get_special_position(coords)
+                new_spec_location = self.get_special_creation_pos(coords)
                 self.board[new_spec_location] = 1
             else:  # bomb
-                new_spec_location = self.get_special_position(coords, straight=False)
+                new_spec_location = self.get_special_creation_pos(coords, straight=False)
                 self.board[new_spec_location] = 3 * self.board[new_spec_location] + 1
 
             for coord in coords:
@@ -515,10 +555,12 @@ class Board:
         tile_coords, tile_names = self.get_matches(lines)
         return tile_coords, tile_names
 
+    
     def get_lines(self) -> List[List[Tuple[int, int]]]:
         """
         Starts from the bottom and checks for 3 or more in a row vertically or horizontally.
-        returns contiguous lines of 3 or more candies
+        returns contiguous lines of 3 or more candies.
+        Stops once it finds the lowest row with a match and only takes lines that start on that row.
         """
         lines = []
         for row in range(self.rows):
@@ -528,7 +570,7 @@ class Board:
 
                 # make sure line has not already been checked
                 # if not (row > 0 and self.board[row][el] == self.board[row-1][el]):
-                if not (row > 0 and self.tile_translator.is_same_colour(self.board[row][el], self.board[row - 1][el]) or self.board[row][el] == 1):
+                if not (row > 0 and self.tile_translator.is_same_colour(self.board[row][el], self.board[row - 1][el]) or self.board[row][el] == 1): # TODO: Take out  the or self.board[row][el] == 1 since we dont want to check for cookies
                     # check for vertical lines
                     while r < self.rows:
                         # if self.board[r][el] == self.board[r-1][el]:
@@ -588,13 +630,14 @@ class Board:
                 else:
                     tile_names.append("vertical_laser")
                 tile_coords.append(line)
-            # check for bomb
+            # check for bomb (coord should appear in another line)
             elif any([coord in l for coord in line for l in lines]):
                 # elif any([c in l for c in line for l in lines]): # TODO - REMOVE THIS AS SLOW AND IS DONE TWICE
                 for l in lines:
                     shared = [c for c in line if c in l]
                     if any(shared):
                         shared = shared[0]
+                        
                         sorted_closest = sorted(l, key=lambda x: (abs(x[0] - shared[0]) + abs(x[1] - shared[1])))
                         tile_coords.append([p for p in line] + [p for p in sorted_closest[:3] if p not in line])
                         if len(l) <= 6:

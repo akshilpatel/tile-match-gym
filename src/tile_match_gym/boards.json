@@ -713,7 +713,7 @@
       ]
     },
     {
-      "name": "horizontal 5 and 2 vertical",
+      "name": "horizontal 5 and 1 connected vertical",
       "board": [
         [3, 2, 3, 2, 3, 4, 3, 2, 3, 2],
         [2, 4, 4, 4, 4, 4, 2, 3, 2, 3],
