@@ -33,6 +33,8 @@ from utils.print_board_diffs import highlight_board_diff
 # Subclasses that add on functionality - add specials.
 
 
+
+
 class Board:
     def __init__(
         self,
@@ -555,7 +557,6 @@ class Board:
         tile_coords, tile_names = self.get_matches(lines)
         return tile_coords, tile_names
 
-    
     def get_lines(self) -> List[List[Tuple[int, int]]]:
         """
         Starts from the bottom and checks for 3 or more in a row vertically or horizontally.
@@ -618,36 +619,38 @@ class Board:
         while len(lines) > 0:
             line = lines.pop(0)
             # check for cookie
-            if len(line) >= 5:
+            if len(line) >= 5 and "cookie" in self.specials:
                 tile_names.append("cookie")
                 tile_coords.append(line[:5])
                 if len(line[5:]) > 2:
                     lines.append(line[5:])  # TODO - should just not pop the line rather than removing and adding again.
             # check for laser
             elif len(line) == 4:
-                if line[0][0] == line[1][0]:
+                if line[0][0] == line[1][0] and "horizontal_laser" in self.specials:
                     tile_names.append("horizontal_laser")
-                else:
-                    tile_names.append("vertical_laser")
-                tile_coords.append(line)
+                    tile_coords.append(line)
+                elif "vertical_laser" in self.specials:
+                    tile_names.append("vertical_laser") 
+                    tile_coords.append(line)
             # check for bomb (coord should appear in another line)
-            elif any([coord in l for coord in line for l in lines]):
-                # elif any([c in l for c in line for l in lines]): # TODO - REMOVE THIS AS SLOW AND IS DONE TWICE
-                for l in lines:
-                    shared = [c for c in line if c in l]
-                    if any(shared):
-                        shared = shared[0]
-                        
-                        sorted_closest = sorted(l, key=lambda x: (abs(x[0] - shared[0]) + abs(x[1] - shared[1])))
-                        tile_coords.append([p for p in line] + [p for p in sorted_closest[:3] if p not in line])
-                        if len(l) <= 6:
-                            lines.remove(l)
-                        for c in sorted_closest[:3]:
-                            l.remove(c)
-                        break
-                tile_names.append("bomb")
-            # check for normal
-            elif len(line) == 3:
+            elif "bomb" in self.specials:
+                if any([coord in l for coord in line for l in lines]):  # TODO - REMOVE THIS AS SLOW AND IS DONE TWICE
+                    for l in lines:
+                        shared = [c for c in line if c in l]
+                        if any(shared):
+                            shared = shared[0]
+                            # Add the closest three coordinates from both lines.
+                            sorted_closest = sorted(l, key=lambda x: (abs(x[0] - shared[0]) + abs(x[1] - shared[1])))
+                            tile_coords.append([p for p in line] + [p for p in sorted_closest[:3] if p not in line]) # TODO: Change this to also only extract 3 closest to intersection from line.
+                            tile_names.append("bomb")        
+                            if len(l) < 6 : # Remove the other line if shorter than 3 after extracting bomb.
+                                lines.remove(l)
+                            else:
+                                for c in sorted_closest[:3]: # Remove the coordinates that were taken for the bomb
+                                    l.remove(c)
+                            break # Stop searching after finding one intersection. This should break out of the for loop.
+            # Check for normals. This happends even if the lines are longer than 3 but there are no matching specials.
+            elif len(line) >= 3:
                 tile_names.append("norm")
                 tile_coords.append(line)
             # check for no match
