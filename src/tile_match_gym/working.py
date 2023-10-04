@@ -77,16 +77,15 @@ class Board:
         ).reshape(self.num_rows, self.num_cols)
         line_matches = self._get_colour_lines()
         while len(line_matches) > 0:
-            self.remove_matches(line_matches)
+            self.remove_colour_lines(line_matches)
             line_matches = self._get_colour_lines()
 
-    def remove_matches(self, line_matches: List[List[Tuple[int, int]]]) -> None:
+    def remove_colour_lines(self, line_matches: List[List[Tuple[int, int]]]) -> None:
         """Given a board and list of lines where each line is a list of coordinates where the colour of the tiles at each coordinate in one line is the same, changes the board such that none of the
 
         Args:
             line_matches (List[List[Tuple[int, int]]]): _description_
         """
-        print(self.board)
         ordinary_min = self.num_colourless_specials
         ordinary_max = ordinary_min + self.num_colours - 1
         while len(line_matches) > 0:
@@ -111,43 +110,46 @@ class Board:
 
     def _get_colour_lines(self) -> List[List[Tuple[int, int]]]:
         """
-        Starts from the bottom and checks for 3 or more in a row vertically or horizontally.
-        returns contiguous lines of 3 or more candies.
-        Stops once it finds the lowest row with a match and only takes lines that start on that row.
+        Starts from the top and checks for 3 or more in a row vertically or horizontally.
+        Returns contiguous lines of 3 or more tiles.
         """
         lines = []
 
-        for row in range(self.num_rows):
+        found_line = False
+        for row in range(self.num_rows - 1, -1, -1):
+            if found_line:
+                break  # Only get lowest lines.
             for col in range(self.num_cols):
                 # Vertical lines
-
-                if row < self.num_rows - 1:
+                if 1 < row:
                     curr_tile = self.board[row, col]
                     if not self.tile_translator.is_colourless_special(curr_tile):
-                        if self.tile_translator.is_same_colour(curr_tile, self.board[row + 1, col]):
-                            line_start = row
-                            line_end = row + 1
-                            while line_end < self.num_rows - 1:
-                                if self.tile_translator.is_same_colour(curr_tile, self.board[line_end + 1, col]):
-                                    line_end += 1
+                        if self.tile_translator.is_same_colour(curr_tile, self.board[row - 1, col]):
+                            line_start = row - 1
+                            line_end = row
+                            while line_start > 0:
+                                if self.tile_translator.is_same_colour(curr_tile, self.board[line_start - 1, col]):
+                                    line_start -= 1
                                 else:
                                     break
                             if line_end - line_start >= 2:
+                                found_line = True
                                 lines.append([(i, col) for i in range(line_start, line_end + 1)])
 
                 # Horizontal lines
-                if col < self.num_cols - 1:
+                if 1 < col:
                     curr_tile = self.board[row, col]
                     if not self.tile_translator.is_colourless_special(curr_tile):
-                        if self.tile_translator.is_same_colour(curr_tile, self.board[row, col + 1]):
-                            line_start = col
-                            line_end = col + 1
-                            while line_end < self.num_cols - 1:
-                                if self.tile_translator.is_same_colour(curr_tile, self.board[row, line_end + 1]):
-                                    line_end += 1
+                        if self.tile_translator.is_same_colour(curr_tile, self.board[row, col - 1]):
+                            line_start = col - 1
+                            line_end = col
+                            while line_start > 0:
+                                if self.tile_translator.is_same_colour(curr_tile, self.board[row, line_start - 1]):
+                                    line_start -= 1
                                 else:
                                     break
                             if line_end - line_start >= 2:
+                                found_line = True
                                 lines.append([(row, i) for i in range(line_start, line_end + 1)])
         return lines
 
