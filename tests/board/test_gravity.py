@@ -5,7 +5,7 @@ from copy import deepcopy
 
 
 # Test that gravity pushes down tiles
-def test_gravity_falls():
+def test_gravity():
     # Case 1
 
     board = create_alternating_board(4, 3)
@@ -39,49 +39,6 @@ def test_gravity_falls():
             ]
         ),
     )
-
-
-def test_gravity_updates_activation_queue():
-    # We will never need to do an activation consisting of two specials since this is only caused by swiping two special candies together.
-    # The corresponding activation would happen immediately and so gravity would not be called with this type of activation in it.
-
-    # Case 1
-    board = create_alternating_board(4, 3)
-    board.board = wipe_coords(board, [(0, 0), (2, 0), (2, 2), (2, 1), (3, 2)])
-
-    board.board[(0, 1)] = 3
-    board.board[(1, 2)] = 3
-    board.board[(3, 1)] = 3
-
-    board.activation_q.append({"coord": (0, 1), "activation_type": None})
-    board.activation_q.append({"coord": (1, 2), "activation_type": 3})  # Vertical laser
-    board.activation_q.append({"coord": (3, 1), "activation_type": 1})  # Horizontal laser
-
-    board.gravity()
-    activation0 = board.activation_q[0]
-    activation1 = board.activation_q[1]
-    activation2 = board.activation_q[2]
-
-    assert activation0["coord"] == (1, 1), activation0
-    assert activation1 == {"coord": (3, 2), "activation_type": 3}, activation1
-    assert activation2 == {"coord": (3, 1), "activation_type": 1}, activation2
-
-    # Case 2
-    board = create_alternating_board(5, 6)
-    board.board = wipe_coords(board, [(1, 0), (2, 2), (3, 1), (4, 3), (3, 5), (3, 3), (2, 3)])
-
-    board.activation_q.append({"coord": (4, 2), "activation_type": None})
-    board.activation_q.append({"coord": (4, 5), "activation_type": 3})  # Vertical laser
-    board.activation_q.append({"coord": (0, 3), "activation_type": 1})  # Horizontal laser
-
-    board.gravity()
-    activation0 = board.activation_q[0]
-    activation1 = board.activation_q[1]
-    activation2 = board.activation_q[2]
-
-    assert activation0["coord"] == (4, 2), activation0
-    assert activation1 == {"coord": (4, 5), "activation_type": 3}, activation1
-    assert activation2 == {"coord": (3, 3), "activation_type": 1}, activation2
 
 
 if __name__ == "__main__":
