@@ -6,8 +6,8 @@ from collections import deque
 # from tile_match_gym.utils.print_board_diffs import highlight_board_diff
 
 # temp while testing
-from tile_translator import TileTranslator  # temp while testing
-from utils.print_board_diffs import highlight_board_diff
+from tile_match_gym.tile_translator import TileTranslator  # temp while testing
+from tile_match_gym.utils.print_board_diffs import highlight_board_diff
 
 """
     tile_TYPES = {
@@ -315,8 +315,6 @@ class Board:
                 activation_type, _ = self.tile_translator.get_type_colour(self.board[coord])
                 if self.board[coord] == 0:
                     return
-                
-            else:
 
 
         # Maximum one special in the move/activation.
