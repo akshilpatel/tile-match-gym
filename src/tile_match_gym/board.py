@@ -292,3 +292,265 @@ class Board:
 # 1. Currently automatch always return true indicating the board always has a match. Instead, two options are available: First, automatch should call gravity and refill before checking if there are matches left to detect/resolve on the board, and then return the. This avoids returning True for a match and then gravity making the match no longer exist.
 # 3. Rewrite gravity to not use transpose.
 # 4. The activation queue should be emptied all at once. Instead, by doing one activation and then gravity and refill, we might end up with activations being called where there no longer exists a map due to delay?
+    def possible_move(self, grid=None):
+        """
+        checks if any 3 in a row can be made in the current grid
+        if grid does not exist then take self.board
+
+        *Maybe incorporate this into the check for matches function*
+        
+        - 3 in a row already (WONT BE CALLED WHILE THERE ARE MATCHES)
+
+        conditions:
+            - 2/3 the same with a neighbouring color at the odd one out
+            - 2 in a row with a space and then the same color
+
+
+        look at the next four in each direction if there is a gap, check
+        if anything in the missing axis is the same
+
+        if there is a 2 in a row, check if the space is in position 1 or 2
+
+        All combininations of 3 in a row:
+        
+        ___   __1   ___   _1_   ___   1__   ___   ___                                                       
+        11_1  11__  11__  1_1_  1_1_  _11_  _11_  1_11                                                          
+        ___   ___   __1   ___   _1_   ___   1__   ___                                                       
+
+        
+        All combinations of 3 in a col:
+
+        _1_  _1_  _1_  _1_  _1_  1__  __1  _1_                                                        
+        _1_  _1_  _1_  __1  1__  _1_  _1_  ___                                                       
+        ___  __1  1__  _1_  _1_  _1_  _1_  _1_                                                        
+         1    _    _    _    _    _    _    1                                                      
+
+                                                                                
+        If there is 2 in a row:
+            check diagonally up and down for the same color
+            check 2 before and 2 after
+        else:
+            check neighbours of gap for same colour
+                                                                                
+        """
+        rows, cols = self.num_rows, self.num_cols
+
+        exists = lambda c: c[0] >= 0 and c[1] >= 0 and c[0] < rows and c[1] < cols
+
+        if grid is None:
+            grid = self.board
+        
+        for i in range(2):
+            if i == 1:
+                grid= np.rot90(grid)
+                rows, cols = self.num_cols, self.num_rows
+                # rows, cols = self.cols, self.rows
+            for r in range(rows - 2):
+                for c in range(cols - 2):
+
+                    # if 2/3 of the values in the next 3 are the same
+                    if len(set(grid[r][c:c + 3])) == 2:
+                        # check the possible combiniations
+                        if exists([r,c+2]) and grid[r][c] == grid[r][c + 2]: # gap in the middle 1_1
+                            for possible in [[r + 1, c + 1], [r - 1, c + 1]]: # triangles
+                                if exists(possible) and grid[possible[0]][possible[1]] == grid[r][c]:
+                                    return True
+
+                        cn = c
+                        # if the second two are the same 011 shift logic up 1 column
+                        if grid[r][c+1] == grid[r][c + 2]:
+                            cn = c+1
+
+                        for possible in [[r, cn+3], [r-1,cn+2], [r+1, cn+2],[r-1,cn-1], [r+1,cn-1]]: # combinations around _11_
+                            if exists(possible) and grid[possible[0]][possible[1]] == grid[r][cn]:
+                                print(grid)
+                                print("HIT HERE")
+                                return True
+
+        return False
+
+def temp_test_matches():
+    """
+        All combinations of 3 in a row
+        ___   __1   ___   _1_   ___   1__   ___   ___                                                       
+        11_1  11__  11__  1_1_  1_1_  _11_  _11_  1_11                                                          
+        ___   ___   __1   ___   _1_   ___   1__   ___                                                       
+
+        
+        All combinations of 3 in a col:
+
+        _1_  _1_  _1_  _1_  _1_  1__  __1  _1_                                                        
+        _1_  _1_  _1_  __1  1__  _1_  _1_  ___                                                       
+        ___  __1  1__  _1_  _1_  _1_  _1_  _1_                                                        
+         1    _    _    _    _    _    _    1                                                      
+    """
+    
+    combinations = [
+            [[1,1,1,1],[0,0,1,0],[1,1,1,1]],
+            [[1,1,0,1],[0,0,1,1],[1,1,1,1]],
+            [[1,1,1,1],[0,0,1,1],[1,1,0,1]],
+            [[1,0,1,1],[0,1,0,1],[1,1,1,1]],
+            [[1,1,1,1],[0,1,0,1],[1,0,1,1]],
+            [[0,1,1,1],[1,0,0,1],[1,1,1,1]],
+            [[1,1,1,1],[1,0,0,1],[0,1,1,1]],
+            [[1,1,1,1],[0,1,0,0],[1,1,1,1]],
+            ]
+
+    x = np.array(
+        [
+            [1, 2, 3, 4, 1, 2, 3, 4, 1, 2],
+            [2, 3, 4, 1, 2, 3, 4, 1, 2, 3],
+            [3, 4, 1, 2, 3, 4, 1, 2, 3, 4],
+            [4, 1, 2, 3, 4, 1, 2, 3, 4, 1],
+            [1, 2, 3, 4, 1, 2, 3, 4, 1, 2],
+            [2, 3, 4, 1, 2, 3, 4, 1, 2, 3]
+        ]
+    )
+    bm = Board(0, 0, 4, board=x.copy())
+
+    for c in combinations:
+        bm.board[1:4, 1:5] *= c
+        # print(bm.board)
+        # print(bm.possible_move())
+        assert bm.possible_move() == True, "There is a move \n"+str(bm.board)
+        print("passed")
+        bm.board = x.copy()
+    # do rotation of the combinations
+    for c in combinations:
+        bm.board[1:5, 1:4] *= np.rot90(c)
+        # print(bm.board)
+        assert bm.possible_move() == True, "There is a move \n"+str(bm.board)
+        print("passed")
+        bm.board = x.copy()
+    assert bm.possible_move() == False, "There is no possible move \n"+str(bm.board)
+    print("passed")
+
+
+    combinations = [
+            [[1,1,1,1],[0,1,1,0],[1,0,1,1]],
+            [[0,1,1,0],[0,1,1,0],[1,1,1,1]],
+            [[1,1,1,1],[0,1,0,1],[1,1,1,1]],
+            ]
+    for c in combinations:
+        bm.board[1:4, 1:5] *= c
+        # print(bm.board)
+        assert bm.possible_move() == False, "There is no possible move \n"+str(bm.board)
+        print("passed")
+        bm.board = x.copy()
+
+
+
+
+
+if __name__ == "__main__":
+
+    # REMOVE THIS AND MOVE TO THE TESTING SECTION
+    # temp_test_matches()
+    # x = np.array(
+    #     [
+    #         [1, 2, 3, 4, 1, 2, 3, 4, 1, 2],
+    #         [2, 3, 4, 1, 2, 3, 4, 1, 2, 3],
+    #         [3, 4, 1, 2, 3, 4, 1, 2, 3, 4],
+    #         [4, 1, 2, 3, 4, 1, 2, 3, 4, 1],
+    #         [1, 2, 3, 4, 1, 2, 3, 4, 1, 2],
+    #         [2, 3, 4, 1, 2, 3, 4, 1, 2, 3]
+    #     ]
+    # )
+    # bm = Board(0, 0, 4, board=np.array(x), seed=3)
+    # exit()
+
+    import json
+
+    sort_l1 = lambda l: sorted(l, key=lambda x: (x[0], x[1]))
+    sort_coords = lambda l: sorted([sort_l1(i) for i in l])
+    coords_match = lambda l1, l2: sort_coords(l1) == sort_coords(l2)
+    format_test = lambda r, e: "result: \t" + str(r) + "\nexpected: \t" + str(e) + "\n"
+
+    boards = json.load(open("boards.json", "r"))["boards"]
+
+    for i, board in enumerate(boards):
+        print("testing board: ", board["name"])
+
+        bm = Board(0, 0, 3, board=np.array(board["board"]), seed=i)
+        # bm.rows, bm.cols = np.array(board["board"]).shape
+        matches = bm.get_lines()
+        tile_coords, tile_names = bm.get_matches(matches)
+
+        print("BOARD::::::")
+        bm.print_board()
+
+        expected_matches = [[tuple(coord) for coord in line] for line in board["matches"]]
+        expected_tile_coords = [[tuple(coord) for coord in line] for line in board["tile_locations"]]
+        expected_activation_q = [tuple(coord) for coord in board["activation_q"]]
+        expected_tile_names = board["tile_names"]
+        expected_first_activation = np.array(board["first_activation"])
+        expected_post_activation = np.array(board["post_activation"])
+        expected_post_gravity = np.array(board["post_gravity"])
+        expected_post_refill = np.array(board["post_refill"])
+
+        assert len(matches) == len(board["matches"]), "incorrect number of matches found\n" + format_test(matches, expected_matches)
+        assert coords_match(matches, expected_matches), "incorrect matches found\n" + format_test(sort_coords(matches), sort_coords(expected_matches))
+
+        assert coords_match(tile_coords, expected_tile_coords), "incorrect tile coords found\n" + format_test(
+            sort_coords(tile_coords), sort_coords(expected_tile_coords)
+        )
+
+        # make sure that the tiles collected are in the same order
+        ordered_matches1 = [sort_l1(t) for t in tile_coords]
+        ordered_matches2 = [sort_l1(t) for t in expected_tile_coords]
+        assert all([c1 == c2 for c1, c2 in zip(ordered_matches1, ordered_matches2)]), "incorrect match order found\n" + format_test(
+            ordered_matches1, ordered_matches2
+        )
+        # make sure that the tiles collected are correct and in the same order
+        # print(tile_names, expected_tile_names)
+        assert all([name == expected_name for name, expected_name in zip(tile_names, expected_tile_names)]), "incorrect tile names found\n" + format_test(
+            tile_names, expected_tile_names
+        )
+
+        # activation tests
+        bm.print_board()
+        if len(tile_coords) > 0:
+            bm.activate_match(tile_coords[0], tile_names[0])
+            tile_coords.pop(0)
+        bm.print_board()
+        assert np.array_equal(bm.board, expected_first_activation), "incorrect board after activation\n" + highlight_board_diff(
+            bm.board, expected_first_activation
+        )
+
+        # activation queue tests
+        print("Activation Queue", bm.activation_q)
+
+        assert len(bm.activation_q) == len(expected_activation_q), "incorrect activation queue length\n" + format_test(bm.activation_q, expected_activation_q)
+        assert all([bm.activation_q[i] == a for i, a in enumerate(expected_activation_q)]), "incorrect activation queue\n" + format_test(
+            bm.activation_q, expected_activation_q
+        )
+
+        # handle activations test
+        if len(bm.activation_q) > 0:
+            activation = bm.activation_q.pop()
+            bm.apply_activation(activation)
+            bm.print_board()
+
+        assert np.array_equal(bm.board, expected_post_activation), "incorrect board after activation\n" + highlight_board_diff(
+            bm.board, expected_post_activation
+        )
+
+        # Gravity test
+        bm.gravity()
+        assert np.array_equal(bm.board, expected_post_gravity), "incorrect board after gravity\n" + highlight_board_diff(bm.board, expected_post_gravity)
+
+        non_zero_mask = bm.board != 0
+        zero_mask = ~non_zero_mask
+        old_board = bm.board[non_zero_mask]
+        # Refill test
+        bm.refill()
+
+        assert np.all(bm.board > 0)
+        assert np.all(bm.board[non_zero_mask] == old_board), (bm.board, old_board)
+        assert np.all(bm.board[zero_mask] > bm.num_colourless_specials) and np.all(bm.board[zero_mask] <= (bm.num_colourless_specials + bm.num_colours))
+        assert np.array_equal(bm.board, expected_post_refill), "incorrect board after refill\n" + highlight_board_diff(bm.board, expected_post_refill)
+
+        print("PASSED")
+        print("----")
+
+    bm.colour_check()
