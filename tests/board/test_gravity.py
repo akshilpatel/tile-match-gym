@@ -39,7 +39,3 @@ def test_gravity():
             ]
         ),
     )
-
-
-if __name__ == "__main__":
-    test_gravity_falls()
