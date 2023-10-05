@@ -292,46 +292,17 @@ class Board:
 # 1. Currently automatch always return true indicating the board always has a match. Instead, two options are available: First, automatch should call gravity and refill before checking if there are matches left to detect/resolve on the board, and then return the. This avoids returning True for a match and then gravity making the match no longer exist.
 # 3. Rewrite gravity to not use transpose.
 # 4. The activation queue should be emptied all at once. Instead, by doing one activation and then gravity and refill, we might end up with activations being called where there no longer exists a map due to delay?
+
+
     def possible_move(self, grid=None):
         """
         checks if any 3 in a row can be made in the current grid
         if grid does not exist then take self.board
 
-        *Maybe incorporate this into the check for matches function*
-        
-        - 3 in a row already (WONT BE CALLED WHILE THERE ARE MATCHES)
+        If 2/3 in a row are the same color then either a gap 1_1 or 2 in a row 11_1 or 1_11
 
-        conditions:
-            - 2/3 the same with a neighbouring color at the odd one out
-            - 2 in a row with a space and then the same color
+        check combinations of diagonal neighbours to determine if a match is possible
 
-
-        look at the next four in each direction if there is a gap, check
-        if anything in the missing axis is the same
-
-        if there is a 2 in a row, check if the space is in position 1 or 2
-
-        All combininations of 3 in a row:
-        
-        ___   __1   ___   _1_   ___   1__   ___   ___                                                       
-        11_1  11__  11__  1_1_  1_1_  _11_  _11_  1_11                                                          
-        ___   ___   __1   ___   _1_   ___   1__   ___                                                       
-
-        
-        All combinations of 3 in a col:
-
-        _1_  _1_  _1_  _1_  _1_  1__  __1  _1_                                                        
-        _1_  _1_  _1_  __1  1__  _1_  _1_  ___                                                       
-        ___  __1  1__  _1_  _1_  _1_  _1_  _1_                                                        
-         1    _    _    _    _    _    _    1                                                      
-
-                                                                                
-        If there is 2 in a row:
-            check diagonally up and down for the same color
-            check 2 before and 2 after
-        else:
-            check neighbours of gap for same colour
-                                                                                
         """
         rows, cols = self.num_rows, self.num_cols
 
@@ -340,7 +311,7 @@ class Board:
         if grid is None:
             grid = self.board
         
-        for i in range(2):
+        for i in range(2): # check both orientations
             if i == 1:
                 grid= np.rot90(grid)
                 rows, cols = self.num_cols, self.num_rows
@@ -367,97 +338,10 @@ class Board:
                                 print("HIT HERE")
                                 return True
 
-        return False
-
-def temp_test_matches():
-    """
-        All combinations of 3 in a row
-        ___   __1   ___   _1_   ___   1__   ___   ___                                                       
-        11_1  11__  11__  1_1_  1_1_  _11_  _11_  1_11                                                          
-        ___   ___   __1   ___   _1_   ___   1__   ___                                                       
-
-        
-        All combinations of 3 in a col:
-
-        _1_  _1_  _1_  _1_  _1_  1__  __1  _1_                                                        
-        _1_  _1_  _1_  __1  1__  _1_  _1_  ___                                                       
-        ___  __1  1__  _1_  _1_  _1_  _1_  _1_                                                        
-         1    _    _    _    _    _    _    1                                                      
-    """
-    
-    combinations = [
-            [[1,1,1,1],[0,0,1,0],[1,1,1,1]],
-            [[1,1,0,1],[0,0,1,1],[1,1,1,1]],
-            [[1,1,1,1],[0,0,1,1],[1,1,0,1]],
-            [[1,0,1,1],[0,1,0,1],[1,1,1,1]],
-            [[1,1,1,1],[0,1,0,1],[1,0,1,1]],
-            [[0,1,1,1],[1,0,0,1],[1,1,1,1]],
-            [[1,1,1,1],[1,0,0,1],[0,1,1,1]],
-            [[1,1,1,1],[0,1,0,0],[1,1,1,1]],
-            ]
-
-    x = np.array(
-        [
-            [1, 2, 3, 4, 1, 2, 3, 4, 1, 2],
-            [2, 3, 4, 1, 2, 3, 4, 1, 2, 3],
-            [3, 4, 1, 2, 3, 4, 1, 2, 3, 4],
-            [4, 1, 2, 3, 4, 1, 2, 3, 4, 1],
-            [1, 2, 3, 4, 1, 2, 3, 4, 1, 2],
-            [2, 3, 4, 1, 2, 3, 4, 1, 2, 3]
-        ]
-    )
-    bm = Board(0, 0, 4, board=x.copy())
-
-    for c in combinations:
-        bm.board[1:4, 1:5] *= c
-        # print(bm.board)
-        # print(bm.possible_move())
-        assert bm.possible_move() == True, "There is a move \n"+str(bm.board)
-        print("passed")
-        bm.board = x.copy()
-    # do rotation of the combinations
-    for c in combinations:
-        bm.board[1:5, 1:4] *= np.rot90(c)
-        # print(bm.board)
-        assert bm.possible_move() == True, "There is a move \n"+str(bm.board)
-        print("passed")
-        bm.board = x.copy()
-    assert bm.possible_move() == False, "There is no possible move \n"+str(bm.board)
-    print("passed")
-
-
-    combinations = [
-            [[1,1,1,1],[0,1,1,0],[1,0,1,1]],
-            [[0,1,1,0],[0,1,1,0],[1,1,1,1]],
-            [[1,1,1,1],[0,1,0,1],[1,1,1,1]],
-            ]
-    for c in combinations:
-        bm.board[1:4, 1:5] *= c
-        # print(bm.board)
-        assert bm.possible_move() == False, "There is no possible move \n"+str(bm.board)
-        print("passed")
-        bm.board = x.copy()
-
-
-
+        return False # there are no ways to make a move and get 3 in a row
 
 
 if __name__ == "__main__":
-
-    # REMOVE THIS AND MOVE TO THE TESTING SECTION
-    # temp_test_matches()
-    # x = np.array(
-    #     [
-    #         [1, 2, 3, 4, 1, 2, 3, 4, 1, 2],
-    #         [2, 3, 4, 1, 2, 3, 4, 1, 2, 3],
-    #         [3, 4, 1, 2, 3, 4, 1, 2, 3, 4],
-    #         [4, 1, 2, 3, 4, 1, 2, 3, 4, 1],
-    #         [1, 2, 3, 4, 1, 2, 3, 4, 1, 2],
-    #         [2, 3, 4, 1, 2, 3, 4, 1, 2, 3]
-    #     ]
-    # )
-    # bm = Board(0, 0, 4, board=np.array(x), seed=3)
-    # exit()
 
     import json
 
