@@ -281,7 +281,7 @@ class Board:
                             break  # Stop searching after finding one intersection. This should break out of the for loop.
             # Check for normals. This happends even if the lines are longer than 3 but there are no matching specials.
             elif len(line) >= 3:
-                tile_names.append("norm")
+                tile_names.append("normal")
                 tile_coords.append(line)
             # check for no match
             else:
@@ -289,6 +289,121 @@ class Board:
                 tile_coords.append(line)
 
 
-# 1. Currently automatch always return true indicating the board always has a match. Instead, two options are available: First, automatch should call gravity and refill before checking if there are matches left to detect/resolve on the board, and then return the. This avoids returning True for a match and then gravity making the match no longer exist.
-# 3. Rewrite gravity to not use transpose.
-# 4. The activation queue should be emptied all at once. Instead, by doing one activation and then gravity and refill, we might end up with activations being called where there no longer exists a map due to delay?
+    def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
+        
+        if not self.check_move_validity(coord1, coord2):
+            return
+        
+        # Swap the coordinates.
+        self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
+
+        
+        ## Combination match ##
+
+        # If there are two special coords. Add one activation with both coords to the activation queue.
+        coord1_special = self.tile_translator.is_special(self.board[coord1])
+        coord2_special = self.tile_translator.is_special(self.board[coord2])
+        has_one_colourless_special = self.tile_translator.is_colourless_special(self.board[coord1]) or self.tile_translator.is_colourless_special(self.board[coord1])
+        # Combination match of two specials or one colourless special and any other tile.
+        if (coord1_special and coord2_special) or has_one_colourless_special:
+            self.combination_match(coord1, coord2)
+            self.gravity()
+            self.refill()
+                
+
+        ## Colour matching ##
+        has_match = True
+        while has_match:
+            match_locs, match_types = self.detect_colour_matches()
+            if len(match_locs) == 0:
+                has_match = False
+            else:
+                self.resolve_colour_matches(match_locs, match_types)
+                self.gravity()
+                self.refill()
+    
+    def resolve_colour_matches(self, match_locs: List[List[Tuple[int, int]]], match_types: List[str]) -> None:
+        # For each match
+            # For each coord in match:
+                # 1. If the match_coord is an existing special then add activation to local activation_queue
+                # 2. Delete coord.
+
+            # For each activation in local queue:
+                # Activate the special at the coordinate.
+            
+            # if match_type != normal:
+                # Create special(match_type, self.np_random.choice(match_coords))
+        self.activation_q_coords = set()
+
+        self.activation_q = []
+        for i in range(len(match_locs)):
+            match_coords = match_locs[i]
+            match_type = match_types[i]
+
+            for coord in match_coords:
+                tile = self.board[coord]
+                if self.tile_translator.is_special(tile):
+                    self.activation_q_coords.add(coord)
+                    self.activation_q.append((coord, *self.tile_translator.get_type_colour(tile)))
+                self.board[coord] = 0
+            
+            for coord, tile_type, tile_colour in self.activation_q:
+                self.activate_special(coord, tile_type, tile_colour)
+
+            if match_type != "normal":
+                self.create_special(match_type, self.np_random.choice(match_coords))
+
+    def activate_special(self, coord, tile_type, tile_colour):
+        special_r, special_c = coord
+        if tile_type == "vertical_laser":
+            for row in range(self.num_rows):
+                if self.tile_translator.is_special(self.board[row, special_c]) and (row, special_c) not in self.activation_q_coords:
+                    self.activation_q_coords.add((row, special_c))
+                    self.activation_q.append((coord, *self.tile_translator.get_type_colour(self.board[row, special_c])))
+                self.board[row, special_c] = 0
+        elif tile_type == "horizontal_laser":
+            for col in range(self.num_cols):
+                if self.tile_translator.is_special(self.board[special_r, col]) and (special_r, col) not in self.activation_q_coords:
+                    self.activation_q_coords.add((special_r, col))
+                    self.activation_q.append((coord, *self.tile_translator.get_type_colour(self.board[special_r, col])))
+                self.board[special_r, col] = 0
+            
+        elif tile_type == "bomb":
+            for i in range(coord[0] - 1, coord[0] + 2):
+                for j in range(coord[1] - 1, coord[1] + 2):
+                    if self.tile_translator.is_special(self.board[i, j]):
+                        self.activation_q.append((i, j))
+                    else:
+                        self.board[i, j] = 0
+        elif tile_type == "cookie":
+            self.cookie(coord, tile_colour)
+        
+
+    def get_special_creation_pos(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
+        """
+        Given a set of coordinates return the position of the special tile that should be placed
+        The position should be as close to the center as possible but should not already be special.
+        """
+
+        if not straight:
+            # get the corner coords
+            xs = [c[0] for c in coords]
+            ys = [c[1] for c in coords]
+            corner = (max(xs, key=xs.count), max(ys, key=ys.count))
+            print("corner = ", corner)
+            std = [c for c in coords if not self.tile_translator.is_special(self.board[c])]
+            print("std = ", std)
+            if corner in std:
+                return corner
+            else:
+                return sorted(std, key=lambda x: (x[0] - corner[0]) ** 2 + (x[1] - corner[1]) ** 2)[0]
+
+        print("coords = ", coords)
+        sorted_coords = sorted([c for c in coords if not self.tile_translator.is_special(self.board[c])], key=lambda x: (x[0], x[1]))
+        print("sorted_coords = ", sorted_coords)
+        print(len(sorted_coords))
+        if len(sorted_coords) % 2 == 0:
+            return sorted_coords[len(sorted_coords) // 2 - 1]
+        return sorted_coords[len(sorted_coords) // 2]
+
+# TODO: Rewrite gravity to not use transpose.
