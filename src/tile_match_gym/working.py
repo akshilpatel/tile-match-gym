@@ -73,7 +73,7 @@ class Board:
 
     def generate_board(self):
         self.board = self.np_random.integers(
-            self.num_colourless_specials + 1, self.num_colourless_specials + self.num_colours + 2, size=self.flat_size
+            self.num_colourless_specials + 1, self.num_colourless_specials + self.num_colours + 1, size=self.flat_size
         ).reshape(self.num_rows, self.num_cols)
         line_matches = self._get_colour_lines()
         while len(line_matches) > 0:
@@ -89,10 +89,9 @@ class Board:
         ordinary_min = self.num_colourless_specials
         ordinary_max = ordinary_min + self.num_colours - 1
         while len(line_matches) > 0:
-            l = line_matches.pop(0)
+            l = line_matches.pop()
             coord = self.np_random.choice(l).tolist()
             new_enc = self.np_random.integers(ordinary_min + 1, ordinary_max + 2)
-            # print(new_enc, coord, self.board[coord[0], coord[1]])
             while new_enc == self.board[coord[0], coord[1]]:
                 new_enc = self.np_random.integers(ordinary_min + 1, ordinary_max + 2)
             self.board[coord[0], coord[1]] = new_enc
@@ -114,14 +113,15 @@ class Board:
         Returns contiguous lines of 3 or more tiles.
         """
         lines = []
-
+        vertical_line_coords = set()
+        horizontal_line_coords = set()
         found_line = False
         for row in range(self.num_rows - 1, -1, -1):
             if found_line:
                 break  # Only get lowest lines.
             for col in range(self.num_cols):
                 # Vertical lines
-                if 1 < row:
+                if 1 < row and (row, col) not in vertical_line_coords:
                     curr_tile = self.board[row, col]
                     if not self.tile_translator.is_colourless_special(curr_tile):
                         if self.tile_translator.is_same_colour(curr_tile, self.board[row - 1, col]):
@@ -134,25 +134,30 @@ class Board:
                                     break
                             if line_end - line_start >= 2:
                                 found_line = True
-                                lines.append([(i, col) for i in range(line_start, line_end + 1)])
+                                line = [(i, col) for i in range(line_start, line_end + 1)]      
+                                vertical_line_coords.update(line)
+                                lines.append(line)
 
                 # Horizontal lines
-                if 1 < col:
+                if col < self.num_cols - 2 and (row, col) not in horizontal_line_coords:
                     curr_tile = self.board[row, col]
                     if not self.tile_translator.is_colourless_special(curr_tile):
-                        if self.tile_translator.is_same_colour(curr_tile, self.board[row, col - 1]):
-                            line_start = col - 1
-                            line_end = col
-                            while line_start > 0:
-                                if self.tile_translator.is_same_colour(curr_tile, self.board[row, line_start - 1]):
-                                    line_start -= 1
+                        if self.tile_translator.is_same_colour(curr_tile, self.board[row, col + 1]):
+                            line_start = col
+                            line_end = col + 1
+                            while line_end < self.num_cols - 1:
+                                if self.tile_translator.is_same_colour(curr_tile, self.board[row, line_end + 1]):
+                                    line_end += 1
                                 else:
                                     break
                             if line_end - line_start >= 2:
                                 found_line = True
-                                lines.append([(row, i) for i in range(line_start, line_end + 1)])
+                                line = [(row, i) for i in range(line_start, line_end + 1)]
+                                horizontal_line_coords.update(line)
+                                lines.append(line)
+        
         return lines
-
+        
     def gravity(self) -> None:
         """
         Given a board with zeros, push the zeros to the top of the board.
@@ -164,11 +169,6 @@ class Board:
         for j, col in enumerate(self.board.T):
             self.board[:, j] = np.concatenate([col[mask_T[j]], col[non_zero_mask_T[j]]])
 
-        # Update coordinates in activation queue
-        # if len(self.activation_q) != 0:
-        #     for activation in self.activation_q:
-        #         row, col = activation["coord"]
-        #         activation["coord"] = (row + zero_counts_T[col, row], col)
 
     def refill(self) -> None:
         """Replace all empty tiles."""
@@ -232,7 +232,8 @@ class Board:
         return False
 
     def _process_colour_lines(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
-        """Given list of contiguous lines, this function detects the match type from the bottom up, merging any lines that share a coordinate if.
+        """
+        Given list of contiguous lines, this function detects the match type from the bottom up, merging any lines that share a coordinate if.
         It greedily extracts the maximum match from the bottom up. So first look at what the most powerful thing you can extract from the bottom up.
 
         Note: concurrent groups can be matched at the same time.
@@ -291,5 +292,3 @@ class Board:
 # 1. Currently automatch always return true indicating the board always has a match. Instead, two options are available: First, automatch should call gravity and refill before checking if there are matches left to detect/resolve on the board, and then return the. This avoids returning True for a match and then gravity making the match no longer exist.
 # 3. Rewrite gravity to not use transpose.
 # 4. The activation queue should be emptied all at once. Instead, by doing one activation and then gravity and refill, we might end up with activations being called where there no longer exists a map due to delay?
-# 6. Make _process_colour_lines work for different colourless special types and coloured special types, agnostic to tile encoding.
-# 7. What about when two concurrent matches happen and one affects the other.
