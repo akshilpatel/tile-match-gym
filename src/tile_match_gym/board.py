@@ -288,7 +288,6 @@ class Board:
                 tile_names.append("ERR")
                 tile_coords.append(line)
 
-
     def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
         
         if not self.check_move_validity(coord1, coord2):
@@ -406,4 +405,49 @@ class Board:
             return sorted_coords[len(sorted_coords) // 2 - 1]
         return sorted_coords[len(sorted_coords) // 2]
 
-# TODO: Rewrite gravity to not use transpose.
+
+    def possible_move(self, grid=None):
+        """
+        checks if any 3 in a row can be made in the current grid
+        if grid does not exist then take self.board
+
+        If 2/3 in a row are the same color then either a gap 1_1 or 2 in a row 11_1 or 1_11
+
+        check combinations of diagonal neighbours to determine if a match is possible
+
+        """
+        rows, cols = self.num_rows, self.num_cols
+
+        exists = lambda c: c[0] >= 0 and c[1] >= 0 and c[0] < rows and c[1] < cols
+
+        if grid is None:
+            grid = self.board
+        
+        for i in range(2): # check both orientations
+            if i == 1:
+                grid= np.rot90(grid)
+                rows, cols = self.num_cols, self.num_rows
+                # rows, cols = self.cols, self.rows
+            for r in range(rows - 2):
+                for c in range(cols - 2):
+
+                    # if 2/3 of the values in the next 3 are the same
+                    if len(set(grid[r][c:c + 3])) == 2:
+                        # check the possible combiniations
+                        if exists([r,c+2]) and grid[r][c] == grid[r][c + 2]: # gap in the middle 1_1
+                            for possible in [[r + 1, c + 1], [r - 1, c + 1]]: # triangles
+                                if exists(possible) and grid[possible[0]][possible[1]] == grid[r][c]:
+                                    return True
+
+                        cn = c
+                        # if the second two are the same 011 shift logic up 1 column
+                        if grid[r][c+1] == grid[r][c + 2]:
+                            cn = c+1
+
+                        for possible in [[r, cn+3], [r-1,cn+2], [r+1, cn+2],[r-1,cn-1], [r+1,cn-1]]: # combinations around _11_
+                            if exists(possible) and grid[possible[0]][possible[1]] == grid[r][cn]:
+                                print(grid)
+                                print("HIT HERE")
+                                return True
+
+        return False # there are no ways to make a move and get 3 in a row
