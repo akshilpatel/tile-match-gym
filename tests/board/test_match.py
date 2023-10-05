@@ -2,6 +2,7 @@ import pytest
 from tile_match_gym.board import Board
 from tests.utils import create_alternating_array, contains_threes
 import json
+import numpy as np
 
 ################################################################################
 ################## This is just templating - needs to be changed ###############
@@ -25,18 +26,19 @@ def test_match():
     coords_match = lambda l1, l2: sort_coords(l1) == sort_coords(l2)
     format_test = lambda r, e: "result: \t"+str(r)+"\nexpected: \t"+str(e)+"\n"
 
-    boards = json.load(open("board_test_data.json", "r"))["boards"]
+    boards = json.load(open("tests/board/board_test_data.json", "r"))["boards"]
     
-    for board in boards:
+    for i, board in enumerate(boards):
         print("testing board: ", board['name'])
-        bm = Board(0, 0, 0, board['board'])
+        # need to pass the number of colours (3 chosen arbitrarily)
+        bm = Board(0, 0, 3, board=np.array(board["board"]))
         matches = bm.get_lines()
         expected_matches = [[tuple(coord) for coord in line] for line in board['matches']]
         expected_islands = [[tuple(coord) for coord in line] for line in board['islands']]
         expected_tile_coords = [[tuple(coord) for coord in line] for line in board['tile_locations']]
         expected_tile_names = board['tile_names']
 
-        assert len(matches) == len(board['matches']), "incorrect number of matches found\n"+format_test(matches, expected_matches)
+        assert len(matches) == len(board['matches']), "incorrect number of matches found in board"+ str(i)+"\n"+format_test(matches, expected_matches)
         assert coords_match(matches, expected_matches), "incorrect matches found\n"+format_test(matches, expected_matches)
         
         #islands = bm.get_islands(matches)

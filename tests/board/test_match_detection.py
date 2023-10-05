@@ -138,7 +138,6 @@ def test_get_colour_lines():
     assert [(7, 1), (8, 1), (9, 1)] in output_lines
     
 
-test_get_colour_lines()
 
 
 
