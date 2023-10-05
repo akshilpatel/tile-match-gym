@@ -52,14 +52,14 @@ t1 = {
 }
 
 
-# def test_activation():
-#     board = Board(5, 7, 4, ["cookie"], ["vertical_laser", "horizontal_laser", "bomb"], seed=0)
-#     board.board = t1["original"]
-#     board.width = 7
-#     board.height = 5
-#     board.num_colours = 4
-#     board.apply_activation((2, 2), activation_type=1)
-# 
-#     if not np.array_equal(board.board, t1["expected"]):
-#         print()
-#         print_board_diffs.highlight_board_diff(board.board, t1["expected"])
+def test_activation():
+    board = Board(5, 7, 4, ["cookie"], ["vertical_laser", "horizontal_laser", "bomb"], seed=0)
+    board.board = t1["original"]
+    board.width = 7
+    board.height = 5
+    board.num_colours = 4
+    board.apply_activation((2, 2), activation_type=1)
+
+    if not np.array_equal(board.board, t1["expected"]):
+        print()
+        print_board_diffs.highlight_board_diff(board.board, t1["expected"])

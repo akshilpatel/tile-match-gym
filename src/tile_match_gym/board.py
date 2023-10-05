@@ -409,7 +409,7 @@ class Board:
             else:
                 raise ValueError(f"We are ridden with bugs. candy1: {tile_type} candy2: {tile2_type}")
 
-    def apply_activation(self, coord: Tuple[int, int]) -> None:
+    def apply_activation(self, coord: Tuple[int, int], activation_type: Optional[int] = None) -> None:
         """Applies the activation at the given coordinates.
 
         Args:
