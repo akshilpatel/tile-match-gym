@@ -1,6 +1,7 @@
 import numpy as np
+
 from typing import Optional, List, Tuple, Dict
-from collections import deque
+from collections import Counter
 
 from tile_match_gym.tile_translator import TileTranslator
 from tile_match_gym.utils.print_board_diffs import highlight_board_diff
@@ -354,28 +355,46 @@ class Board:
 
     def activate_special(self, coord, tile_type, tile_colour):
         special_r, special_c = coord
+        # Delete special.
+        self.board[special_r, special_c] = 0
         if tile_type == "vertical_laser":
             for row in range(self.num_rows):
-                if self.tile_translator.is_special(self.board[row, special_c]) and (row, special_c) not in self.activation_q_coords:
+                if row == special_r: continue
+
+                elif self.tile_translator.is_special(self.board[row, special_c]) and (row, special_c) not in self.activation_q_coords:
                     self.activation_q_coords.add((row, special_c))
                     self.activation_q.append((coord, *self.tile_translator.get_type_colour(self.board[row, special_c])))
                 self.board[row, special_c] = 0
         elif tile_type == "horizontal_laser":
             for col in range(self.num_cols):
-                if self.tile_translator.is_special(self.board[special_r, col]) and (special_r, col) not in self.activation_q_coords:
+                if col == special_c: continue
+                elif self.tile_translator.is_special(self.board[special_r, col]) and (special_r, col) not in self.activation_q_coords:
                     self.activation_q_coords.add((special_r, col))
                     self.activation_q.append((coord, *self.tile_translator.get_type_colour(self.board[special_r, col])))
                 self.board[special_r, col] = 0
             
         elif tile_type == "bomb":
-            for i in range(coord[0] - 1, coord[0] + 2):
-                for j in range(coord[1] - 1, coord[1] + 2):
-                    if self.tile_translator.is_special(self.board[i, j]):
-                        self.activation_q.append((i, j))
-                    else:
-                        self.board[i, j] = 0
+            for r in range(coord[0] - 1, coord[0] + 2):
+                for c in range(coord[1] - 1, coord[1] + 2):
+                    if (r, c) == coord: continue
+                    elif self.tile_translator.is_special(self.board[r, c]):
+                        self.activation_q.append(((r, c), *self.tile_translator.get_type_colour(self.board[r, c])))
+                    self.board[r, c] = 0
+
         elif tile_type == "cookie":
-            self.cookie(coord, tile_colour)
+            neighbours = [self.board[(coord[0] + i, coord[1] + j)] for i, j in [(0, 1), (0, -1), (1, 0), (-1, 0)]]
+            colours = [self.tile_translator.get_type_colour(n)[1] for n in neighbours if n != 0]
+            most_common_colour = max(Counter(colours))
+            # get the most common neighbour
+            # remove all variants of that tile
+            for i in range(self.rows):
+                for j in range(self.cols):
+                    col = self.tile_translator.get_type_colour(self.board[i, j])[1]
+                    if col == most_common_col:
+                        if self.tile_translator.is_special(self.board[i, j]):
+                            self.activation_q.append((i, j))
+                        else:
+                            self.board[i, j] = 0
         
 
     def get_special_creation_pos(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
@@ -408,12 +427,12 @@ class Board:
 
     def possible_move(self, grid=None):
         """
-        checks if any 3 in a row can be made in the current grid
-        if grid does not exist then take self.board
+        Checks if any 3 in a row can be made in the current grid
+        If the grid does not exist then take self.board
 
-        If 2/3 in a row are the same color then either a gap 1_1 or 2 in a row 11_1 or 1_11
+        If 2/3 in a row are the same color then either a gap 1_1 or 2 in a row 11_1 or 1_11 exist.
 
-        check combinations of diagonal neighbours to determine if a match is possible
+        Check combinations of diagonal neighbours to determine if a match is possible
 
         """
         rows, cols = self.num_rows, self.num_cols
@@ -425,9 +444,8 @@ class Board:
         
         for i in range(2): # check both orientations
             if i == 1:
-                grid= np.rot90(grid)
+                grid = np.rot90(grid)
                 rows, cols = self.num_cols, self.num_rows
-                # rows, cols = self.cols, self.rows
             for r in range(rows - 2):
                 for c in range(cols - 2):
 
@@ -446,8 +464,6 @@ class Board:
 
                         for possible in [[r, cn+3], [r-1,cn+2], [r+1, cn+2],[r-1,cn-1], [r+1,cn-1]]: # combinations around _11_
                             if exists(possible) and grid[possible[0]][possible[1]] == grid[r][cn]:
-                                print(grid)
-                                print("HIT HERE")
                                 return True
 
         return False # there are no ways to make a move and get 3 in a row
