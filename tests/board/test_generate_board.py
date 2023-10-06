@@ -12,7 +12,7 @@ def test_generate_board():
     for i in range(100):
         b = Board(num_rows=3, num_cols=4, num_colours=3, colour_specials= ["vertical_laser", "horizontal_laser", "bomb"], colourless_specials=["cookie"], seed=i)
         # No matches
-        line_matches = b._get_colour_line()
+        line_matches = b.get_colour_lines()
         assert line_matches == []
         # All numbers within num_colourless_specials + 1 ,..., (1 + num_colour_specials) * num_colours + num_colourless_specials + 1
         assert np.all(b.board > 0)
@@ -22,7 +22,7 @@ def test_generate_board():
 
         # No colourless specials
         b = Board(num_rows=4, num_cols=14, num_colours=21, colour_specials= ["vertical_laser", "horizontal_laser", "bomb"], colourless_specials=[], seed=i)
-        line_matches = b._get_colour_lines()
+        line_matches = b.get_colour_lines()
         assert line_matches == []
         assert np.all(b.board > 0)
         for i in range(b.num_rows):
@@ -33,7 +33,7 @@ def test_generate_board():
 
         # No colour specials
         b = Board(num_rows=10, num_cols=10, num_colours=7, colour_specials= [], colourless_specials=["cookie"], seed=i)
-        line_matches = b._get_colour_lines()
+        line_matches = b.get_colour_lines()
         
         assert line_matches == []        
         assert np.all(b.board > 0)
