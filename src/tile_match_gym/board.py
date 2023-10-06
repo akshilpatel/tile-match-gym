@@ -76,10 +76,10 @@ class Board:
         self.board = self.np_random.integers(
             self.num_colourless_specials + 1, self.num_colourless_specials + self.num_colours + 1, size=self.flat_size
         ).reshape(self.num_rows, self.num_cols)
-        line_matches = self._get_colour_lines()
+        line_matches = self.get_colour_lines()
         while len(line_matches) > 0:
             self.remove_colour_lines(line_matches)
-            line_matches = self._get_colour_lines()
+            line_matches = self.get_colour_lines()
 
     def remove_colour_lines(self, line_matches: List[List[Tuple[int, int]]]) -> None:
         """Given a board and list of lines where each line is a list of coordinates where the colour of the tiles at each coordinate in one line is the same, changes the board such that none of the
@@ -101,14 +101,14 @@ class Board:
         """
         Returns the types and locations of tiles involved in the bottom-most colour matches.
         """
-        lines = self._get_colour_lines()
+        lines = self.get_colour_lines()
         if len(lines) == 0:
             return [], []
         else:
-            tile_coords, tile_names = self._process_colour_lines(lines)
+            tile_coords, tile_names = self.process_colour_lines(lines)
             return tile_coords, tile_names
 
-    def _get_colour_lines(self) -> List[List[Tuple[int, int]]]:
+    def get_colour_lines(self) -> List[List[Tuple[int, int]]]:
         """
         Starts from the top and checks for 3 or more in a row vertically or horizontally.
         Returns contiguous lines of 3 or more tiles.
@@ -203,10 +203,10 @@ class Board:
 
         # Checks if both are special.
         if self.tile_translator.is_special(self.board[coord1]) and self.tile_translator.is_special(self.board[coord2]):
-            return True, "both special"
+            return True
 
         if self.tile_translator.is_colourless_special(self.board[coord1]) or self.tile_translator.is_colourless_special(self.board[coord2]):
-            return True, "colourless_special"
+            return True
 
         # Extract a minimal grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
         r_min = max(0, min(coord1[0] - 2, coord2[0] - 2))
@@ -232,7 +232,7 @@ class Board:
         self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
         return False
 
-    def _process_colour_lines(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
+    def process_colour_lines(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
         """
         Given list of contiguous lines, this function detects the match type from the bottom up, merging any lines that share a coordinate if.
         It greedily extracts the maximum match from the bottom up. So first look at what the most powerful thing you can extract from the bottom up.
@@ -297,7 +297,6 @@ class Board:
         # Swap the coordinates.
         self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
 
-        
         ## Combination match ##
 
         # If there are two special coords. Add one activation with both coords to the activation queue.
@@ -309,7 +308,6 @@ class Board:
             self.combination_match(coord1, coord2)
             self.gravity()
             self.refill()
-                
 
         ## Colour matching ##
         has_match = True
@@ -323,18 +321,13 @@ class Board:
                 self.refill()
     
     def resolve_colour_matches(self, match_locs: List[List[Tuple[int, int]]], match_types: List[str]) -> None:
-        # For each match
-            # For each coord in match:
-                # 1. If the match_coord is an existing special then add activation to local activation_queue
-                # 2. Delete coord.
+        """The main loop for processing a batch of colour matches. This function eliminates tiles, activates specials and creates new specials.
 
-            # For each activation in local queue:
-                # Activate the special at the coordinate.
-            
-            # if match_type != normal:
-                # Create special(match_type, self.np_random.choice(match_coords))
+        Args:
+            match_locs (List[List[Tuple[int, int]]]): List of match locations. Each match location is a list of coordinates that are part of the match.
+            match_types (List[str]): List of match types ordered in the same way as match_locs.
+        """
         self.activation_q_coords = set()
-
         self.activation_q = []
         for i in range(len(match_locs)):
             match_coords = match_locs[i]
@@ -351,12 +344,14 @@ class Board:
                 self.activate_special(coord, tile_type, tile_colour)
 
             if match_type != "normal":
-                self.create_special(match_type, self.np_random.choice(match_coords))
+                self.create_special(match_coords, match_type)
 
     def activate_special(self, coord, tile_type, tile_colour):
         special_r, special_c = coord
+
         # Delete special.
         self.board[special_r, special_c] = 0
+        
         if tile_type == "vertical_laser":
             for row in range(self.num_rows):
                 if row == special_r: continue
@@ -365,6 +360,7 @@ class Board:
                     self.activation_q_coords.add((row, special_c))
                     self.activation_q.append((coord, *self.tile_translator.get_type_colour(self.board[row, special_c])))
                 self.board[row, special_c] = 0
+
         elif tile_type == "horizontal_laser":
             for col in range(self.num_cols):
                 if col == special_c: continue
@@ -374,28 +370,33 @@ class Board:
                 self.board[special_r, col] = 0
             
         elif tile_type == "bomb":
-            for r in range(coord[0] - 1, coord[0] + 2):
-                for c in range(coord[1] - 1, coord[1] + 2):
-                    if (r, c) == coord: continue
-                    elif self.tile_translator.is_special(self.board[r, c]):
-                        self.activation_q.append(((r, c), *self.tile_translator.get_type_colour(self.board[r, c])))
-                    self.board[r, c] = 0
+            for i in range(coord[0] - 1, coord[0] + 2):
+                for j in range(coord[1] - 1, coord[1] + 2):
+                    if (i, j) == coord: continue
+                    elif self.tile_translator.is_special(self.board[i, j]):
+                        self.activation_q.append(((i, j), *self.tile_translator.get_type_colour(self.board[i, j])))
+                    self.board[i, j] = 0
 
         elif tile_type == "cookie":
             neighbours = [self.board[(coord[0] + i, coord[1] + j)] for i, j in [(0, 1), (0, -1), (1, 0), (-1, 0)]]
             colours = [self.tile_translator.get_type_colour(n)[1] for n in neighbours if n != 0]
-            most_common_colour = max(Counter(colours))
+            most_common_colour = Counter(colours).most_common(1)[0]
             # get the most common neighbour
             # remove all variants of that tile
-            for i in range(self.rows):
-                for j in range(self.cols):
-                    col = self.tile_translator.get_type_colour(self.board[i, j])[1]
-                    if col == most_common_col:
+            for i in range(self.num_rows):
+                for j in range(self.num_cols):
+                    colour = self.tile_translator.get_type_colour(self.board[i, j])[1]
+                    if colour == most_common_colour:
                         if self.tile_translator.is_special(self.board[i, j]):
                             self.activation_q.append((i, j))
                         else:
                             self.board[i, j] = 0
-        
+        else: 
+            raise ValueError(f"{tile_type} is an invalid special tile type.")
+
+    # def create_special(self, special_type:str, possible_coords: List[Tuple[int, int]]) -> None:
+    #     if special_type == "vertical_laser":
+
 
     def get_special_creation_pos(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
         """
@@ -408,18 +409,15 @@ class Board:
             xs = [c[0] for c in coords]
             ys = [c[1] for c in coords]
             corner = (max(xs, key=xs.count), max(ys, key=ys.count))
-            print("corner = ", corner)
+
             std = [c for c in coords if not self.tile_translator.is_special(self.board[c])]
-            print("std = ", std)
             if corner in std:
                 return corner
             else:
                 return sorted(std, key=lambda x: (x[0] - corner[0]) ** 2 + (x[1] - corner[1]) ** 2)[0]
 
-        print("coords = ", coords)
         sorted_coords = sorted([c for c in coords if not self.tile_translator.is_special(self.board[c])], key=lambda x: (x[0], x[1]))
-        print("sorted_coords = ", sorted_coords)
-        print(len(sorted_coords))
+        
         if len(sorted_coords) % 2 == 0:
             return sorted_coords[len(sorted_coords) // 2 - 1]
         return sorted_coords[len(sorted_coords) // 2]
