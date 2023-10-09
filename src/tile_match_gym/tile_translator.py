@@ -34,6 +34,11 @@ class TileTranslator:
         self.all_tile_types = ["none"] + self.colourless_specials + ["normal"] + self.colour_specials
         self.max_tile_encoding = self.num_colourless_specials + (1 + self.num_specials) * self.num_colours
 
+        self.normal_tile_range = self.num_colourless_specials + 1, self.num_colourless_specials + self.num_colours + 1
+
+    def get_normal_tile_range(self):
+        return self.normal_tile_range
+
     def get_tile_encoding(self, tile_type: str, tile_colour: int):
         """
         Convert the tile type and colour to the tile index.

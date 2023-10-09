@@ -1,5 +1,12 @@
 import pytest
-from tile_match_gym.board import Board
 import numpy as np
-from typing import Optional, List, Tuple
+
+from tile_match_gym.board import Board
 from tile_match_gym.utils import print_board_diffs
+from typing import Optional, List, Tuple
+
+def test_activate_special():
+    assert False
+
+def test_get_special_creation_pos():
+    assert False

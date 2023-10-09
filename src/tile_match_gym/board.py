@@ -54,8 +54,9 @@ class Board:
         self.num_colourless_specials = len(self.colourless_specials)
 
         self.specials = set(self.colourless_specials + self.colour_specials)
-
+    
         self.tile_translator = TileTranslator(num_colours, (num_rows, num_cols), self.colourless_specials, self.colour_specials)
+        self.normal_tile_range = self.tile_translator.get_normal_tile_range()
 
         if seed is None:
             seed = np.random.randint(0, 1000000000)
@@ -73,14 +74,32 @@ class Board:
         self.activation_q = []
 
     def generate_board(self):
-        self.board = self.np_random.integers(
-            self.num_colourless_specials + 1, self.num_colourless_specials + self.num_colours + 1, size=self.flat_size
-        ).reshape(self.num_rows, self.num_cols)
+        self.board = self.np_random.integers(self.normal_tile_range[0], self.normal_tile_range[1], self.flat_size).reshape(self.num_rows, self.num_cols)
         line_matches = self.get_colour_lines()
-        while len(line_matches) > 0:
-            self.remove_colour_lines(line_matches)
-            line_matches = self.get_colour_lines()
+        num_line_matches = len(line_matches)
+        # while num_line_matches > 0:
+        #     self.remove_colour_lines(line_matches)
+        #     line_matches = self.get_colour_lines()
+        #     num_line_matches = len(line_matches)
+        #     print(self.board)
+        #     print(num_line_matches)
+        i = 0
+        # print(self.board)
+        while not self.possible_move() or num_line_matches > 0:
+            if num_line_matches > 0:
+                self.remove_colour_lines(line_matches)
+            else:
+                self.board = self.board.flatten()
+                self.np_random.shuffle(self.board)
+                self.board = self.board.reshape(self.num_rows, self.num_cols)
 
+            line_matches = self.get_colour_lines()
+            num_line_matches = len(line_matches)
+            
+            i += 1
+        assert self.possible_move()
+        assert self.get_colour_lines() == []
+            
     def remove_colour_lines(self, line_matches: List[List[Tuple[int, int]]]) -> None:
         """Given a board and list of lines where each line is a list of coordinates where the colour of the tiles at each coordinate in one line is the same, changes the board such that none of the
 

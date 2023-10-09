@@ -4,18 +4,23 @@ from copy import deepcopy
 
 
 def test_check_move_validity():
-    # 3 in a row
-    board = Board(10, 10, 5, seed=1)  # cookie , and vertical lase, horizontal laser, bomb
-    board.board[4, 3] = board.tile_translator.get_tile_encoding("normal", 0)
-    board.board[4, 4] = board.tile_translator.get_tile_encoding("normal", 0)
-    board.board[4, 5] = board.tile_translator.get_tile_encoding("normal", 1)
-    board.board[4, 6] = board.tile_translator.get_tile_encoding("normal", 0)
-    old_board = deepcopy(board.board)
+    # 3 in a row and 3 in a col
+    board = Board(10, 10, 5)  # cookie , and vertical laser, horizontal laser, bomb
+    board.board = np.array([[4, 4, 5, 4, 2, 2, 6, 6, 3, 3],
+                            [3, 6, 3, 6, 3, 4, 5, 4, 2, 2],
+                            [6, 5, 6, 4, 6, 3, 4, 5, 2, 3],
+                            [2, 4, 6, 2, 3, 4, 6, 3, 4, 3],
+                            [2, 5, 2, 3, 4, 4, 2, 6, 5, 6],
+                            [4, 5, 3, 4, 6, 3, 5, 2, 5, 6],
+                            [4, 4, 3, 2, 4, 5, 4, 5, 3, 5],
+                            [5, 6, 4, 2, 5, 4, 6, 4, 3, 2],
+                            [4, 5, 5, 6, 3, 4, 6, 3, 5, 6],
+                            [4, 4, 5, 4, 6, 5, 2, 2, 4, 6]])
 
-    assert not board.check_move_validity((2, 1), (2, 2))
-    assert not board.check_move_validity((2, 1), (2, 2))
-    assert board.check_move_validity((4, 5), (4, 6))
-    assert np.array_equal(board.board, old_board), board.board
+    old_board = deepcopy(board.board)
+    assert board.check_move_validity((1,1), (1, 2))
+    assert board.check_move_validity((1,1), (2, 1))
+    assert np.array_equal(board.board, old_board)
 
     # 3 in a col
     board.board[6, 2] = board.tile_translator.get_tile_encoding("normal", 3)
@@ -108,3 +113,8 @@ def test_check_move_validity():
     board.board[12, 2] = board.tile_translator.get_tile_encoding("cookie", 0)
     board.board[13, 2] = board.tile_translator.get_tile_encoding("cookie", 0)
     assert board.check_move_validity((12, 2), (13, 2))
+
+
+    # Not adjacent
+
+    
