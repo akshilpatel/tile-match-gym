@@ -174,11 +174,14 @@ class Board:
         Given a board with zeroes, push the zeroes to the top of the board.
         If an activation queue of coordinates is passed in, then the coordinates in the queue are updated as gravity pushes the coordinates down.
         """
-        mask_T = self.board.T == 0
-        non_zero_mask_T = ~mask_T
 
-        for j, col in enumerate(self.board.T):
-            self.board[:, j] = np.concatenate([col[mask_T[j]], col[non_zero_mask_T[j]]])
+        colour_zero_mask_T = self.board.T[:,:, 0] == 0
+        type_zero_mask_T = self.board.T[:,:, 1] == 0
+        non_zero_mask_T = colour_zero_mask_T & type_zero_mask_T
+        mask_T = ~non_zero_mask_T
+
+        for j in range(self.num_cols):
+            self.board[:, j] = np.concatenate([self.board[:,j][mask_T[j]], self.board[:,j][non_zero_mask_T[j]]])
 
     def refill(self) -> None:
         """Replace all empty tiles."""

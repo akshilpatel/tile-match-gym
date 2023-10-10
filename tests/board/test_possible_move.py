@@ -41,18 +41,21 @@ def test_possible_move():
             [2, 3, 4, 1, 2, 3, 4, 1, 2, 3]
         ]
     )
-    bm = Board(0, 0, 4, board=x.copy())
+    bm = Board(6, 10, 4)
+    print(bm.board.shape)
+    bm.board[:, :, 0] = x.copy()
 
     for c in combinations:
-        bm.board[1:4, 1:5] *= c
+        bm.board[1:4, 1:5, 0] *= c
         # print(bm.board)
         # print(bm.possible_move())
         assert bm.possible_move() == True, "There is a move \n"+str(bm.board)
         print("passed")
         bm.board = x.copy()
+        
     # do rotation of the combinations
     for c in combinations:
-        bm.board[1:5, 1:4] *= np.rot90(c)
+        bm.board[1:5, 1:4, 0] *= np.rot90(c)
         # print(bm.board)
         assert bm.possible_move() == True, "There is a move \n"+str(bm.board)
         print("passed")
