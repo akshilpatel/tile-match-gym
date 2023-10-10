@@ -263,7 +263,7 @@ class Board:
 
     def process_colour_lines(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
         """
-        Given list of contiguous lines, this function detects the match type from the bottom up, merging any lines that share a coordinate if.
+        Given list of contiguous lines, this function detects the match type from the bottom up, merging any lines that share a coordinate.
         It greedily extracts the maximum match from the bottom up. So first look at what the most powerful thing you can extract from the bottom up.
 
         Note: concurrent groups can be matched at the same time.
@@ -347,7 +347,7 @@ class Board:
                 self.resolve_colour_matches(match_locs, match_types)
                 self.gravity()
                 self.refill()
-    
+
     def resolve_colour_matches(self, match_locs: List[List[Tuple[int, int]]], match_types: List[str]) -> None:
         """The main loop for processing a batch of colour matches. This function eliminates tiles, activates specials and creates new specials.
 
@@ -360,19 +360,28 @@ class Board:
         for i in range(len(match_locs)):
             match_coords = match_locs[i]
             match_type = match_types[i]
+            self.resolve_colour_match(match_coords, match_type)
 
-            for coord in match_coords:
-                tile = self.board[coord]
-                if tile[1] != 0:
-                    self.activation_q_coords.add(coord)
-                    self.activation_q.append((coord, *tile))
-                self.board[coord] = 0
-            
-            for coord, tile_type, tile_colour in self.activation_q:
-                self.activate_special(coord, tile_type, tile_colour)
+    
+    def resolve_colour_match(self, match_coords:List[Tuple[int, int]], match_type:str) -> None:
+        """Resolving a single match. This function eliminates tiles, activates specials and creates new specials.
 
-            if match_type != "normal":
-                self.create_special(match_coords, match_type)
+        Args:
+            match_coords (List[Tuple[int, int]]): List of coordinates that are part of the match.
+            match_type (List[str]): List of match types ordered in the same way as match_coords.
+        """
+        for coord in match_coords:
+            tile = self.board[coord]
+            if tile[1] != 0: # Not
+                self.activation_q_coords.add(coord)
+                self.activation_q.append((coord, *tile))
+            self.board[coord] = 0
+        
+        for coord, tile_type, tile_colour in self.activation_q:
+            self.activate_special(coord, tile_type, tile_colour)
+
+        if match_type != "normal":
+            self.create_special(match_coords, match_type)
 
     def activate_special(self, coord, tile_type, tile_colour):
         special_r, special_c = coord

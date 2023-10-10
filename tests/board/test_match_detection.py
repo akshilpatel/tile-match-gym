@@ -145,14 +145,5 @@ def test_get_colour_lines():
     assert [(7, 1), (8, 1), (9, 1)] in output_lines
     
 def test_process_colour_lines():
-    b = Board(num_rows=3, num_cols=4, num_colours=3)
-    # No lines
-    b.board = np.array([[4, 3, 4, 3],
-                        [4, 4, 5, 4], 
-                        [4, 3, 4, 2]])
-
     
-    # Single vertical line on left edge
-    lines = [(0,0), (1,0), (2,0)]
-    match_locs, match_types = b.process_colour_lines(lines)
     assert False
