@@ -77,12 +77,7 @@ class Board:
 
     def generate_board(self):
         self.board = np.ones((2, self.num_rows, self.num_cols), dtype=int)
-        self.board[0, :, :] = self.np_random.integers(self.num_colours+1, self.flat_size)
-
-        print("self.board.shape = ", self.board.shape)
-
-
-        # self.board[0, :, :] = self.np_random.integers(1, self.num_colours+1, self.flat_size).reshape(self.num_rows, self.num_cols)
+        self.board[0] = self.np_random.integers(1, self.num_colours+1, self.flat_size).reshape(self.num_rows, self.num_cols)
 
         line_matches = self.get_colour_lines()
         num_line_matches = len(line_matches)
@@ -91,13 +86,10 @@ class Board:
             if num_line_matches > 0:
                 self.remove_colour_lines(line_matches)
             else:
-                print("self.board before: ", self.board)
                 shuffled_idcs = np.arange(self.num_rows * self.num_cols)
                 self.np_random.shuffle(shuffled_idcs)
                 shuffled_idcs = shuffled_idcs.reshape(self.num_rows, self.num_cols)
                 self.board = self.board[:, shuffled_idcs // self.num_cols, shuffled_idcs % self.num_cols]
-                print("self.board after: ", self.board)
-
 
             line_matches = self.get_colour_lines()
             num_line_matches = len(line_matches)
@@ -183,23 +175,30 @@ class Board:
         If an activation queue of coordinates is passed in, then the coordinates in the queue are updated as gravity pushes the coordinates down.
         """
 
-        colour_zero_mask_T = self.board.T[:,:, 0] == 0
-        type_zero_mask_T = self.board.T[:,:, 1] == 0
-        non_zero_mask_T = colour_zero_mask_T & type_zero_mask_T
-        mask_T = ~non_zero_mask_T
-
+        colour_zero_mask_T = self.board[0].T == 0
+        
+        type_zero_mask_T = self.board[1].T == 0
+        zero_mask_T = colour_zero_mask_T & type_zero_mask_T
+        non_zero_mask_T = ~zero_mask_T
+        print(zero_mask_T.shape)
+        
         for j in range(self.num_cols):
-            self.board[:, j] = np.concatenate([self.board[:,j][mask_T[j]], self.board[:,j][non_zero_mask_T[j]]])
+            self.board[0][:, j] = np.concatenate([self.board[0][:, j][zero_mask_T[j]], self.board[0][:, j][non_zero_mask_T[j]]])
+            self.board[1][:, j] = np.concatenate([self.board[1][:, j][zero_mask_T[j]], self.board[1][:, j][non_zero_mask_T[j]]])
+            
 
     def refill(self) -> None:
         """Replace all empty tiles."""
-        zero_mask_colour = self.board[0, :, :] == 0
-        zero_mask_type = self.board[1, :, :] == 0
+        zero_mask_colour = self.board[0] == 0
+        zero_mask_type = self.board[1] == 0
         zero_mask = zero_mask_colour & zero_mask_type
+        # print(zero_mask.shape)
         num_zeros = zero_mask.sum()
         if num_zeros > 0:
-            rand_vals = self.np_random.integers(len(self.colourless_specials) + 1, self.num_colours + len(self.colourless_specials) + 1, size=num_zeros)
-            self.board[zero_mask] = rand_vals
+            rand_vals = self.np_random.integers(1, self.num_colours + 1, size=num_zeros)
+            self.board[0, zero_mask] = rand_vals
+            self.board[1, zero_mask] = 1
+
 
     # TODO: Make this faster.
     def check_move_validity(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
@@ -238,23 +237,23 @@ class Board:
         c_max = min(self.num_cols, max(coord1[1] + 3, coord2[1] + 3))
 
         # Swap the coordinates to see what happens.
-        self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
+        self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
         for r in range(r_min, r_max):
             for c in range(c_min + 2, c_max):
                 # If the current and previous 2 are matched and that they are not cookies.
                 if self.board[1, r, c] > 0: # Check it isn't a colourless special or empty.
                     if self.board[0, r, c - 2] == self.board[0, r, c - 1] == self.board[0, r, c]:
-                        self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
+                        self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
                         return True
 
         for r in range(r_min + 2, r_max):
             for c in range(c_min, c_max):
                 if self.board[1, r, c] > 0: 
                     if self.board[0, r - 2, c] == self.board[0, r - 1, c] == self.board[0, r, c]:
-                        self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
+                        self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
                         return True
 
-        self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
+        self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
         return False
 
     def process_colour_lines(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
@@ -320,7 +319,7 @@ class Board:
             return
         
         # Swap the coordinates.
-        self.board[coord1], self.board[coord2] = self.board[coord2], self.board[coord1]
+        self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
 
         ## Combination match ##
 
@@ -416,10 +415,6 @@ class Board:
                             self.board[:, i, j] = 0
         else: 
             raise ValueError(f"{tile_type} is an invalid special tile type.")
-
-    # def create_special(self, special_type:str, possible_coords: List[Tuple[int, int]]) -> None:
-    #     if special_type == "vertical_laser":
-
 
     def get_special_creation_pos(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
         """
