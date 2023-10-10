@@ -218,8 +218,13 @@ class Board:
             return False
         if not (0 <= coord2[0] < self.num_rows and 0 <= coord2[1] < self.num_cols):
             return False
+        
+        # Have to pick two distinct coordinates.
+        if coord1 == coord2:
+            return False
+        
         # Check coords are next to each other.
-        if not (coord1[0] == coord2[0] or coord1[1] == coord2[1]):
+        if not (coord1[0] == coord2[0] or coord1[1] == coord2[1]) or np.abs(coord1[0] - coord2[0]) > 1 or  np.abs(coord1[1] - coord2[1]) > 1:
             return False
 
         # Checks if both are special
