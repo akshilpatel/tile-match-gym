@@ -145,5 +145,21 @@ def test_get_colour_lines():
     assert [(7, 1), (8, 1), (9, 1)] in output_lines
     
 def test_process_colour_lines():
-    
+
+    # No lines
+
+    # Single vertical line
+
+    # Single horizontal line
+
+    # T 
+
+    # L
+
+    # Disjoint lines should not be merged.
+
+    # Lines > 3.
+
+    # Lines > 3 where the board config doesn't include the corresponding special.
+
     assert False

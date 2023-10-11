@@ -66,8 +66,6 @@ def test_possible_move():
         print("passed")
         bm.board = bd.copy()
     assert bm.possible_move() == False, "There is no possible move \n"+str(bm.board)
-    print("passed")
-
 
     combinations = [
             [[1,1,1,1],[0,1,1,0],[1,0,1,1]],
@@ -78,7 +76,6 @@ def test_possible_move():
         bm.board[0, 1:4, 1:5] *= c
         # print(bm.board)
         assert bm.possible_move() == False, "There is no possible move \n"+str(bm.board)
-        print("passed")
         bm.board = bd.copy()
 
 

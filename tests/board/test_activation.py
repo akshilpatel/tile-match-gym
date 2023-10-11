@@ -15,11 +15,19 @@ def test_activate_special():
     # Cookie
 
     # Adding to queue.
-
-
-
-
     assert False
 
 def test_get_special_creation_pos():
+    # Match of length 3 where middle is not special
+
+
+    # Match of even length.
+
+    # Match where middle is special.
+
+    # Match where non-middle is special.
+
+    # Match where all are already special... is this possible?
+
+
     assert False

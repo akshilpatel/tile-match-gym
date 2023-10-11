@@ -1,6 +1,7 @@
 
 from tile_match_gym.board import Board
 
+# Take boards from json
 def test_combination_match():
     # Cookie + cookie
 
