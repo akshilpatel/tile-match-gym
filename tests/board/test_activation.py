@@ -20,7 +20,6 @@ def test_activate_special():
 def test_get_special_creation_pos():
     # Match of length 3 where middle is not special
 
-
     # Match of even length.
 
     # Match where middle is special.

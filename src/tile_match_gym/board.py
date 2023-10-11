@@ -3,7 +3,6 @@ import numpy as np
 from typing import Optional, List, Tuple, Dict
 from collections import Counter
 
-from tile_match_gym.tile_translator import TileTranslator
 from tile_match_gym.utils.print_board_diffs import highlight_board_diff
 
 """
@@ -12,17 +11,6 @@ tile_colours = {
     1: colour1,
     2: ...
 }
-coloured_tile_types = {
-    1:      normal,
-    2:      v_laser,
-    3:      h_laser,
-    4:      bomb,
-}
-
-colourless_tile_types = {
-    -1:      cookie,
-
-}
 
 empty_tile: [0, 0] if tile_
 
@@ -30,7 +18,14 @@ empty_tile: [0, 0] if tile_
 
 
 
-
+TILE_TYPES = {
+    "empty": 0,
+    "normal": 1,
+    "vertical_laser": 2,
+    "horizontal_laser": 3,
+    "bomb": 4,
+    "cookie": -1,
+}
 
 class Board:
     def __init__(
@@ -384,6 +379,16 @@ class Board:
             self.create_special(match_coords, match_type)
 
     def activate_special(self, coord, tile_type, tile_colour):
+        """Used in the move loop for when a special has been chosen to activate passively (as opposed to when a combination match occurs).
+
+        Args:
+            coord (Tuple[int, int]): Coordinate at which to activate the special.
+            tile_type (str): Type of special.
+            tile_colour (_type_): _description_
+
+        Raises:
+            ValueError: _description_
+        """
         special_r, special_c = coord
 
         # Delete special.
