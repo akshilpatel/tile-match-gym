@@ -3,7 +3,7 @@ from tile_match_gym.board import Board
 import numpy as np
 from copy import deepcopy
 
-
+# TODO: Add tests for combination matches flagging as possible move
 def test_possible_move():
     """
         All combinations of 3 in a row
