@@ -15,6 +15,11 @@ def test_activate_special():
     # Cookie
 
     # Adding to queue.
+
+    # Test that a special can't be readded to queue after activation due to another tile activation
+
+
+    # Test case that cookie is activated but surrounded already by colourless specials - current code does not work.
     assert False
 
 def test_get_special_creation_pos():
