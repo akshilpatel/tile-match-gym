@@ -348,40 +348,59 @@ class Board:
                 self.gravity()
                 self.refill()
 
-    def resolve_colour_matches(self, match_locs: List[List[Tuple[int, int]]], match_types: List[str]) -> None:
+    def resolve_colour_matches(
+            self, 
+            match_locs: List[List[Tuple[int, int]]], 
+            match_types: List[str], 
+            match_colours:List[int]
+            ) -> None:
         """The main loop for processing a batch of colour matches. This function eliminates tiles, activates specials and creates new specials.
 
         Args:
             match_locs (List[List[Tuple[int, int]]]): List of match locations. Each match location is a list of coordinates that are part of the match.
             match_types (List[str]): List of match types ordered in the same way as match_locs.
+            match_colours (List[int]): The colour of a tile in each match. Used to track what colour new specials should be.
         """
         self.activation_q_coords = set()
         self.activation_q = []
+        special_creation_q = []
+
+        # Extract the special creation position first since the loop below deletes tiles so we cannot check colours for determining special pos.
+        for i in range(len(match_locs)):
+            if match_types[i] != "norm":
+                special_creation_coord = self.get_special_creation_pos(match_locs[i], match_types[i] != "bomb")
+                special_creation_q.append((special_creation_coord, match_types[i], match_colours[i]))
+
+        # Activate specials and delete tiles.
         for i in range(len(match_locs)):
             match_coords = match_locs[i]
             match_type = match_types[i]
             self.resolve_colour_match(match_coords, match_type)
-
+        
+        # Create new specials.
+        for i in range(len(special_creation_q)):
+            self.create_special(*special_creation_q[i])
     
-    def resolve_colour_match(self, match_coords:List[Tuple[int, int]], match_type:str) -> None:
-        """Resolving a single match. This function eliminates tiles, activates specials and creates new specials.
+    def resolve_colour_match(self, match_coords: List[Tuple[int, int]], match_type:str) -> None:
+        """
+        Resolving a single match. This function eliminates normal tiles and activates special tiles.
 
         Args:
             match_coords (List[Tuple[int, int]]): List of coordinates that are part of the match.
-            match_type (List[str]): List of match types ordered in the same way as match_coords.
+            match_type (str): Match type.
         """
         for coord in match_coords:
-            tile = self.board[coord]
-            if tile[1] != 0: # Not
+            tile = self.board[:, coord[0], coord[1]]
+            if tile[1] != 1:
                 self.activation_q_coords.add(coord)
                 self.activation_q.append((coord, *tile))
-            self.board[coord] = 0
+            else:
+                self.board[:, coord[0], coord[1]] = 0 # Delete the normal tiles.
         
-        for coord, tile_type, tile_colour in self.activation_q:
+        while len(self.activation_q) > 0:
+            coord, tile_type, tile_colour = self.activation_q.pop()
+            self.activation_q_coords.remove(coord)
             self.activate_special(coord, tile_type, tile_colour)
-
-        if match_type != "normal":
-            self.create_special(match_coords, match_type)
 
     def activate_special(self, coord, tile_type, tile_colour):
         """Used in the move loop for when a special has been chosen to activate passively (as opposed to when a combination match occurs).
@@ -509,12 +528,28 @@ class Board:
         return False # there are no ways to make a move and get 3 in a row
     
 
-    def create_special(self, match_coords: List[Tuple[int, int ]], match_type: str) -> None :
+    def create_special(self, coord: Tuple[int, int], special_type: str, tile_colour: int) -> None :
         """This function creates a special tile at the location specified by the match_coords.
-
+        We don't check if the special is valid under the board specification since that should be checked in process_colour_lines.
         Args:
-            match_coords (List[Tuple[int, int ]]): Coordinates to pick from.
-            match_type (str): The type of new special tile to create
+            coord (Tuple[int, int]): Coordinates to pick from.
+            special_type (str): The type of new special tile to create
         """
 
-        raise NotImplementedError()
+        assert self.board[0, coord[0], coord[1]] == 0
+        assert self.board[1, coord[0], coord[1]] == 0
+
+        tile_colour = None
+        if special_type == "cookie":
+            tile_type = -1
+        elif special_type == "vertical_laser":
+            tile_type = 2
+        elif special_type == "horizontal_laser":
+            tile_type = 3
+        elif special_type == "bomb":
+            tile_type = 4
+        else:
+            raise ValueError("Invalid match type for creating special: {match_type}")
+
+        self.board[0, coord[0], coord[1]] = tile_colour
+        self.board[1, coord[0], coord[1]] = tile_type
