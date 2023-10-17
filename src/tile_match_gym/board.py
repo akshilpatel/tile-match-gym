@@ -101,7 +101,7 @@ class Board:
             self.board[0, :row+1, :] = self.np_random.integers(1, self.num_colours+1, int((row+1) * self.num_cols)).reshape(-1, self.num_cols)
             line_matches = self.get_colour_lines()
             
-    def detect_colour_matches(self) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
+    def detect_colour_matches(self) -> Tuple[List[List[Tuple[int, int]]], List[str], List[int]]:
         """
         Returns the types and locations of tiles involved in the bottom-most colour matches.
         """
@@ -109,8 +109,8 @@ class Board:
         if len(lines) == 0:
             return [], []
         else:
-            tile_coords, tile_names = self.process_colour_lines(lines)
-            return tile_coords, tile_names
+            tile_coords, tile_names, tile_colours = self.process_colour_lines(lines)
+            return tile_coords, tile_names, tile_colours
 
     def get_colour_lines(self) -> List[List[Tuple[int, int]]]:
         """
@@ -253,17 +253,20 @@ class Board:
         self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
         return False
 
-    def process_colour_lines(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str]]:
+    def process_colour_lines(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str], List[int]]:
         """
         Given list of contiguous lines, this function detects the match type from the bottom up, merging any lines that share a coordinate.
         It greedily extracts the maximum match from the bottom up. So first look at what the most powerful thing you can extract from the bottom up.
 
         Note: concurrent groups can be matched at the same time.
+
+        Returns:
+            Tuple[List[List[Tuple[int, int]]], List[str], List[int]]: List of coordinates, list of match types, list of match colours.
         """
         tile_names = []
         tile_coords = []
+        tile_colours = []
 
-        # lines = sorted([sorted(i, key=lambda x: (x[0],x[1])) for i in lines], key=lambda y: (y[0][0]), reverse=True)
         lines = sorted([sorted(i, key=lambda x: (x[0], x[1])) for i in lines], key=lambda y: (y[0][0]), reverse=False)
 
         while len(lines) > 0:
@@ -272,16 +275,17 @@ class Board:
             if len(line) >= 5 and "cookie" in self.specials:
                 tile_names.append("cookie")
                 tile_coords.append(line[:5])
+                tile_colours.append(0)
                 if len(line[5:]) > 2:
                     lines.append(line[5:])  # TODO - should just not pop the line rather than removing and adding again.
             # check for laser
             elif len(line) == 4:
+                tile_colours.append(self.board[0, line[0][0], line[0][1]])
+                tile_coords.append(line)
                 if line[0][0] == line[1][0] and "horizontal_laser" in self.specials:
                     tile_names.append("horizontal_laser")
-                    tile_coords.append(line)
                 elif "vertical_laser" in self.specials:
                     tile_names.append("vertical_laser")
-                    tile_coords.append(line)
             # check for bomb (coord should appear in another line)
             elif "bomb" in self.specials:
                 if any([coord in l for coord in line for l in lines]):  # TODO - REMOVE THIS AS SLOW AND IS DONE TWICE
@@ -291,10 +295,10 @@ class Board:
                             shared = shared[0]
                             # Add the closest three coordinates from both lines.
                             sorted_closest = sorted(l, key=lambda x: (abs(x[0] - shared[0]) + abs(x[1] - shared[1])))
-                            tile_coords.append(
-                                [p for p in line] + [p for p in sorted_closest[:3] if p not in line]
-                            )  # TODO: Change this to also only extract 3 closest to intersection from line.
+                            # TODO: Change this to also only extract 3 closest to intersection from line.
+                            tile_coords.append([p for p in line] + [p for p in sorted_closest[:3] if p not in line])  
                             tile_names.append("bomb")
+                            tile_colours.append(self.board[0, line[0][0], line[0][1]])
                             if len(l) < 6:  # Remove the other line if shorter than 3 after extracting bomb.
                                 lines.remove(l)
                             else:
@@ -305,10 +309,14 @@ class Board:
             elif len(line) >= 3:
                 tile_names.append("normal")
                 tile_coords.append(line)
+                tile_colours.append(-1)
             # check for no match
-            else:
+            else: # TODO: Remove after debugging.
                 tile_names.append("ERR")
                 tile_coords.append(line)
+                tile_colours.append(-1)
+
+        return tile_coords, tile_names, tile_colours
 
     def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
         
