@@ -172,7 +172,6 @@ class Board:
         type_zero_mask_T = self.board[1].T == 0
         zero_mask_T = colour_zero_mask_T & type_zero_mask_T
         non_zero_mask_T = ~zero_mask_T
-        print(zero_mask_T.shape)
         
         for j in range(self.num_cols):
             self.board[0][:, j] = np.concatenate([self.board[0][:, j][zero_mask_T[j]], self.board[0][:, j][non_zero_mask_T[j]]])
@@ -324,7 +323,7 @@ class Board:
             return
         
         # Swap the coordinates.
-        self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
+        self.board[:, coord1[0], coord1[1]], self.board[:, coord2[0], coord2[1]] = self.board[:, coord2[0], coord2[1]], self.board[:, coord1[0], coord1[1]]
 
         ## Combination match ##
 
@@ -340,11 +339,11 @@ class Board:
         ## Colour matching ##
         has_match = True
         while has_match:
-            match_locs, match_types = self.detect_colour_matches()
+            match_locs, match_types, match_colours = self.detect_colour_matches()
             if len(match_locs) == 0:
                 has_match = False
             else:
-                self.resolve_colour_matches(match_locs, match_types)
+                self.resolve_colour_matches(match_locs, match_types, match_colours)
                 self.gravity()
                 self.refill()
 
@@ -401,63 +400,90 @@ class Board:
             coord, tile_type, tile_colour = self.activation_q.pop()
             self.activation_q_coords.remove(coord)
             self.activate_special(coord, tile_type, tile_colour)
-
-    def activate_special(self, coord, tile_type, tile_colour):
-        """Used in the move loop for when a special has been chosen to activate passively (as opposed to when a combination match occurs).
+            
+    
+    def activate_special(self, coord: Tuple[int, int], tile_type: str, tile_colour: int):
+        """
+        Used in the move loop for when a special has been chosen to activate passively (as opposed to when a combination match occurs). 
+        So the special tile has been _hit_ by another activation or it is involved in a colour match.
 
         Args:
             coord (Tuple[int, int]): Coordinate at which to activate the special.
             tile_type (str): Type of special.
-            tile_colour (_type_): _description_
+            tile_colour (int): Colour of the special tile.
 
         Raises:
-            ValueError: _description_
+            ValueError: If the type of tile being activated is not valid.
         """
         special_r, special_c = coord
 
-        # Delete special.
-        self.board[:, special_r, special_c] = 0
+        # Delete special if it hasn't already been deleted.
+        if self.board[1, special_r, special_c] == tile_type and self.board[0, special_r, special_c] == tile_colour:
+            self.board[:, special_r, special_c] = 0
         
         if tile_type == "vertical_laser":
             for row in range(self.num_rows):
-                if row == special_r: continue
-
+                if row == special_r: 
+                    continue
                 elif (self.board[1, row, special_c] not in [0, 1]) and (row, special_c) not in self.activation_q_coords:
-                    self.activation_q_coords.add((row, special_c))
+                    self.activation_q_coords.add((row, special_c)) # TODO: Maybe recurse here to ensure a special tile's activation is completely done like DFS instead of BFS.
                     self.activation_q.append((coord, *self.board[row, special_c]))
                 self.board[:, row, special_c] = 0
 
         elif tile_type == "horizontal_laser":
             for col in range(self.num_cols):
-                if col == special_c: continue
+                
+                if col == special_c:  # Already deleted the special tile.
+                    continue
+                # Queue specials for activation.
                 elif self.board[1, special_r, col] not in [0, 1] and (special_r, col) not in self.activation_q_coords:
                     self.activation_q_coords.add((special_r, col))
                     self.activation_q.append((coord, *self.board[special_r, col]))
-                self.board[:, special_r, col] = 0
+                # Delete normals
+                else:
+                    self.board[:, special_r, col] = 0   
             
         elif tile_type == "bomb":
             for i in range(coord[0] - 1, coord[0] + 2):
                 for j in range(coord[1] - 1, coord[1] + 2):
-                    if (i, j) == coord: continue
-                    elif self.board[1, i, j] not in [0, 1]:
+                    if (i, j) == coord: # Already deleted special tile
+                        continue
+                    # Queue specials for activation.
+                    elif self.board[1, i, j] not in [0, 1] and (i, j) not in self.activation_q_coords:
                         self.activation_q.append(((i, j), *self.board[1, i, j]))
-                    self.board[:, i, j] = 0
+                        self.activation_q_coords.add((i, j))
+                    # Delete normal tiles
+                    else:
+                        self.board[:, i, j] = 0 
 
         elif tile_type == "cookie":
+            colours = [self.board[0, coord[0] + i, coord[1] + j] for i, j in [(0, 1), (0, -1), (1, 0), (-1, 0)] if self.board[0, coord[0] + i, coord[1] + j] != 0]
+            colour_counter = Counter(colours)
+            # If the most common colour is 0 then we'd be deleting nothing.
+            if len(colour_counter) == 0:
+                most_common_colour = self.np_random.integers(1, self.num_colours + 1)
+            else:
+                most_common_colour = colour_counter.most_common(1)[0] 
+            # get the most common neighbour and activate all variants of that tile
+
+            # Delete all normal tiles of the chosen colour.
+            colour_mask = self.board[0] == most_common_colour
+            normal_mask = self.board[1] == 1
+            mask = colour_mask & normal_mask
+            self.board[0, mask] = 0
+            self.board[1, mask] = 0
             
-            colours = [self.board[0, coord[0] + i, coord[1] + j]  for i, j in [(0, 1), (0, -1), (1, 0), (-1, 0)]]
-            most_common_colour = Counter(colours).most_common(1)[0]
-            # get the most common neighbour and remove all variants of that tile
-            for i in range(self.num_rows):
-                for j in range(self.num_cols):
-                    colour = self.board[0, i, j]
-                    if colour == most_common_colour:
-                        if self.board[1, i, j] not in [0, 1]:
-                            self.activation_q.append((i, j))
-                        else:
-                            self.board[:, i, j] = 0
+            special_type_mask = self.board[1] > 1
+            mask = colour_mask & special_type_mask
+            r_idcs, c_idcs = np.where(mask)
+            
+            for i in range(len(r_idcs)):
+                r, c = r_idcs[i], c_idcs[i]
+                if self.board[1, r, c] not in [0, 1] and (r, c) not in self.activation_q_coords:
+                    self.activation_q.append((r, c))
+                    self.activation_q_coords.add((r, c))
         else: 
-            raise ValueError(f"{tile_type} is an invalid special tile type.")
+            raise ValueError(f"Tile type: {tile_type}, tile colour: {tile_colour} is an invalid special tile.")
 
     def get_special_creation_pos(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
         """
@@ -471,13 +497,13 @@ class Board:
             ys = [c[1] for c in coords]
             corner = (max(xs, key=xs.count), max(ys, key=ys.count))
 
-            std = [c for c in coords if not self.board[1, c[0], c[1]] not in [0, 1]]
+            std = [c for c in coords if self.board[1, c[0], c[1]] not in [0, 1]]
             if corner in std:
                 return corner
             else:
                 return sorted(std, key=lambda x: (x[0] - corner[0]) ** 2 + (x[1] - corner[1]) ** 2)[0]
 
-        sorted_coords = sorted([c for c in coords if not self.board[1, c[0], c[1]] not in [0, 1]], key=lambda x: (x[0], x[1]))
+        sorted_coords = sorted([c for c in coords if self.board[1, c[0], c[1]] not in [0, 1]], key=lambda x: (x[0], x[1]))
         
         if len(sorted_coords) % 2 == 0:
             return sorted_coords[len(sorted_coords) // 2 - 1]
@@ -507,7 +533,6 @@ class Board:
                 rows, cols = self.num_cols, self.num_rows
             for r in range(rows - 2):
                 for c in range(cols - 2):
-
                     # if 2/3 of the values in the next 3 are the same
                     if len(set(grid[r, c:c + 3])) == 2:
                         # check the possible combiniations
@@ -515,7 +540,6 @@ class Board:
                             for possible in [[r + 1, c + 1], [r - 1, c + 1]]: # triangles
                                 if exists(possible) and grid[possible[0], possible[1]] == grid[r, c]:
                                     return True
-
                         cn = c
                         # if the second two are the same 011 shift logic up 1 column
                         if grid[r, c+1] == grid[r, c + 2]:
