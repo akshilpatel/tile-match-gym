@@ -42,6 +42,7 @@ def test_get_colour_lines():
     assert  [(2, 0), (2, 1), (2, 2)] in b.get_colour_lines(), b.get_colour_lines()
     assert len(b.get_colour_lines()) == 1
 
+
     # Different board shape.
     b2 = Board(num_rows=5, num_cols=3, num_colours=7)
     b2.board[0] = np.array([[3, 4, 4], 
@@ -129,26 +130,58 @@ def test_get_colour_lines():
 
     b4 = Board(num_rows=10, num_cols=4, num_colours=5)
     b4.board[0] = np.array([[5, 5, 4, 5],
-                     [3, 3, 5, 6],
-                     [3, 6, 3, 3],
-                     [5, 5, 4, 3],
-                     [5, 5, 3, 5],
-                     [3, 5, 2, 6],
-                     [5, 6, 6, 5],
-                     [4, 4, 4, 5],
-                     [2, 4, 2, 2],
-                     [5, 4, 5, 6]])
+                            [3, 3, 5, 6],
+                            [3, 6, 3, 3],
+                            [5, 5, 4, 3],
+                            [5, 5, 3, 5],
+                            [3, 5, 2, 6],
+                            [5, 6, 6, 5],
+                            [4, 4, 4, 5],
+                            [2, 4, 2, 2],
+                            [5, 4, 5, 6]])
 
 
     output_lines = b4.get_colour_lines()
     assert len(output_lines) == 1, output_lines
     assert [(7, 1), (8, 1), (9, 1)] in output_lines
+
+    # not on the bottom vertical line
+    b6 = Board(num_rows=4, num_cols=4, num_colours=7)
+    b6.board[0] = np.array([[2, 3, 4, 3],
+                           [3, 1, 3, 2],
+                           [3, 1, 3, 2],
+                           [4, 1, 2, 1]])
+    assert  [(1, 1), (2, 1), (3, 1)] in b6.get_colour_lines(), b6.get_colour_lines()
+    assert len(b6.get_colour_lines()) == 1
     
 def test_process_colour_lines():
 
     # No lines
+    # Match where the colours are different
+    coordinates, match_types, match_colors = get_match_details(
+        [[3, 1, 2, 2],
+         [1, 3, 2, 3],
+         [3, 1, 1, 2]])
+
+    assert len(coordinates) == 0
+    assert len(match_types) == 0
+    assert len(match_colors) == 0
+
 
     # Single vertical line
+    coordinates, match_types, match_colors = get_match_details(
+        np.array([[2, 3, 4, 3],
+         [3, 1, 3, 2],
+         [3, 1, 3, 2],
+         [4, 1, 2, 1]]))
+    expected_coordinates = [(0, 1), (1, 1), (2, 1)]
+    
+    print("coordinates = ", coordinates)
+    print("match_types = ", match_types)
+    print("match_colors = ", match_colors)
+    assert len(coordinates) == 3
+    assert all([c in expected_coordinates for c in coordinates])
+
 
     # Single horizontal line
 
@@ -162,4 +195,19 @@ def test_process_colour_lines():
 
     # Lines > 3 where the board config doesn't include the corresponding special.
 
-    assert False
+
+def get_match_details(grid, type_grid=None, num_colours=3):
+    """
+    Helper function to setup a board with a given grid.
+    """
+    b = Board(num_rows=len(grid), num_cols=len(grid[0]), num_colours=num_colours)
+    b.board[0] = np.zeros((b.num_rows, b.num_cols))
+    b.board[1] = np.ones_like(b.board[0])
+    b.board[0] = np.array(grid)
+    if type_grid is not None:
+        b.board[1] = np.array(type_grid)
+
+    lines = b.get_colour_lines()
+    tile_coords, tile_names, tile_colours = b.process_colour_lines(lines)
+    return tile_coords, tile_names, tile_colours
+
