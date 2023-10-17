@@ -52,9 +52,6 @@ class Board:
 
         self.specials = set(self.colourless_specials + self.colour_specials)
     
-        self.tile_translator = TileTranslator(num_colours, (num_rows, num_cols), self.colourless_specials, self.colour_specials)
-        self.normal_tile_range = self.tile_translator.get_normal_tile_range()
-
         if seed is None:
             seed = np.random.randint(0, 1000000000)
         self.np_random = np.random.default_rng(seed)
