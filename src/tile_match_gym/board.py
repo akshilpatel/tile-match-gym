@@ -490,21 +490,19 @@ class Board:
         Given a set of coordinates return the position of the special tile that should be placed
         The position should be as close to the center as possible but should not already be special.
         """
-
         if not straight:
             # get the corner coords
             xs = [c[0] for c in coords]
             ys = [c[1] for c in coords]
             corner = (max(xs, key=xs.count), max(ys, key=ys.count))
 
-            std = [c for c in coords if self.board[1, c[0], c[1]] not in [0, 1]]
+            std = [tuple(c) for c in coords if self.board[1, c[0], c[1]] in [0, 1]]
             if corner in std:
                 return corner
             else:
                 return sorted(std, key=lambda x: (x[0] - corner[0]) ** 2 + (x[1] - corner[1]) ** 2)[0]
 
-        sorted_coords = sorted([c for c in coords if self.board[1, c[0], c[1]] not in [0, 1]], key=lambda x: (x[0], x[1]))
-        
+        sorted_coords = sorted([c for c in coords if self.board[1, c[0], c[1]] in [0, 1]], key=lambda x: (x[0], x[1]))
         if len(sorted_coords) % 2 == 0:
             return sorted_coords[len(sorted_coords) // 2 - 1]
         return sorted_coords[len(sorted_coords) // 2]
