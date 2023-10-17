@@ -577,3 +577,93 @@ class Board:
 
         self.board[0, coord[0], coord[1]] = tile_colour
         self.board[1, coord[0], coord[1]] = tile_type
+        
+
+    def combination_match(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
+        """
+        This function executes a combination match. This usually creates a more powerful effect than activating each special tile alone.
+
+        Args:
+            coord1 (Tuple[int, int]): Coordinates in combination.
+            coord2 (Tuple[int, int]): Coordinates in combination.
+        """
+
+        # Get the types and colours of each tile.
+        tile_type1, tile_colour1 = self.board[1, coord1[0], coord1[1]], self.board[0, coord1[0], coord1[1]]
+        tile_type2, tile_colour2 = self.board[1, coord2[0], coord2[1]], self.board[0, coord2[0], coord2[1]]
+        
+
+        # Cookie + cookie
+        if tile_type1 == tile_type2 == -1:
+            self.board[:, :, :] = 0
+            self.activation_q = [] # clear the activation queue since the tiles no longer exist.
+            self.activation_q_coords = set()
+        
+        # Cookie + normal
+        elif tile_type1 == -1 and tile_type2 == 1 or tile_type1 == 1 and tile_type2 == -1:
+            if tile_type1 == 1: # Deal with reverse order.
+                tile_type1, tile_type2 = tile_type2, tile_type1
+                tile_colour1, tile_colour2 = tile_colour2, tile_colour1
+                coord1, coord2 = coord2, coord1
+
+            self.board[:, coord1[0], coord1[1]] = 0
+            colour_mask = self.board[0] == tile_colour2
+            type_mask = self.board[1] == 1
+            mask = colour_mask & type_mask
+            self.board[0, mask] = 0
+            self.board[1, mask] = 0
+
+            
+
+        # Cookie + vertical laser/horizontal laser/bomb -> convert all normals of same colour to the special type.
+        elif tile_type1 == -1 and tile_type2 >= 2 or tile_type1 >=2  and tile_type2 == -1:
+            if tile_type2 == -1:
+                tile_type1, tile_type2 = tile_type2, tile_type1
+                tile_colour1, tile_colour2 = tile_colour2, tile_colour1
+                coord1, coord2 = coord2, coord1
+            
+            colour_mask = self.board[0] == tile_colour2 
+            normal_mask = self.board[1] == 1
+            mask = colour_mask & normal_mask
+            self.board[0, mask] = 0
+            self.board[1, mask] = 0
+            
+            special_type_mask = self.board[1] > 1
+            mask = colour_mask & special_type_mask
+            r_idcs, c_idcs = np.where(mask)
+            
+            for i in range(len(r_idcs)):
+                r, c = r_idcs[i], c_idcs[i]
+                if self.board[1, r, c] not in [0, 1] and (r, c) not in self.activation_q_coords:
+                    self.activation_q.append((r, c))
+                    self.activation_q_coords.add((r, c))
+        
+        # vertical laser + vertical laser or horizontal laser + horizontal laser or vertical laser + horizontal laser
+        elif tile_type1 == tile_type2 == 2 or tile_type1 == tile_type2 == 3 or tile_type1 == 2 and tile_type2 == 3 or tile_type1 == 3 and tile_type1 == 2:
+            self.board[:, coord1[0], coord1[1]] = 0
+            self.board[:, coord2[0], coord2[1]] = 0
+            
+            # Do a vertical and horizontal laser at the same time at the topmost leftmost coordinate.
+            if coord1[0] == coord2[0]:
+                r = coord1[0]
+                c = min(coord1[1], coord2[1])
+            else:
+                r = min(coord1[0], coord2[0])
+                c = coord1[1]
+
+            self.activate_special((r,c), 2, tile_colour1)
+            self.activate_special((r,c), 3, tile_colour1)
+            
+        # vertical laser/horizontal laser + bomb
+        elif tile_type1 == 4 and 2 <= tile_type2 <= 3 or tile_type2 == 4 and 2 <= tile_type1 <= 3:
+            if tile_type2 == 4:
+                tile_type1, tile_type2 = tile_type2, tile_type1
+                tile_colour1, tile_colour2 = tile_colour2, tile_colour1
+                coord1, coord2 = coord2, coord1
+
+            
+            
+
+
+                
+        # bomb + bomb 
