@@ -606,11 +606,10 @@ class Board:
 
             self.board[:, coord1[0], coord1[1]] = 0
             colour_mask = self.board[0] == tile_colour2
-            type_mask = self.board[1] == 1
-            mask = colour_mask & type_mask
+            normal_mask = self.board[1] == 1
+            mask = colour_mask & normal_mask
             self.board[0, mask] = 0
             self.board[1, mask] = 0
-
             
 
         # Cookie + vertical laser/horizontal laser/bomb -> convert all normals of same colour to the special type.
@@ -648,7 +647,8 @@ class Board:
             else:
                 r = min(coord1[0], coord2[0])
                 c = coord1[1]
-
+            
+            # Activate a vertical and then horizontal laser.
             self.activate_special((r,c), 2, tile_colour1)
             self.activate_special((r,c), 3, tile_colour1)
             
@@ -659,9 +659,29 @@ class Board:
                 tile_colour1, tile_colour2 = tile_colour2, tile_colour1
                 coord1, coord2 = coord2, coord1
 
-            
-            
+        # bomb + bomb             
+        elif tile_type1 == tile_type2 == 4:
+            if coord1[0] == coord2[0]:
+                central_r = coord1[0]
+                central_c = min(coord1[1], coord1[1])
+            else: 
+                central_c = coord1[1]
+                central_r = min(coord1[0], coord2[0])
 
+            min_r = max(central_r - 2, 0)
+            max_r = min(central_r + 2, self.num_rows - 1)
+            min_c = max(central_c  - 2, 0)
+            max_c = min(central_c + 2, self.num_cols - 1)
+            
+            # Delete bombs
+            self.board[:, coord1[0], coord1[0]] = 0
+            self.board[:, coord2[0], coord2[0]] = 0
 
-                
-        # bomb + bomb 
+            # Iterate through activation area.
+            for i in range(min_r, max_r + 1):
+                for j in range(min_c, max_c + 1):
+                    if self.board[1, i, j] == 1:
+                        self.board[:, i, j] = 0
+                    elif self.board[1, i, j] > 1:
+                        self.activate_special((i, j), self.board[1, i, j], self.board[0, i, j])
+            
