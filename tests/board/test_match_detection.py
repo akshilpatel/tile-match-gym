@@ -171,16 +171,17 @@ def test_process_colour_lines():
     # Single vertical line
     coordinates, match_types, match_colors = get_match_details(
         np.array([[2, 3, 4, 3],
-         [3, 1, 3, 2],
-         [3, 1, 3, 2],
-         [4, 1, 2, 1]]))
-    expected_coordinates = [(0, 1), (1, 1), (2, 1)]
+                  [3, 1, 3, 2],
+                  [3, 1, 3, 2],
+                  [4, 1, 2, 1]]))
+    expected_coordinates = [(1, 1), (2, 1), (3, 1)]
     
     print("coordinates = ", coordinates)
     print("match_types = ", match_types)
     print("match_colors = ", match_colors)
-    assert len(coordinates) == 3
-    assert all([c in expected_coordinates for c in coordinates])
+    assert len(coordinates) == 1
+    assert len(coordinates[0]) == 3
+    assert all([c in expected_coordinates for c in coordinates[0]])
 
 
     # Single horizontal line
