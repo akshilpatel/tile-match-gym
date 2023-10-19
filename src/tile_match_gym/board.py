@@ -330,7 +330,7 @@ class Board:
             elif len(line) >= 3:
                 tile_names.append("normal")
                 tile_coords.append(line)
-                tile_colours.append(-1)
+                tile_colours.append(self.board[0, line[0][0], line[0][1]])
             # check for no match
             else: # TODO: Remove after debugging.
                 tile_names.append("ERR")

@@ -233,6 +233,9 @@ def test_process_colour_lines():
                   [3, 1, 3, 2],
                   [4, 1, 2, 1]]))
     expected_coordinates = [(1, 1), (2, 1), (3, 1)]
+    expected_types = ['normal']
+    assert all([t == e for t, e in zip(match_types, expected_types)]), str(match_types) + " should be " + str(expected_types)
+    assert match_colors == [1]
     assert len(coordinates) == 1
     assert len(coordinates[0]) == 3
     assert all([c in expected_coordinates for c in coordinates[0]])
@@ -247,6 +250,9 @@ def test_process_colour_lines():
     assert len(coordinates) == 1
     assert len(coordinates[0]) == 3
     assert all([c in expected_coordinates for c in coordinates[0]])
+    expected_types = ['normal']
+    assert all([t == e for t, e in zip(match_types, expected_types)])
+    assert match_colors == [1]
 
     # T 
     coordinates, match_types, match_colors = get_match_details(
@@ -258,6 +264,9 @@ def test_process_colour_lines():
     assert len(coordinates) == 1
     assert len(coordinates[0]) == 5
     assert all([c in expected_coordinates for c in coordinates[0]])
+    expected_types = ['bomb']
+    assert all([t == e for t, e in zip(match_types, expected_types)])
+    assert match_colors == [1]
 
     # L
 
@@ -270,10 +279,35 @@ def test_process_colour_lines():
     assert len(coordinates) == 2
     assert [(1,1),(2,1),(3,1)] in coordinates
     assert [(1,3),(2,3),(3,3)] in coordinates
+    expected_types = ['normal', 'normal']
+    assert all([t == e for t, e in zip(match_types, expected_types)])
+    assert match_colors == [1, 1]
 
     # Lines > 3.
+    coordinates, match_types, match_colors = get_match_details(
+        np.array([[2, 1, 3, 2, 3],
+                  [4, 1, 4, 1, 3],
+                  [3, 1, 3, 2, 2],
+                  [3, 1, 4, 1, 2]]))
+    assert len(coordinates) == 1
+    assert [(0,1),(1,1),(2,1),(3,1)] in coordinates
+    expected_types = ['vertical_laser']
+    assert all([t == e for t, e in zip(match_types, expected_types)]), str(match_types) + " should be " + str(expected_types)
+    assert match_colors == [1]
 
     # Lines > 3 where the board config doesn't include the corresponding special.
+    coordinates, match_types, match_colors = get_match_details(
+        np.array([[2, 1, 3, 2, 3],
+                  [4, 1, 4, 1, 3],
+                  [2, 1, 3, 2, 2],
+                  [4, 1, 4, 1, 3],
+                  [3, 1, 3, 2, 2],
+                  [3, 1, 4, 1, 2]]))
+    assert len(coordinates) == 1
+    assert [(0,1),(1,1),(2,1),(3,1),(4,1)] in coordinates
+    expected_types = ['cookie']
+    assert all([t == e for t, e in zip(match_types, expected_types)]), str(match_types) + " should be " + str(expected_types)
+    assert match_colors == [0]
 
 
 def get_match_details(grid, type_grid=None, num_colours=3):
