@@ -162,42 +162,25 @@ class Board:
         #   colour and (and are not colourless)
         # follow the neighbours until the end of the line is reached
         # if the line is long enough, add it to the list of lines
-        print("grid = ",)
-        print(self.board[0])
-        print("#####\n")
-        print("lines = ", lines)
 
         valid_coord = lambda coord: 0 <= coord[0] < self.num_rows and 0 <= coord[1] < self.num_cols
         match_color = lambda coord1, coord2: self.board[0, coord1[0], coord1[1]] == self.board[0, coord2[0], coord2[1]] and self.board[1, coord1[0], coord1[1]] > 0 and self.board[1, coord2[0], coord2[1]] > 0
         coords = [(i, j) for l in lines for i, j in l]
         directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         
-        print("coords = ", coords)
         for c in coords:
             for d in directions:
-                n = (c[0] + d[0], c[1] + d[1])
-                print(f"valid_coord({n}) = ", valid_coord(n))
-                print(f"match_color({c}, {n}) = ", match_color(c, n))
-                print("color of c = ", self.board[0, c[0], c[1]])
-                print("color of n = ", self.board[0, n[0], n[1]])
-                if n not in coords and valid_coord(n) and match_color(c, n):
-                    line = [c, n]
-                    print("######\nc=",c)
-                    print("n=",n)
-                    print("d=",d)
-                    next_neighbour = (n[0] + d[0], n[1] + d[1])
-                    # [print(line) for line in self.board[0]]
-                    print("next_neighbour coords = ", next_neighbour)
-                    if valid_coord(next_neighbour):
-                        print("neighbour value = ", self.board[0, next_neighbour[0], next_neighbour[1]])
-                    while next_neighbour not in coords and valid_coord(next_neighbour) and match_color(c, next_neighbour):
-                        line.append(next_neighbour)
-                        n = next_neighbour
-                        next_neighbour = (n[0] + d[0], n[1] + d[1])
-                    if len(line) >= 3:
-                        lines.append(line)
+                line = [c]
+                for direction in [d, (-d[0], -d[1])]:
+                    n = (c[0] + direction[0], c[1] + direction[1])
+                    while n not in coords and valid_coord(n) and match_color(c, n):
+                        line.append(n)
+                        n = (n[0] + direction[0], n[1] + direction[1])
+                if len(line) >= 3:
+                    sorted_line = sorted(line, key=lambda x: (x[0], x[1]))
+                    if sorted_line not in lines:
+                        lines.append(sorted_line)
         
-        print("lines = ", lines)
         return lines
 
 

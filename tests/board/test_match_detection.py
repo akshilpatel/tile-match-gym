@@ -153,8 +153,10 @@ def test_get_colour_lines():
 
 
     output_lines = b4.get_colour_lines()
-    assert len(output_lines) == 1, output_lines
-    assert [(7, 1), (8, 1), (9, 1)] in output_lines
+    assert len(output_lines) == 2, output_lines
+    assert [(7,1),(8,1),(9,1)] in output_lines
+    assert [(7,0),(7,1),(7,2)] in output_lines
+    # assert [(7, 1), (8, 1), (9, 1)] in output_lines
 
     # not on the bottom vertical line
     b6 = Board(num_rows=4, num_cols=4, num_colours=7)
@@ -179,13 +181,35 @@ def test_get_colour_lines():
                            [1, 1, 1, 2],
                            [3, 1, 3, 2],
                            [4, 1, 2, 1]])
-    [print(line) for line in b8.board]
     lines = b8.get_colour_lines()
-    print("#####")
-    [print(line) for line in b8.board]
     # assert  [(1,0),(1,1),(1,2),(2,1),(3,1)] in lines, lines
     assert [(1,1),(2,1),(3,1)] in lines, lines
     assert [(1,0),(1,1),(1,2)] in lines, lines
+    assert len(b6.get_colour_lines()) == 1
+
+
+    # upside down T shape
+    b8 = Board(num_rows=4, num_cols=4, num_colours=7) #, board=np.array([bo, bb]), seed=1)
+    b8.board[0] = np.array([[2, 3, 4, 3],
+                           [4, 1, 2, 2],
+                           [3, 1, 3, 2],
+                           [1, 1, 1, 3]])
+    lines = b8.get_colour_lines()
+    # assert  [(1,0),(1,1),(1,2),(2,1),(3,1)] in lines, lines
+    assert [(1,1),(2,1),(3,1)] in lines, lines
+    assert [(3,0),(3,1),(3,2)] in lines, lines
+    assert len(b6.get_colour_lines()) == 1
+
+    # L
+    b8 = Board(num_rows=4, num_cols=4, num_colours=7) #, board=np.array([bo, bb]), seed=1)
+    b8.board[0] = np.array([[2, 3, 4, 3],
+                           [4, 1, 2, 2],
+                           [3, 1, 3, 2],
+                           [3, 1, 1, 1]])
+    lines = b8.get_colour_lines()
+    # assert  [(1,0),(1,1),(1,2),(2,1),(3,1)] in lines, lines
+    assert [(1,1),(2,1),(3,1)] in lines, lines
+    assert [(3,1),(3,2),(3,3)] in lines, lines
     assert len(b6.get_colour_lines()) == 1
     
 # def test_process_colour_lines():
@@ -271,10 +295,19 @@ def get_match_details(grid, type_grid=None, num_colours=3):
 
 
 if __name__ == "__main__":
-    print("T_SHAPE")
-    b7 = Board(num_rows=4, num_cols=4, num_colours=7)
-    b7.board[0] = np.array([[2, 3, 4, 3],
-                            [1, 1, 1, 2],
-                            [3, 1, 3, 2],
-                            [4, 1, 2, 1]])
-    lines = b7.get_colour_lines()
+    b4 = Board(num_rows=10, num_cols=4, num_colours=5)
+    b4.board[0] = np.array([[5, 5, 4, 5],
+                            [3, 3, 5, 6],
+                            [3, 6, 3, 3],
+                            [5, 5, 4, 3],
+                            [5, 5, 3, 5],
+                            [3, 5, 2, 6],
+                            [5, 6, 6, 5],
+                            [4, 4, 4, 5],
+                            [2, 4, 2, 2],
+                            [5, 4, 5, 6]])
+
+
+    output_lines = b4.get_colour_lines()
+    assert len(output_lines) == 1, output_lines
+    assert [(3, 1), (4, 1), (5, 1)] in output_lines
