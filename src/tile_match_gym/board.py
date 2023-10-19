@@ -65,7 +65,6 @@ class Board:
             self.generate_board()
 
         self.indices = np.array([[(r, c) for r in range(self.num_cols)] for c in range(self.num_rows)])
-        self.activation_q = []
 
     def generate_board(self):
         self.board = np.ones((2, self.num_rows, self.num_cols), dtype=int)
@@ -141,7 +140,6 @@ class Board:
                                 line = [(i, col) for i in range(line_start, line_end + 1)]      
                                 vertical_line_coords.update(line)
                                 lines.append(line)
-
                 # Horizontal lines
                 if col < self.num_cols - 2 and (row, col) not in horizontal_line_coords:
                     if self.board[1, row, col] > 0 : # Not Colourless special
@@ -359,8 +357,6 @@ class Board:
             match_types (List[str]): List of match types ordered in the same way as match_locs.
             match_colours (List[int]): The colour of a tile in each match. Used to track what colour new specials should be.
         """
-        self.activation_q_coords = set()
-        self.activation_q = []
         special_creation_q = []
 
         # Extract the special creation position first since the loop below deletes tiles so we cannot check colours for determining special pos.
@@ -390,15 +386,10 @@ class Board:
         for coord in match_coords:
             tile = self.board[:, coord[0], coord[1]]
             if tile[1] != 1:
-                self.activation_q_coords.add(coord)
-                self.activation_q.append((coord, *tile))
+                self.activate_special(coord, tile[1], tile[0])
             else:
                 self.board[:, coord[0], coord[1]] = 0 # Delete the normal tiles.
         
-        while len(self.activation_q) > 0:
-            coord, tile_type, tile_colour = self.activation_q.pop()
-            self.activation_q_coords.remove(coord)
-            self.activate_special(coord, tile_type, tile_colour)
             
     
     def activate_special(self, coord: Tuple[int, int], tile_type: str, tile_colour: int):
@@ -424,9 +415,8 @@ class Board:
             for row in range(self.num_rows):
                 if row == special_r: 
                     continue
-                elif (self.board[1, row, special_c] not in [0, 1]) and (row, special_c) not in self.activation_q_coords:
-                    self.activation_q_coords.add((row, special_c)) # TODO: Maybe recurse here to ensure a special tile's activation is completely done like DFS instead of BFS.
-                    self.activation_q.append((coord, *self.board[row, special_c]))
+                elif (self.board[1, row, special_c] not in [0, 1]) and (row, special_c):
+                    self.activate_special((row, special_c), self.board[1, row, special_c], self.board[0, row, special_c])
                 self.board[:, row, special_c] = 0
 
         elif tile_type == "horizontal_laser":
@@ -435,9 +425,8 @@ class Board:
                 if col == special_c:  # Already deleted the special tile.
                     continue
                 # Queue specials for activation.
-                elif self.board[1, special_r, col] not in [0, 1] and (special_r, col) not in self.activation_q_coords:
-                    self.activation_q_coords.add((special_r, col))
-                    self.activation_q.append((coord, *self.board[special_r, col]))
+                elif self.board[1, special_r, col] not in [0, 1] and (special_r, col):
+                    self.activate_special((special_r, col), self.board[1, special_r, col], self.board[0, special_r, col])
                 # Delete normals
                 else:
                     self.board[:, special_r, col] = 0   
@@ -448,9 +437,8 @@ class Board:
                     if (i, j) == coord: # Already deleted special tile
                         continue
                     # Queue specials for activation.
-                    elif self.board[1, i, j] not in [0, 1] and (i, j) not in self.activation_q_coords:
-                        self.activation_q.append(((i, j), *self.board[1, i, j]))
-                        self.activation_q_coords.add((i, j))
+                    elif self.board[1, i, j] not in [0, 1] and (i, j):
+                        self.activate_special((i, j), self.board[1, i, j], self.board[0, i, j])
                     # Delete normal tiles
                     else:
                         self.board[:, i, j] = 0 
@@ -478,9 +466,8 @@ class Board:
             
             for i in range(len(r_idcs)):
                 r, c = r_idcs[i], c_idcs[i]
-                if self.board[1, r, c] not in [0, 1] and (r, c) not in self.activation_q_coords:
-                    self.activation_q.append((r, c))
-                    self.activation_q_coords.add((r, c))
+                if self.board[1, r, c] not in [0, 1] and (r, c):
+                    self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c])
         else: 
             raise ValueError(f"Tile type: {tile_type}, tile colour: {tile_colour} is an invalid special tile.")
 
@@ -593,9 +580,7 @@ class Board:
         # Cookie + cookie
         if tile_type1 == tile_type2 == -1:
             self.board[:, :, :] = 0
-            self.activation_q = [] # clear the activation queue since the tiles no longer exist.
-            self.activation_q_coords = set()
-        
+            
         # Cookie + normal
         elif tile_type1 == -1 and tile_type2 == 1 or tile_type1 == 1 and tile_type2 == -1:
             if tile_type1 == 1: # Deal with reverse order.
@@ -630,10 +615,9 @@ class Board:
             
             for i in range(len(r_idcs)):
                 r, c = r_idcs[i], c_idcs[i]
-                if self.board[1, r, c] not in [0, 1] and (r, c) not in self.activation_q_coords:
-                    self.activation_q.append((r, c))
-                    self.activation_q_coords.add((r, c))
-        
+                if self.board[1, r, c] not in [0, 1] and (r, c):
+                    self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c])
+                    
         # vertical laser + vertical laser or horizontal laser + horizontal laser or vertical laser + horizontal laser
         elif tile_type1 == tile_type2 == 2 or tile_type1 == tile_type2 == 3 or tile_type1 == 2 and tile_type2 == 3 or tile_type1 == 3 and tile_type1 == 2:
             self.board[:, coord1[0], coord1[1]] = 0
@@ -683,4 +667,3 @@ class Board:
                         self.board[:, i, j] = 0
                     elif self.board[1, i, j] > 1:
                         self.activate_special((i, j), self.board[1, i, j], self.board[0, i, j])
-            
