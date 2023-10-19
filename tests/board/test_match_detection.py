@@ -212,69 +212,68 @@ def test_get_colour_lines():
     assert [(3,1),(3,2),(3,3)] in lines, lines
     assert len(b6.get_colour_lines()) == 1
     
-# def test_process_colour_lines():
-# 
-#     # No lines
-#     # Match where the colours are different
-#     coordinates, match_types, match_colors = get_match_details(
-#         [[3, 1, 2, 2],
-#          [1, 3, 2, 3],
-#          [3, 1, 1, 2]])
-# 
-#     assert len(coordinates) == 0
-#     assert len(match_types) == 0
-#     assert len(match_colors) == 0
-# 
-# 
-#     # Single vertical line
-#     coordinates, match_types, match_colors = get_match_details(
-#         np.array([[2, 3, 4, 3],
-#                   [3, 1, 3, 2],
-#                   [3, 1, 3, 2],
-#                   [4, 1, 2, 1]]))
-#     expected_coordinates = [(1, 1), (2, 1), (3, 1)]
-#     assert len(coordinates) == 1
-#     assert len(coordinates[0]) == 3
-#     assert all([c in expected_coordinates for c in coordinates[0]])
-# 
-#     # Single horizontal line
-#     coordinates, match_types, match_colors = get_match_details(
-#         np.array([[2, 3, 3, 4, 3],
-#                   [3, 2, 4, 3, 2],
-#                   [4, 1, 1, 1, 3],
-#                   [3, 4, 2, 3, 2]]))
-#     expected_coordinates = [(2, 1), (2, 2), (2, 3)]
-#     assert len(coordinates) == 1
-#     assert len(coordinates[0]) == 3
-#     assert all([c in expected_coordinates for c in coordinates[0]])
-# 
-#     # T 
-#     coordinates, match_types, match_colors = get_match_details(
-#         np.array([[2, 3, 3, 4, 3],
-#                   [4, 1, 1, 1, 3],
-#                   [3, 2, 1, 3, 2],
-#                   [3, 4, 1, 3, 2]]))
-#     expected_coordinates = [(1, 1), (1, 2), (1, 3), (2, 2), (3, 2)]
-#     assert len(coordinates) == 1
-#     assert len(coordinates[0]) == 5
-#     assert all([c in expected_coordinates for c in coordinates[0]])
-# 
-#     # L
-# 
-#     # Disjoint lines should not be merged.
-#     coordinates, match_types, match_colors = get_match_details(
-#         np.array([[2, 3, 3, 2, 3],
-#                   [4, 1, 4, 1, 3],
-#                   [3, 1, 3, 1, 2],
-#                   [3, 1, 4, 1, 2]]))
-#     expected_coordinates = [(1, 1), (1, 2), (1, 3), (2, 2), (3, 2)]
-#     assert len(coordinates) == 1
-#     assert len(coordinates[0]) == 5
-#     assert all([c in expected_coordinates for c in coordinates[0]])
-# 
-#     # Lines > 3.
-# 
-#     # Lines > 3 where the board config doesn't include the corresponding special.
+def test_process_colour_lines():
+
+    # No lines
+    # Match where the colours are different
+    coordinates, match_types, match_colors = get_match_details(
+        [[3, 1, 2, 2],
+         [1, 3, 2, 3],
+         [3, 1, 1, 2]])
+
+    assert len(coordinates) == 0
+    assert len(match_types) == 0
+    assert len(match_colors) == 0
+
+
+    # Single vertical line
+    coordinates, match_types, match_colors = get_match_details(
+        np.array([[2, 3, 4, 3],
+                  [3, 1, 3, 2],
+                  [3, 1, 3, 2],
+                  [4, 1, 2, 1]]))
+    expected_coordinates = [(1, 1), (2, 1), (3, 1)]
+    assert len(coordinates) == 1
+    assert len(coordinates[0]) == 3
+    assert all([c in expected_coordinates for c in coordinates[0]])
+
+    # Single horizontal line
+    coordinates, match_types, match_colors = get_match_details(
+        np.array([[2, 3, 3, 4, 3],
+                  [3, 2, 4, 3, 2],
+                  [4, 1, 1, 1, 3],
+                  [3, 4, 2, 3, 2]]))
+    expected_coordinates = [(2, 1), (2, 2), (2, 3)]
+    assert len(coordinates) == 1
+    assert len(coordinates[0]) == 3
+    assert all([c in expected_coordinates for c in coordinates[0]])
+
+    # T 
+    coordinates, match_types, match_colors = get_match_details(
+        np.array([[2, 3, 3, 4, 3],
+                  [4, 1, 1, 1, 3],
+                  [3, 2, 1, 3, 2],
+                  [3, 4, 1, 3, 2]]))
+    expected_coordinates = [(1, 1), (1, 2), (1, 3), (2, 2), (3, 2)]
+    assert len(coordinates) == 1
+    assert len(coordinates[0]) == 5
+    assert all([c in expected_coordinates for c in coordinates[0]])
+
+    # L
+
+    # Disjoint lines should not be merged.
+    coordinates, match_types, match_colors = get_match_details(
+        np.array([[2, 3, 3, 2, 3],
+                  [4, 1, 4, 1, 3],
+                  [3, 1, 3, 1, 2],
+                  [3, 1, 4, 1, 2]]))
+    assert len(coordinates) == 2
+    assert [(1,1),(2,1),(3,1)] in coordinates
+    assert [(1,3),(2,3),(3,3)] in coordinates
+
+    # Lines > 3.
+
+    # Lines > 3 where the board config doesn't include the corresponding special.
 
 
 def get_match_details(grid, type_grid=None, num_colours=3):
@@ -289,7 +288,6 @@ def get_match_details(grid, type_grid=None, num_colours=3):
         b.board[1] = np.array(type_grid)
 
     lines = b.get_colour_lines()
-    print("lines in get_colour_lines ", lines)
     tile_coords, tile_names, tile_colours = b.process_colour_lines(lines)
     return tile_coords, tile_names, tile_colours
 
