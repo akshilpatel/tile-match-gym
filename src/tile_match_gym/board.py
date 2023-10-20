@@ -156,8 +156,33 @@ class Board:
                                 line = [(row, i) for i in range(line_start, line_end + 1)]
                                 horizontal_line_coords.update(line)
                                 lines.append(line)
+        
+        # go through all the coordinates as a list
+        # find neighbours that are not in the coordinates list but have the same
+        #   colour and (and are not colourless)
+        # follow the neighbours until the end of the line is reached
+        # if the line is long enough, add it to the list of lines
+
+        valid_coord = lambda coord: 0 <= coord[0] < self.num_rows and 0 <= coord[1] < self.num_cols
+        match_color = lambda coord1, coord2: self.board[0, coord1[0], coord1[1]] == self.board[0, coord2[0], coord2[1]] and self.board[1, coord1[0], coord1[1]] > 0 and self.board[1, coord2[0], coord2[1]] > 0
+        coords = [(i, j) for l in lines for i, j in l]
+        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+        
+        for c in coords:
+            for d in directions:
+                line = [c]
+                for direction in [d, (-d[0], -d[1])]:
+                    n = (c[0] + direction[0], c[1] + direction[1])
+                    while n not in coords and valid_coord(n) and match_color(c, n):
+                        line.append(n)
+                        n = (n[0] + direction[0], n[1] + direction[1])
+                if len(line) >= 3:
+                    sorted_line = sorted(line, key=lambda x: (x[0], x[1]))
+                    if sorted_line not in lines:
+                        lines.append(sorted_line)
+        
         return lines
-    
+
 
     def gravity(self) -> None:
         """
@@ -305,7 +330,7 @@ class Board:
             elif len(line) >= 3:
                 tile_names.append("normal")
                 tile_coords.append(line)
-                tile_colours.append(-1)
+                tile_colours.append(self.board[0, line[0][0], line[0][1]])
             # check for no match
             else: # TODO: Remove after debugging.
                 tile_names.append("ERR")
