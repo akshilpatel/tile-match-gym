@@ -392,14 +392,14 @@ class Board:
         
             
     
-    def activate_special(self, coord: Tuple[int, int], tile_type: str, tile_colour: int):
+    def activate_special(self, coord: Tuple[int, int], tile_type: int, tile_colour: int):
         """
         Used in the move loop for when a special has been chosen to activate passively (as opposed to when a combination match occurs). 
         So the special tile has been _hit_ by another activation or it is involved in a colour match.
 
         Args:
             coord (Tuple[int, int]): Coordinate at which to activate the special.
-            tile_type (str): Type of special.
+            tile_type (int): Type of special.
             tile_colour (int): Colour of the special tile.
 
         Raises:
@@ -407,52 +407,59 @@ class Board:
         """
         special_r, special_c = coord
 
-        # Delete special if it hasn't already been deleted.
-        if self.board[1, special_r, special_c] == tile_type and self.board[0, special_r, special_c] == tile_colour:
-            self.board[:, special_r, special_c] = 0
+        if tile_type in [0, 1]: 
+            raise ValueError(f"Invalid type of tile given: {tile_type}")
+
+        # Delete special
+        self.board[:, special_r, special_c] = 0
         
-        if tile_type == "vertical_laser":
+        # vertical laser
+        if tile_type == 2:
             for row in range(self.num_rows):
                 if row == special_r: 
                     continue
-                elif (self.board[1, row, special_c] not in [0, 1]) and (row, special_c):
+                elif self.board[1, row, special_c] not in [0, 1]:
                     self.activate_special((row, special_c), self.board[1, row, special_c], self.board[0, row, special_c])
                 self.board[:, row, special_c] = 0
 
-        elif tile_type == "horizontal_laser":
+        # horizontal_laser
+        elif tile_type == 3:
             for col in range(self.num_cols):
-                
                 if col == special_c:  # Already deleted the special tile.
                     continue
                 # Queue specials for activation.
-                elif self.board[1, special_r, col] not in [0, 1] and (special_r, col):
+                elif self.board[1, special_r, col] not in [0, 1]:
                     self.activate_special((special_r, col), self.board[1, special_r, col], self.board[0, special_r, col])
                 # Delete normals
                 else:
                     self.board[:, special_r, col] = 0   
-            
-        elif tile_type == "bomb":
-            for i in range(coord[0] - 1, coord[0] + 2):
-                for j in range(coord[1] - 1, coord[1] + 2):
+        # bomb
+        elif tile_type == 4:
+            min_r = max(coord[0] - 1, 0)
+            max_r = min(coord[0] + 1, self.num_rows - 1)
+            min_c = max(coord[1] - 1, 0)
+            max_c = min(coord[1] + 1, self.num_cols - 1)
+
+            for i in range(min_r, max_r + 1):
+                for j in range(min_c, max_c + 1):
                     if (i, j) == coord: # Already deleted special tile
                         continue
                     # Queue specials for activation.
-                    elif self.board[1, i, j] not in [0, 1] and (i, j):
+                    elif self.board[1, i, j] not in [0, 1]:
                         self.activate_special((i, j), self.board[1, i, j], self.board[0, i, j])
                     # Delete normal tiles
                     else:
                         self.board[:, i, j] = 0 
-
-        elif tile_type == "cookie":
-            colours = [self.board[0, coord[0] + i, coord[1] + j] for i, j in [(0, 1), (0, -1), (1, 0), (-1, 0)] if self.board[0, coord[0] + i, coord[1] + j] != 0]
-            colour_counter = Counter(colours)
+        # cookie
+        elif tile_type == -1:
             # If the most common colour is 0 then we'd be deleting nothing.
-            if len(colour_counter) == 0:
-                most_common_colour = self.np_random.integers(1, self.num_colours + 1)
-            else:
-                most_common_colour = colour_counter.most_common(1)[0] 
-            # get the most common neighbour and activate all variants of that tile
-
+            
+            mask = self.board[0] != 0
+            counts = np.bincount(self.board[0][mask])
+            most_common_colour = np.argmax(counts) # break ties randomly
+            assert most_common_colour != 0
+            
+            
             # Delete all normal tiles of the chosen colour.
             colour_mask = self.board[0] == most_common_colour
             normal_mask = self.board[1] == 1
@@ -460,13 +467,14 @@ class Board:
             self.board[0, mask] = 0
             self.board[1, mask] = 0
             
+            # Activate all specials of the chosen colour.
             special_type_mask = self.board[1] > 1
             mask = colour_mask & special_type_mask
             r_idcs, c_idcs = np.where(mask)
             
             for i in range(len(r_idcs)):
                 r, c = r_idcs[i], c_idcs[i]
-                if self.board[1, r, c] not in [0, 1] and (r, c):
+                if self.board[1, r, c] not in [0, 1]:
                     self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c])
         else: 
             raise ValueError(f"Tile type: {tile_type}, tile colour: {tile_colour} is an invalid special tile.")
@@ -576,7 +584,6 @@ class Board:
         tile_type1, tile_colour1 = self.board[1, coord1[0], coord1[1]], self.board[0, coord1[0], coord1[1]]
         tile_type2, tile_colour2 = self.board[1, coord2[0], coord2[1]], self.board[0, coord2[0], coord2[1]]
         
-
         # Cookie + cookie
         if tile_type1 == tile_type2 == -1:
             self.board[:, :, :] = 0
@@ -603,7 +610,7 @@ class Board:
                 tile_colour1, tile_colour2 = tile_colour2, tile_colour1
                 coord1, coord2 = coord2, coord1
             
-            colour_mask = self.board[0] == tile_colour2 
+            colour_mask = self.board[0] == tile_colour2
             normal_mask = self.board[1] == 1
             mask = colour_mask & normal_mask
             self.board[0, mask] = 0
@@ -615,7 +622,7 @@ class Board:
             
             for i in range(len(r_idcs)):
                 r, c = r_idcs[i], c_idcs[i]
-                if self.board[1, r, c] not in [0, 1] and (r, c):
+                if self.board[1, r, c] not in [0, 1]:
                     self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c])
                     
         # vertical laser + vertical laser or horizontal laser + horizontal laser or vertical laser + horizontal laser
@@ -656,6 +663,7 @@ class Board:
             min_c = max(central_c  - 2, 0)
             max_c = min(central_c + 2, self.num_cols - 1)
             
+            print(central_r, central_c, min_r, max_r, min_c, max_c)
             # Delete bombs
             self.board[:, coord1[0], coord1[0]] = 0
             self.board[:, coord2[0], coord2[0]] = 0
@@ -665,5 +673,5 @@ class Board:
                 for j in range(min_c, max_c + 1):
                     if self.board[1, i, j] == 1:
                         self.board[:, i, j] = 0
-                    elif self.board[1, i, j] > 1:
+                    elif self.board[1, i, j] != 0:
                         self.activate_special((i, j), self.board[1, i, j], self.board[0, i, j])
