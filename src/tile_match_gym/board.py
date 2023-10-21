@@ -651,7 +651,7 @@ class Board:
                 coord1, coord2 = coord2, coord1
             
             # Delete cookie.
-            self.board[:, coord1[0], coord2[0]] = 0
+            self.board[:, coord1[0], coord1[1]] = 0
             
             # Convert all normal tiles of same colour to special.
             colour_mask = self.board[0] == tile_colour2
