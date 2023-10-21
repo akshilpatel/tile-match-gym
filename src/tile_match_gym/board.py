@@ -206,7 +206,7 @@ class Board:
         zero_mask_colour = self.board[0] == 0
         zero_mask_type = self.board[1] == 0
         zero_mask = zero_mask_colour & zero_mask_type
-        # print(zero_mask.shape)
+
         num_zeros = zero_mask.sum()
         if num_zeros > 0:
             rand_vals = self.np_random.integers(1, self.num_colours + 1, size=num_zeros)
@@ -504,7 +504,6 @@ class Board:
         else: 
             raise ValueError(f"Tile type: {tile_type}, tile colour: {tile_colour} is an invalid special tile.")
 
-        print(coord, self.board[0], self.board[1], sep="\n")
 
     def get_special_creation_pos(self, coords: List[Tuple[int, int]], straight=True) -> Tuple[int, int]:
         """
@@ -623,7 +622,7 @@ class Board:
                 coord1, coord2 = coord2, coord1
 
             # Delete cookie.
-            self.board[:, coord1[0], coord2[0]] = 0
+            self.board[:, coord1[0], coord1[1]] = 0
 
             # Delete all normal tiles of same colour
             self.board[:, coord1[0], coord1[1]] = 0
@@ -682,8 +681,8 @@ class Board:
                 c = coord1[1]
             
             # Activate a vertical and then horizontal laser.
-            self.activate_special((r,c), 2, tile_colour1)
-            self.activate_special((r,c), 3, tile_colour1)
+            self.activate_special((r, c), 2, tile_colour1)
+            self.activate_special((r, c), 3, tile_colour1)
             
         # vertical laser/horizontal laser + bomb
         elif tile_type1 == 4 and 2 <= tile_type2 <= 3 or tile_type2 == 4 and 2 <= tile_type1 <= 3:
@@ -709,6 +708,7 @@ class Board:
         
         # bomb + bomb             
         elif tile_type1 == tile_type2 == 4:
+            # Get 5x5 grid
             if coord1[0] == coord2[0]:
                 central_r = coord1[0]
                 central_c = min(coord1[1], coord1[1])
