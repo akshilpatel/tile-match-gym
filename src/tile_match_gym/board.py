@@ -250,10 +250,10 @@ class Board:
             return True
 
         # Extract a minimal grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
-        r_min = max(0, min(coord1[0] - 2, coord2[0] - 2))
-        r_max = min(self.num_rows, max(coord1[0] + 3, coord2[0] + 3))
-        c_min = max(0, min(coord1[1] - 2, coord2[1] - 2))
-        c_max = min(self.num_cols, max(coord1[1] + 3, coord2[1] + 3))
+        r_min = max(0, min(coord1[0], coord2[0]) - 2)
+        r_max = min(self.num_rows, max(coord1[0], coord2[0]) + 3)
+        c_min = max(0, min(coord1[1], coord2[1]) - 2)
+        c_max = min(self.num_cols, max(coord1[1], coord2[1]) + 3)
 
         # Swap the coordinates to see what happens.
         self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
@@ -667,18 +667,14 @@ class Board:
                     self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c])
                     
         # vertical laser + vertical laser or horizontal laser + horizontal laser or vertical laser + horizontal laser
-        elif tile_type1 == tile_type2 == 2 or tile_type1 == tile_type2 == 3 or tile_type1 == 2 and tile_type2 == 3 or tile_type1 == 3 and tile_type1 == 2:
+        elif tile_type1 == tile_type2 == 2 or tile_type1 == tile_type2 == 3 or (tile_type1 == 2 and tile_type2 == 3) or (tile_type1 == 3 and tile_type2 == 2):
             # Delete combination tiles.
             self.board[:, coord1[0], coord1[1]] = 0
             self.board[:, coord2[0], coord2[1]] = 0
             
             # Do a vertical and horizontal laser at the same time at the topmost leftmost coordinate.
-            if coord1[0] == coord2[0]:
-                r = coord1[0]
-                c = min(coord1[1], coord2[1])
-            else:
-                r = min(coord1[0], coord2[0])
-                c = coord1[1]
+            r = min(coord1[0], coord2[0])
+            c = min(coord1[1], coord2[1])
             
             # Activate a vertical and then horizontal laser.
             self.activate_special((r, c), 2, tile_colour1)
@@ -686,44 +682,42 @@ class Board:
             
         # vertical laser/horizontal laser + bomb
         elif tile_type1 == 4 and 2 <= tile_type2 <= 3 or tile_type2 == 4 and 2 <= tile_type1 <= 3:
-            # Make the first tile bomb
-            if tile_type2 == 4:
-                tile_type1, tile_type2 = tile_type2, tile_type1
-                tile_colour1, tile_colour2 = tile_colour2, tile_colour1
-                coord1, coord2 = coord2, coord1
+            # Delete the combination tiles.
+            self.board[:, coord1[0], coord1[1]] = 0
+            self.board[:, coord2[0], coord2[1]] = 0
 
+            r = min(coord1[0], coord2[0])
+            c = min(coord1[1], coord2[1])
             # Get the three rows and cols centred at laser coordinate.
-            min_r = max(coord2[0] - 1, 0)
-            max_r = min(coord2[0] + 1, self.num_rows - 1)
-            min_c = max(coord2[1] - 1, 0)
-            max_c = min(coord2[1] + 1, self.num_cols - 1)
-        
-            # Activate vertical lasers
+            min_r = max(r - 1, 0)
+            max_r = min(r + 1, self.num_rows - 1)
+            min_c = max(c - 1, 0)
+            max_c = min(c + 1, self.num_cols - 1)
+            
+            print(r, c, min_r, max_r, min_c, max_c)
+            # Activate horizontal lasers
             for i in range(min_r, max_r + 1):
-                self.activate_special((i, c), 2, tile_colour2)
+                self.activate_special((i, c), 3, tile_colour2)
 
-            # Activate horizontal lasers.
+            # Activate vertical lasers.
             for j in range(min_c, max_c + 1):
-                self.activate_special((r, j), 3, tile_colour2)
+                self.activate_special((r, j), 2, tile_colour2)
         
         # bomb + bomb             
         elif tile_type1 == tile_type2 == 4:
             # Get 5x5 grid
-            if coord1[0] == coord2[0]:
-                central_r = coord1[0]
-                central_c = min(coord1[1], coord1[1])
-            else: 
-                central_c = coord1[1]
-                central_r = min(coord1[0], coord2[0])
+            central_r = min(coord1[0], coord2[0])
+            central_c = min(coord1[1], coord2[1])
 
             min_r = max(central_r - 2, 0)
             max_r = min(central_r + 2, self.num_rows - 1)
-            min_c = max(central_c  - 2, 0)
+            min_c = max(central_c - 2, 0)
             max_c = min(central_c + 2, self.num_cols - 1)
             
+
             # Delete bombs
-            self.board[:, coord1[0], coord1[0]] = 0
-            self.board[:, coord2[0], coord2[0]] = 0
+            self.board[:, coord1[0], coord1[1]] = 0
+            self.board[:, coord2[0], coord2[1]] = 0
 
             # Iterate through activation area.
             for i in range(min_r, max_r + 1):
