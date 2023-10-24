@@ -213,27 +213,24 @@ class Board:
             self.board[0, zero_mask] = rand_vals
             self.board[1, zero_mask] = 1
 
-
-    # TODO: Make this faster.
-    def check_move_validity(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
-        """
-        This function checks if the action actually does anything.
-        First it checks if both coordinates are on the board. Then it checks if the action achieves some form of matching.
+    def is_move_legal(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
+        """This function checks if the move is actually possible regardless of whether the move results in a match. 
 
         Args:
-            coord (tuple): The first coordinate on grid corresponding to the action taken. This will always be above or to the left of the second coordinate below.
-            coord2 (tuple): coordinate on grid corresponding to the action taken.
+            coord1 (Tuple[int, int]): The first coordinate on grid corresponding to the action taken. This will always be above or to the left of the second coordinate below.
+            coord2 (Tuple[int, int]): Second coordinate on grid corresponding to the action taken.
 
         Returns:
-            bool: True iff action has an effect on the environment.
+            bool: Whether the move is legal.
         """
+
         ## Check both coords are on the board. ##
         if not (0 <= coord1[0] < self.num_rows and 0 <= coord1[1] < self.num_cols):
             return False
         if not (0 <= coord2[0] < self.num_rows and 0 <= coord2[1] < self.num_cols):
             return False
         
-        # Have to pick two distinct coordinates.
+        # Check coordinates are not identical.
         if coord1 == coord2:
             return False
         
@@ -241,8 +238,25 @@ class Board:
         if not (coord1[0] == coord2[0] or coord1[1] == coord2[1]) or np.abs(coord1[0] - coord2[0]) > 1 or  np.abs(coord1[1] - coord2[1]) > 1:
             return False
 
+        return True
+    
+    
+    # TODO: Make this faster.
+    def is_move_effective(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
+        """
+        This function checks if the action actually does anything i.e. if the action achieves some form of matching.
+
+        Args:
+            coord (tuple): The first coordinate on grid corresponding to the action taken. This will always be above or to the left of the second coordinate below.
+            coord2 (tuple): Second coordinate on grid corresponding to the action taken.
+
+        Returns:
+            bool: True iff action has an effect on the environment.
+        """
+        
+
         # Checks if both are special
-        if self.board[1, coord1[0], coord1[1]] != 0 and self.board[1, coord2[0], coord2[1]] != 0:
+        if (self.board[1, coord1[0], coord1[1]] not in [0, 1] ) and (self.board[1, coord2[0], coord2[1]] not in [0, 1]):
             return True
 
         # At least one colourless special.
@@ -255,25 +269,32 @@ class Board:
         c_min = max(0, min(coord1[1], coord2[1]) - 2)
         c_max = min(self.num_cols, max(coord1[1], coord2[1]) + 3)
 
-        # Swap the coordinates to see what happens.
-        self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
+        
+        # Swap the coordinates_ to see what happens.
+        self._swap_coords(coord1, coord2)
         for r in range(r_min, r_max):
             for c in range(c_min + 2, c_max):
                 # If the current and previous 2 are matched and that they are not cookies.
                 if self.board[1, r, c] > 0: # Check it isn't a colourless special or empty.
                     if self.board[0, r, c - 2] == self.board[0, r, c - 1] == self.board[0, r, c]:
-                        self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
+                        # Swap back
+                        self._swap_coords(coord1, coord2)
                         return True
 
         for r in range(r_min + 2, r_max):
             for c in range(c_min, c_max):
                 if self.board[1, r, c] > 0: 
                     if self.board[0, r - 2, c] == self.board[0, r - 1, c] == self.board[0, r, c]:
-                        self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
+                        self._swap_coords(coord1, coord2)
                         return True
 
-        self.board[:, coord1], self.board[:, coord2] = self.board[:, coord2], self.board[:, coord1]
+
+        self._swap_coords(coord1, coord2)
         return False
+
+    def _swap_coords(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
+        self.board[0, coord1[0], coord1[1]], self.board[0, coord2[0], coord2[1]] = self.board[0, coord2[0], coord2[1]], self.board[0, coord1[0], coord1[1]]
+        self.board[1, coord1[0], coord1[1]], self.board[1, coord2[0], coord2[1]] = self.board[1, coord2[0], coord2[1]], self.board[1, coord1[0], coord1[1]]
 
     def process_colour_lines(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str], List[int]]:
         """
@@ -341,11 +362,14 @@ class Board:
 
     def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
         
+        if not self.is_move_legal(coord1, coord2):
+            raise ValueError(f"Invalid move: {coord1}, {coord2}")
+
         if not self.check_move_validity(coord1, coord2):
             return
         
         # Swap the coordinates.
-        self.board[:, coord1[0], coord1[1]], self.board[:, coord2[0], coord2[1]] = self.board[:, coord2[0], coord2[1]], self.board[:, coord1[0], coord1[1]]
+        self._swap_coords(coord1, coord2)
 
         ## Combination match ##
 
@@ -481,7 +505,6 @@ class Board:
             counts = np.bincount(self.board[0][mask])
             most_common_colour = np.argmax(counts) # break ties randomly
             assert most_common_colour != 0
-            
             
             # Delete all normal tiles of the chosen colour.
             colour_mask = self.board[0] == most_common_colour
