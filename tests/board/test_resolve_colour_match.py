@@ -10,8 +10,18 @@ def test_resolve_colour_match():
     new_board = run_resolve_colour_match(
         [[3, 1, 2, 2],
          [1, 3, 2, 3],
-         [3, 1, 1, 2]])
-    [print(line) for line in new_board]
+         [3, 1, 1, 2]]
+        )
+    assert np.array_equal(new_board, np.array(
+        [
+        [[3, 1, 2, 2],
+         [1, 3, 2, 3],
+         [3, 1, 1, 2]],
+        [[1, 1, 1, 1],
+         [1, 1, 1, 1],
+         [1, 1, 1, 1]]
+        ]
+        )), new_board
 
 
     # Single vertical line
@@ -21,7 +31,18 @@ def test_resolve_colour_match():
                   [3, 1, 3, 2],
                   [4, 1, 2, 1]]))
 
-    [print(line) for line in new_board]
+    assert np.array_equal(new_board, np.array(
+        [
+        [[2, 3, 4, 3],
+         [3, 0, 3, 2],
+         [3, 0, 3, 2],
+         [4, 0, 2, 1]],
+        [[1, 1, 1, 1],
+         [1, 0, 1, 1],
+         [1, 0, 1, 1],
+         [1, 0, 1, 1]],
+        ]
+        )), new_board
 
     # Single horizontal line
     new_board = run_resolve_colour_match(
@@ -29,7 +50,105 @@ def test_resolve_colour_match():
                   [3, 2, 4, 3, 2],
                   [4, 1, 1, 1, 3],
                   [3, 4, 2, 3, 2]]))
-    [print(line) for line in new_board]
+    assert np.array_equal(new_board, np.array(
+        [
+        [[2, 3, 3, 4, 3],
+         [3, 2, 4, 3, 2],
+         [4, 0, 0, 0, 3],
+         [3, 4, 2, 3, 2]],
+        [[1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1],
+         [1, 0, 0, 0, 1],
+         [1, 1, 1, 1, 1]]
+        ]
+        )), new_board
+
+
+    # T 
+    new_board = run_resolve_colour_match(
+        np.array([[2, 3, 3, 4, 3],
+                  [4, 1, 1, 1, 3],
+                  [3, 2, 1, 3, 2],
+                  [3, 4, 1, 3, 2]]))
+    assert np.array_equal(new_board, np.array(
+        [
+        [[2, 3, 3, 4, 3],
+         [4, 0, 1, 0, 3],
+         [3, 2, 0, 3, 2],
+         [3, 4, 0, 3, 2]],
+        [[1, 1, 1, 1, 1],
+         [1, 0, 4, 0, 1],
+         [1, 1, 0, 1, 1],
+         [1, 1, 0, 1, 1]]
+        ]
+        )), new_board
+
+    # L
+
+    # Disjoint lines should not be merged.
+    new_board = run_resolve_colour_match(
+        np.array([[2, 3, 3, 2, 3],
+                  [4, 1, 4, 1, 3],
+                  [3, 1, 3, 1, 2],
+                  [3, 1, 4, 1, 2]]))
+    assert np.array_equal(new_board, np.array(
+        [
+           [[2, 3, 3, 2, 3],
+            [4, 0, 4, 0, 3],
+            [3, 0, 3, 0, 2],
+            [3, 0, 4, 0, 2]],
+           [[1, 1, 1, 1, 1],
+            [1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1]]
+           ]
+        )), new_board
+    # Lines > 3.
+    new_board = run_resolve_colour_match(
+        np.array([[2, 1, 3, 2, 3],
+                  [4, 1, 4, 1, 3],
+                  [3, 1, 3, 2, 2],
+                  [3, 1, 4, 1, 2]]))
+    assert np.array_equal(new_board, np.array(
+        [
+            [[2, 0, 3, 2, 3],
+             [4, 1, 4, 1, 3],
+             [3, 0, 3, 2, 2],
+             [3, 0, 4, 1, 2]],
+            [[1, 0, 1, 1, 1],
+             [1, 2, 1, 1, 1],
+             [1, 0, 1, 1, 1],
+             [1, 0, 1, 1, 1]]
+        ]
+    )), new_board
+
+
+
+    # Lines > 3 where the board config doesn't include the corresponding special.
+    new_board = run_resolve_colour_match(
+        np.array([[2, 1, 3, 2, 3],
+                  [4, 1, 4, 1, 3],
+                  [2, 1, 3, 2, 2],
+                  [4, 1, 4, 1, 3],
+                  [3, 1, 3, 2, 2],
+                  [3, 1, 4, 1, 2]]))
+    assert np.array_equal(new_board, np.array([
+        [[2, 0, 3, 2, 3],
+         [4, 0, 4, 1, 3],
+         [2, 0, 3, 2, 2],
+         [4, 0, 4, 1, 3],
+         [3, 0, 3, 2, 2],
+         [3, 1, 4, 1, 2]],
+        [[1, 0, 1, 1, 1],
+         [1, 0, 1, 1, 1],
+         [1, -1, 1, 1, 1],
+         [1, 0, 1, 1, 1],
+         [1, 0, 1, 1, 1],
+         [1, 1, 1, 1, 1]
+        ]
+        ]
+    )), new_board
+
 
 
 

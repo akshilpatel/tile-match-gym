@@ -398,7 +398,6 @@ class Board:
         
         # Create new specials.
         for i in range(len(special_creation_q)):
-            print("special_creation_q = ", special_creation_q)
             self.create_special(*special_creation_q[i])
     
     def resolve_colour_match(self, match_coords: List[Tuple[int, int]], match_type:str) -> None:
@@ -582,7 +581,6 @@ class Board:
         assert self.board[0, coord[0], coord[1]] == 0
         assert self.board[1, coord[0], coord[1]] == 0
 
-        tile_colour = None
         if special_type == "cookie":
             tile_type = -1
         elif special_type == "vertical_laser":
@@ -593,7 +591,7 @@ class Board:
             tile_type = 4
         else:
             raise ValueError(f"Invalid match type for creating special: {special_type}")
-
+        
         self.board[0, coord[0], coord[1]] = tile_colour
         self.board[1, coord[0], coord[1]] = tile_type
         
