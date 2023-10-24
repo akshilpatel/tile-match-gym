@@ -383,7 +383,6 @@ class Board:
             match_colours (List[int]): The colour of a tile in each match. Used to track what colour new specials should be.
         """
         special_creation_q = []
-
         # Extract the special creation position first since the loop below deletes tiles so we cannot check colours for determining special pos.
         for i in range(len(match_locs)):
             if match_types[i] != "norm":
@@ -409,9 +408,8 @@ class Board:
             match_type (str): Match type.
         """
         for coord in match_coords:
-            tile = self.board[:, coord[0], coord[1]]
-            if tile[1] != 1:
-                self.activate_special(coord, tile[1], tile[0])
+            if self.board[1, coord[0], coord[1]] not in [0, 1]:
+                self.activate_special(coord, self.board[1, coord[0], coord[1]], self.board[0, coord[0], coord[1]])
             else:
                 self.board[:, coord[0], coord[1]] = 0 # Delete the normal tiles.
         
