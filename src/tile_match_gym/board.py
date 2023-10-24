@@ -365,7 +365,7 @@ class Board:
         if not self.is_move_legal(coord1, coord2):
             raise ValueError(f"Invalid move: {coord1}, {coord2}")
 
-        if not self.check_move_validity(coord1, coord2):
+        if not self.is_move_effective(coord1, coord2):
             return
         
         # Swap the coordinates.
