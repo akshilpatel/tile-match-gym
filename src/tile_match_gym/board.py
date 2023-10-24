@@ -385,7 +385,7 @@ class Board:
         special_creation_q = []
         # Extract the special creation position first since the loop below deletes tiles so we cannot check colours for determining special pos.
         for i in range(len(match_locs)):
-            if match_types[i] != "norm":
+            if match_types[i] != "normal":
                 special_creation_coord = self.get_special_creation_pos(match_locs[i], match_types[i] != "bomb")
                 special_creation_q.append((special_creation_coord, match_types[i], match_colours[i]))
 
@@ -579,7 +579,6 @@ class Board:
         assert self.board[0, coord[0], coord[1]] == 0
         assert self.board[1, coord[0], coord[1]] == 0
 
-        tile_colour = None
         if special_type == "cookie":
             tile_type = -1
         elif special_type == "vertical_laser":
@@ -589,8 +588,8 @@ class Board:
         elif special_type == "bomb":
             tile_type = 4
         else:
-            raise ValueError("Invalid match type for creating special: {match_type}")
-
+            raise ValueError(f"Invalid match type for creating special: {special_type}")
+        
         self.board[0, coord[0], coord[1]] = tile_colour
         self.board[1, coord[0], coord[1]] = tile_type
         
