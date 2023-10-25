@@ -374,7 +374,7 @@ class Board:
         ## Combination match ##
 
         # If there are two special coords. Add one activation with both coords to the activation queue.
-        has_two_specials = self.board[1, coord1[0], coord1[1]] != 0 and self.board[1, coord2[0], coord2[1]] != 0
+        has_two_specials = self.board[1, coord1[0], coord1[1]] not in [0,1] and self.board[1, coord2[0], coord2[1]] not in [0,1]
         has_one_colourless_special = self.board[1, coord1[0], coord1[1]] < 0 or self.board[1, coord2[0], coord2[1]] < 0
         # Combination match of two specials or one colourless special and any other tile.
         if has_two_specials or has_one_colourless_special:
@@ -683,7 +683,7 @@ class Board:
             for i in range(len(r_idcs)):
                 r, c = r_idcs[i], c_idcs[i]
                 # If it hasn't already been activated (through chaining in previous iterations)
-                if self.board[1, r, c] != 0: 
+                if self.board[1, r, c] not in [0, 1]: 
                     self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c])
                     
         # vertical laser + vertical laser or horizontal laser + horizontal laser or vertical laser + horizontal laser
