@@ -58,9 +58,18 @@ class Board:
 
         # handle the case where we are given a board
         if board is not None:
-            self.board = board
-            self.num_rows = len(board)
-            self.num_cols = len(board[0])
+            if type(board) == list:
+                board = np.array(board)
+            if board.shape[0] != 2 or len(board.shape) == 3:
+                self.board = np.array([
+                    board,
+                    np.ones_like(board)
+                    ])
+            else:
+                self.board = board
+
+            self.num_rows = len(self.board)
+            self.num_cols = len(self.board[0])
         else:
             self.generate_board()
 
@@ -105,8 +114,9 @@ class Board:
         Returns the types and locations of tiles involved in the bottom-most colour matches.
         """
         lines = self.get_colour_lines()
+
         if len(lines) == 0:
-            return [], []
+            return [], [], []
         else:
             tile_coords, tile_names, tile_colours = self.process_colour_lines(lines)
             return tile_coords, tile_names, tile_colours
@@ -126,6 +136,8 @@ class Board:
             for col in range(self.num_cols):
                 # Vertical lines
                 if 1 < row and (row, col) not in vertical_line_coords:
+                    print("row = ", row, "col = ", col)
+                    print("board = ", self.board)
                     if self.board[1, row, col] > 0 : # Not Colourless special
                         if self.board[0, row, col] == self.board[0, row-1, col]: # Don't have to check the other one isn't a colourless special since colourless specials should be 0 in first axis.
                             line_start = row - 1
@@ -180,7 +192,6 @@ class Board:
                     sorted_line = sorted(line, key=lambda x: (x[0], x[1]))
                     if sorted_line not in lines:
                         lines.append(sorted_line)
-        
         return lines
 
 
@@ -273,7 +284,7 @@ class Board:
         # Swap the coordinates_ to see what happens.
         self._swap_coords(coord1, coord2)
         for r in range(r_min, r_max):
-            for c in range(c_min + 2, c_max):
+            for c in range(c_min, c_max):
                 # If the current and previous 2 are matched and that they are not cookies.
                 if self.board[1, r, c] > 0: # Check it isn't a colourless special or empty.
                     if self.board[0, r, c - 2] == self.board[0, r, c - 1] == self.board[0, r, c]:
@@ -281,7 +292,7 @@ class Board:
                         self._swap_coords(coord1, coord2)
                         return True
 
-        for r in range(r_min + 2, r_max):
+        for r in range(r_min, r_max):
             for c in range(c_min, c_max):
                 if self.board[1, r, c] > 0: 
                     if self.board[0, r - 2, c] == self.board[0, r - 1, c] == self.board[0, r, c]:
@@ -370,7 +381,6 @@ class Board:
         
         # Swap the coordinates.
         self._swap_coords(coord1, coord2)
-
         ## Combination match ##
 
         # If there are two special coords. Add one activation with both coords to the activation queue.
@@ -386,6 +396,7 @@ class Board:
         has_match = True
         while has_match:
             match_locs, match_types, match_colours = self.detect_colour_matches()
+            print("match_locs, match_types, match_colours = ", match_locs, match_types, match_colours )
             if len(match_locs) == 0:
                 has_match = False
             else:

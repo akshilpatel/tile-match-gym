@@ -35,3 +35,5 @@ def test_generate_board():
         assert line_matches == []        
         assert np.all(b.board[0] > 0)
         assert np.all(b.board[1] == 1)
+
+        print("DONE WITH GENERATE BOARD")
