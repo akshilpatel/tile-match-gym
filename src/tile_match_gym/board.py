@@ -60,7 +60,7 @@ class Board:
         if board is not None:
             if type(board) == list:
                 board = np.array(board)
-            if board.shape[0] != 2 or len(board.shape) == 3:
+            if board.shape[0] != 2 or len(board.shape) < 3:
                 self.board = np.array([
                     board,
                     np.ones_like(board)
@@ -114,7 +114,7 @@ class Board:
         Returns the types and locations of tiles involved in the bottom-most colour matches.
         """
         lines = self.get_colour_lines()
-
+        
         if len(lines) == 0:
             return [], [], []
         else:
@@ -267,6 +267,9 @@ class Board:
         
 
         # Checks if both are special
+        print("coord1", coord1)
+        print("shape = ", self.board.shape)
+        print("self.board[1, coord1[0], coord1[1]]", self.board[1, coord1[0], coord1[1]])
         if (self.board[1, coord1[0], coord1[1]] not in [0, 1] ) and (self.board[1, coord2[0], coord2[1]] not in [0, 1]):
             return True
 

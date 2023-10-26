@@ -131,10 +131,9 @@ def test_get_colour_lines():
     # Separate horizontal lines on same row
     b3 = Board(num_rows=4, num_cols=8, num_colours=5)
     b3.board[0] = np.array([[2, 3, 2, 4, 4, 2, 3, 3],
-                                  [4, 2, 5, 2, 3, 4, 2, 3],
-                                  [3, 3, 3, 3, 5, 2, 2, 2],
-                                  [2, 3, 2, 4, 4, 2, 3, 3]])
-
+                            [4, 2, 5, 2, 3, 4, 2, 3],
+                            [3, 3, 3, 3, 5, 2, 2, 2],
+                            [2, 3, 2, 4, 4, 2, 3, 3]])
     assert len(b3.get_colour_lines()) == 2, b3.get_colour_lines()
     assert [(2, 0), (2, 1), (2, 2), (2, 3)] in b3.get_colour_lines() 
     assert [(2, 5), (2, 6), (2, 7)] in b3.get_colour_lines()
@@ -157,7 +156,6 @@ def test_get_colour_lines():
     assert [(7,1),(8,1),(9,1)] in output_lines
     assert [(7,0),(7,1),(7,2)] in output_lines
     # assert [(7, 1), (8, 1), (9, 1)] in output_lines
-
     # not on the bottom vertical line
     b6 = Board(num_rows=4, num_cols=4, num_colours=7)
     b6.board[0] = np.array([[2, 3, 4, 3],
@@ -168,14 +166,7 @@ def test_get_colour_lines():
     assert len(b6.get_colour_lines()) == 1
 
     # T shape
-    np.random.seed(1)
-    random.seed(1)
     print("T_SHAPE")
-    bo =  np.array([[2, 3, 4, 3],
-                    [1, 1, 1, 2],
-                    [3, 1, 3, 2],
-                    [4, 1, 2, 1]])
-    bb = np.ones_like(bo)
     b8 = Board(num_rows=4, num_cols=4, num_colours=7) #, board=np.array([bo, bb]), seed=1)
     b8.board[0] = np.array([[2, 3, 4, 3],
                            [1, 1, 1, 2],
@@ -183,10 +174,9 @@ def test_get_colour_lines():
                            [4, 1, 2, 1]])
     lines = b8.get_colour_lines()
     # assert  [(1,0),(1,1),(1,2),(2,1),(3,1)] in lines, lines
-    assert [(1,1),(2,1),(3,1)] in lines, lines
-    assert [(1,0),(1,1),(1,2)] in lines, lines
-    assert len(b6.get_colour_lines()) == 1
-
+    assert [(1,1),(2,1),(3,1)] in lines, str([(1,1),(2,1),(3,1)]) + " should be " + str(lines)
+    assert [(1,0),(1,1),(1,2)] in lines, str([(1,0),(1,1),(1,2)]) + " should be " + str(lines)
+    assert len(b8.get_colour_lines()) == 2, "Should be 1 line, got " + str(len(b8.get_colour_lines()))
 
     # upside down T shape
     b8 = Board(num_rows=4, num_cols=4, num_colours=7) #, board=np.array([bo, bb]), seed=1)
@@ -198,8 +188,7 @@ def test_get_colour_lines():
     # assert  [(1,0),(1,1),(1,2),(2,1),(3,1)] in lines, lines
     assert [(1,1),(2,1),(3,1)] in lines, lines
     assert [(3,0),(3,1),(3,2)] in lines, lines
-    assert len(b6.get_colour_lines()) == 1
-
+    assert len(b8.get_colour_lines()) == 2
     # L
     b8 = Board(num_rows=4, num_cols=4, num_colours=7) #, board=np.array([bo, bb]), seed=1)
     b8.board[0] = np.array([[2, 3, 4, 3],
@@ -210,7 +199,26 @@ def test_get_colour_lines():
     # assert  [(1,0),(1,1),(1,2),(2,1),(3,1)] in lines, lines
     assert [(1,1),(2,1),(3,1)] in lines, lines
     assert [(3,1),(3,2),(3,3)] in lines, lines
-    assert len(b6.get_colour_lines()) == 1
+    assert len(b8.get_colour_lines()) == 2
+
+    b9 = Board(num_rows=3, num_cols=4, num_colours=7) #, board=np.array([bo, bb]), seed=1)
+    b9.board[0] = np.array(
+        [[3, 1, 2, 2],
+         [3, 1, 2, 3],
+         [3, 1, 1, 2]])
+#         [[1, 1, 1, 1],
+#          [1, 1, 1, 1],
+#          [1, 1, 1, 1]]
+#         ]
+#             )
+    lines = b9.get_colour_lines()
+    # assert  [(1,0),(1,1),(1,2),(2,1),(3,1)] in lines, lines
+    print("lines = ",lines)
+    assert [(0,0),(1,0),(2,0)] in lines, lines
+    assert [(0,1),(1,1),(2,1)] in lines, lines
+    assert len(b9.get_colour_lines()) == 2
+
+
     
 def test_process_colour_lines():
 
