@@ -68,8 +68,8 @@ class Board:
             else:
                 self.board = board
 
-            self.num_rows = len(self.board)
-            self.num_cols = len(self.board[0])
+            self.num_rows = len(self.board[0])
+            self.num_cols = len(self.board[0][0])
         else:
             self.generate_board()
 
@@ -114,6 +114,7 @@ class Board:
         Returns the types and locations of tiles involved in the bottom-most colour matches.
         """
         lines = self.get_colour_lines()
+        print("Lines = ", lines)
         
         if len(lines) == 0:
             return [], [], []
@@ -136,8 +137,6 @@ class Board:
             for col in range(self.num_cols):
                 # Vertical lines
                 if 1 < row and (row, col) not in vertical_line_coords:
-                    print("row = ", row, "col = ", col)
-                    print("board = ", self.board)
                     if self.board[1, row, col] > 0 : # Not Colourless special
                         if self.board[0, row, col] == self.board[0, row-1, col]: # Don't have to check the other one isn't a colourless special since colourless specials should be 0 in first axis.
                             line_start = row - 1
@@ -192,6 +191,8 @@ class Board:
                     sorted_line = sorted(line, key=lambda x: (x[0], x[1]))
                     if sorted_line not in lines:
                         lines.append(sorted_line)
+
+        print("\n\n\n#############\n\n\n")
         return lines
 
 
@@ -403,7 +404,9 @@ class Board:
             if len(match_locs) == 0:
                 has_match = False
             else:
+                print("Board before resolve colour matches: \n", self.board)
                 self.resolve_colour_matches(match_locs, match_types, match_colours)
+                print("Board after resolve colour matches: \n", self.board)
                 self.gravity()
                 self.refill()
 

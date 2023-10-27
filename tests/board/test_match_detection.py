@@ -48,8 +48,10 @@ def test_get_colour_lines():
     assert len(b.get_colour_lines()) == 1
 
     # Single horizontal line on bottom edge.
-    b.board[0, 1, 0] = 2
-    b.board[0, 2, 1] = 4
+    b.board[0] = np.array([[4, 3, 4, 3],
+                           [2, 4, 5, 4], 
+                           [4, 4, 4, 2]])
+    print("b.board = ", b.board)
     assert  [(2, 0), (2, 1), (2, 2)] in b.get_colour_lines(), b.get_colour_lines()
     assert len(b.get_colour_lines()) == 1
 
@@ -290,6 +292,32 @@ def test_process_colour_lines():
     expected_types = ['normal', 'normal']
     assert all([t == e for t, e in zip(match_types, expected_types)])
     assert match_colors == [1, 1]
+
+    # lines next to eachother
+    coordinates, match_types, match_colors = get_match_details(
+        np.array([[2, 3, 3, 2, 3],
+                  [4, 4, 2, 1, 3],
+                  [3, 3, 2, 1, 2],
+                  [3, 4, 2, 1, 2]]))
+    assert len(coordinates) == 2
+    assert [(1,2),(2,2),(3,2)] in coordinates
+    assert [(1,3),(2,3),(3,3)] in coordinates
+    expected_types = ['normal', 'normal']
+    assert all([t == e for t, e in zip(match_types, expected_types)])
+    assert match_colors == [2, 1]
+
+
+    # The issue test from test_move
+    coordinates, match_types, match_colors = get_match_details(
+        np.array([[3, 1, 2, 2],
+                  [3, 1, 2, 3],
+                  [3, 1, 1, 2]]))
+    assert len(coordinates) == 2
+    assert [(0,0),(1,0),(2,0)] in coordinates
+    assert [(0,1),(1,1),(2,1)] in coordinates
+    expected_types = ['normal', 'normal']
+    assert all([t == e for t, e in zip(match_types, expected_types)])
+    assert match_colors == [3, 1]
 
     # Lines > 3.
     coordinates, match_types, match_colors = get_match_details(

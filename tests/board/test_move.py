@@ -24,12 +24,12 @@ def test_move():
     )
     expected_new = np.array(
         [
-        [[0, 0, 2, 2],
-         [0, 0, 2, 3],
-         [0, 0, 1, 2]],
-        [[0, 0, 1, 1],
-         [0, 0, 1, 1],
-         [0, 0, 1, 1]]
+        [[2, 2, 3, 2],
+         [1, 2, 2, 3],
+         [2, 4, 1, 2]],
+        [[1, 3, 1, 1],
+         [1, 1, 1, 1],
+         [1, 1, 1, 1]]
         ]
     )
     new_board = run_move(old_board, (1,0), (1,1))
@@ -37,26 +37,18 @@ def test_move():
     print("expected_new = ", expected_new)
     assert np.array_equal(expected_new, new_board), print_board(new_board)
 
-    old_board = np.array(
-        [
-        [[3, 1, 2, 2],
-         [1, 3, 2, 3],
-         [3, 1, 1, 2]],
-        [[1, 1, 1, 1],
-         [1, 1, 1, 1],
-         [1, 1, 1, 1]]
-        ]
-    )
-    new_board = run_move(old_board, (1,1), (1,1))
-    assert np.array_equal(old_board, new_board), new_board
 
 
 def run_move(grid, coord1, coord2, num_colours=4):
     """
     Helper function to setup a board with a given grid.
     """
+    print("\n&&&&&&&&&&&&\nBoard in run_move = ", grid)
+    print(f"num_rows = {len(grid[0])}, num_cols = {len(grid[0][0])}")
     b = Board(num_rows=len(grid), num_cols=len(grid[0]),
               num_colours=num_colours, board=grid)
+    
+    print(f"Board after init = {b.board} with shape {b.board.shape} and b.num_rows = {b.num_rows}, b.num_cols = {b.num_cols}\n&&&&&&&&&&&&\n")
     
     b.move(coord1, coord2)
 
