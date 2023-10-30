@@ -16,8 +16,6 @@ empty_tile: [0, 0] if tile_
 
 """
 
-
-
 TILE_TYPES = {
     "empty": 0,
     "normal": 1,
@@ -49,9 +47,8 @@ class Board:
         self.colour_specials = colour_specials
         self.num_colour_specials = len(self.colour_specials)
         self.num_colourless_specials = len(self.colourless_specials)
-
         self.specials = set(self.colourless_specials + self.colour_specials)
-    
+        
         if seed is None:
             seed = np.random.randint(0, 1000000000)
         self.np_random = np.random.default_rng(seed)
@@ -72,7 +69,6 @@ class Board:
             self.num_cols = len(self.board[0][0])
         else:
             self.generate_board()
-
         self.indices = np.array([[(r, c) for r in range(self.num_cols)] for c in range(self.num_rows)])
 
     def generate_board(self):
@@ -114,8 +110,7 @@ class Board:
         Returns the types and locations of tiles involved in the bottom-most colour matches.
         """
         lines = self.get_colour_lines()
-        print("Lines = ", lines)
-        
+
         if len(lines) == 0:
             return [], [], []
         else:
@@ -169,11 +164,8 @@ class Board:
                                 lines.append(line)
         
         # go through all the coordinates as a list
-        # find neighbours that are not in the coordinates list but have the same
-        #   colour and (and are not colourless)
-        # follow the neighbours until the end of the line is reached
-        # if the line is long enough, add it to the list of lines
-
+        # find neighbours that are not in the coordinates list but have the same colour and (and are not colourless)
+        # follow the neighbours until the end of the line is reached if the line is long enough, add it to the list of lines
         valid_coord = lambda coord: 0 <= coord[0] < self.num_rows and 0 <= coord[1] < self.num_cols
         match_color = lambda coord1, coord2: self.board[0, coord1[0], coord1[1]] == self.board[0, coord2[0], coord2[1]] and self.board[1, coord1[0], coord1[1]] > 0 and self.board[1, coord2[0], coord2[1]] > 0
         coords = [(i, j) for l in lines for i, j in l]
@@ -191,8 +183,6 @@ class Board:
                     sorted_line = sorted(line, key=lambda x: (x[0], x[1]))
                     if sorted_line not in lines:
                         lines.append(sorted_line)
-
-        print("\n\n\n#############\n\n\n")
         return lines
 
 
@@ -212,7 +202,6 @@ class Board:
             self.board[0][:, j] = np.concatenate([self.board[0][:, j][zero_mask_T[j]], self.board[0][:, j][non_zero_mask_T[j]]])
             self.board[1][:, j] = np.concatenate([self.board[1][:, j][zero_mask_T[j]], self.board[1][:, j][non_zero_mask_T[j]]])
             
-
     def refill(self) -> None:
         """Replace all empty tiles."""
         zero_mask_colour = self.board[0] == 0
@@ -235,7 +224,6 @@ class Board:
         Returns:
             bool: Whether the move is legal.
         """
-
         ## Check both coords are on the board. ##
         if not (0 <= coord1[0] < self.num_rows and 0 <= coord1[1] < self.num_cols):
             return False
@@ -266,11 +254,7 @@ class Board:
             bool: True iff action has an effect on the environment.
         """
         
-
         # Checks if both are special
-        print("coord1", coord1)
-        print("shape = ", self.board.shape)
-        print("self.board[1, coord1[0], coord1[1]]", self.board[1, coord1[0], coord1[1]])
         if (self.board[1, coord1[0], coord1[1]] not in [0, 1] ) and (self.board[1, coord2[0], coord2[1]] not in [0, 1]):
             return True
 
@@ -375,24 +359,44 @@ class Board:
 
         return tile_coords, tile_names, tile_colours
 
-    def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
+
+
+    # We return number of eliminations, whether it was a combination match, number of new specials created, number of specials activated.
+    def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> Tuple[int, int, int, int]:
+        """High-level entry point for each move. This function checks if the move is legal and effective, then executes the move.
+
+        Args:
+            coord1 (Tuple[int, int]): Tile used in move
+            coord2 (Tuple[int, int]): Second tile used in move
+
+        Raises:
+            ValueError: If the move is illegal, an error is raised.
+
+        Returns:
+            Tuple[int, int, int, int]: number of tiles eliminated, whether it was a combination match, number of specials created, number of specials activated.
+        """
         
+        self.num_specials_activated = 0
+        self.num_new_specials = 0
+        num_eliminations = 0
+        is_combination_match = False
+
         if not self.is_move_legal(coord1, coord2):
             raise ValueError(f"Invalid move: {coord1}, {coord2}")
 
         if not self.is_move_effective(coord1, coord2):
-            return
+            return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated
         
         # Swap the coordinates.
         self._swap_coords(coord1, coord2)
-        ## Combination match ##
 
-        # If there are two special coords. Add one activation with both coords to the activation queue.
+        ## Combination match ##
         has_two_specials = self.board[1, coord1[0], coord1[1]] not in [0,1] and self.board[1, coord2[0], coord2[1]] not in [0,1]
         has_one_colourless_special = self.board[1, coord1[0], coord1[1]] < 0 or self.board[1, coord2[0], coord2[1]] < 0
-        # Combination match of two specials or one colourless special and any other tile.
         if has_two_specials or has_one_colourless_special:
+            is_combination_match = True
             self.combination_match(coord1, coord2)
+            num_eliminations += self.flat_size - np.count_nonzero(self.board[1])
             self.gravity()
             self.refill()
 
@@ -400,15 +404,16 @@ class Board:
         has_match = True
         while has_match:
             match_locs, match_types, match_colours = self.detect_colour_matches()
-            print("match_locs, match_types, match_colours = ", match_locs, match_types, match_colours )
             if len(match_locs) == 0:
                 has_match = False
             else:
-                print("Board before resolve colour matches: \n", self.board)
                 self.resolve_colour_matches(match_locs, match_types, match_colours)
-                print("Board after resolve colour matches: \n", self.board)
+                num_eliminations += self.flat_size - np.count_nonzero(self.board[1])
                 self.gravity()
                 self.refill()
+
+        num_eliminations += self.num_new_specials # New specials are always placed in empty cells.
+        return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated
 
     def resolve_colour_matches(
             self, 
@@ -439,7 +444,7 @@ class Board:
         # Create new specials.
         for i in range(len(special_creation_q)):
             self.create_special(*special_creation_q[i])
-    
+
     def resolve_colour_match(self, match_coords: List[Tuple[int, int]], match_type:str) -> None:
         """
         Resolving a single match. This function eliminates normal tiles and activates special tiles.
@@ -452,11 +457,9 @@ class Board:
             if self.board[1, coord[0], coord[1]] not in [0, 1]:
                 self.activate_special(coord, self.board[1, coord[0], coord[1]], self.board[0, coord[0], coord[1]])
             else:
-                self.board[:, coord[0], coord[1]] = 0 # Delete the normal tiles.
-        
-            
+                self.board[:, coord[0], coord[1]] = 0 # Delete the normal tiles.   
     
-    def activate_special(self, coord: Tuple[int, int], tile_type: int, tile_colour: int):
+    def activate_special(self, coord: Tuple[int, int], tile_type: int, tile_colour: int, is_combination_match: Optional[bool] = False) -> None:
         """
         Used in the move loop for when a special has been chosen to activate passively (as opposed to when a combination match occurs). 
         So the special tile has been _hit_ by another activation or it is involved in a colour match.
@@ -465,17 +468,21 @@ class Board:
             coord (Tuple[int, int]): Coordinate at which to activate the special.
             tile_type (int): Type of special.
             tile_colour (int): Colour of the special tile.
+            is_combination_match (Optional[bool]): Whether the special is being activated as part of a combination match. Defaults to False.
 
         Raises:
             ValueError: If the type of tile being activated is not valid.
         """
-        special_r, special_c = coord
-
+        
         if tile_type in [0, 1]: 
             raise ValueError(f"Invalid type of tile given: {tile_type}")
-
+        
+        special_r, special_c = coord
         # Delete special
         self.board[:, special_r, special_c] = 0
+
+        if not is_combination_match: 
+            self.num_specials_activated += 1
         
         # vertical laser
         if tile_type == 2:
@@ -574,7 +581,6 @@ class Board:
         If 2/3 in a row are the same color then either a gap 1_1 or 2 in a row 11_1 or 1_11 exist.
 
         Check combinations of diagonal neighbours to determine if a match is possible
-
         """
         rows, cols = self.num_rows, self.num_cols
 
@@ -608,7 +614,7 @@ class Board:
         return False # there are no ways to make a move and get 3 in a row
     
 
-    def create_special(self, coord: Tuple[int, int], special_type: str, tile_colour: int) -> None :
+    def create_special(self, coord: Tuple[int, int], special_type: str, tile_colour: int) -> None:
         """This function creates a special tile at the location specified by the match_coords.
         We don't check if the special is valid under the board specification since that should be checked in process_colour_lines.
         Args:
@@ -618,6 +624,7 @@ class Board:
 
         assert self.board[0, coord[0], coord[1]] == 0
         assert self.board[1, coord[0], coord[1]] == 0
+        self.num_new_specials += 1
 
         if special_type == "cookie":
             tile_type = -1
@@ -677,7 +684,7 @@ class Board:
             for i in range(len(r_idcs)):
                 r, c = r_idcs[i], c_idcs[i]
                 if self.board[1, r, c] not in [0, 1]:
-                    self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c])
+                    self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c], is_combination_match=True)
                     
         # Cookie + vertical laser/horizontal laser/bomb -> convert all normals of same colour to the special type then activate them.
         elif (tile_type1 == -1 and tile_type2 >= 2) or (tile_type1 >=2  and tile_type2 == -1):
@@ -701,7 +708,7 @@ class Board:
                 r, c = r_idcs[i], c_idcs[i]
                 # If it hasn't already been activated (through chaining in previous iterations)
                 if self.board[1, r, c] not in [0, 1]: 
-                    self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c])
+                    self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c], is_combination_match=True)
                     
         # vertical laser + vertical laser or horizontal laser + horizontal laser or vertical laser + horizontal laser
         elif tile_type1 == tile_type2 == 2 or tile_type1 == tile_type2 == 3 or (tile_type1 == 2 and tile_type2 == 3) or (tile_type1 == 3 and tile_type2 == 2):
@@ -714,8 +721,8 @@ class Board:
             c = min(coord1[1], coord2[1])
             
             # Activate a vertical and then horizontal laser.
-            self.activate_special((r, c), 2, tile_colour1)
-            self.activate_special((r, c), 3, tile_colour1)
+            self.activate_special((r, c), 2, tile_colour1, is_combination_match=True)
+            self.activate_special((r, c), 3, tile_colour1, is_combination_match=True)
             
         # vertical laser/horizontal laser + bomb
         elif tile_type1 == 4 and 2 <= tile_type2 <= 3 or tile_type2 == 4 and 2 <= tile_type1 <= 3:
@@ -731,14 +738,13 @@ class Board:
             min_c = max(c - 1, 0)
             max_c = min(c + 1, self.num_cols - 1)
             
-            print(r, c, min_r, max_r, min_c, max_c)
             # Activate horizontal lasers
             for i in range(min_r, max_r + 1):
-                self.activate_special((i, c), 3, tile_colour2)
+                self.activate_special((i, c), 3, tile_colour2, is_combination_match=True)
 
             # Activate vertical lasers.
             for j in range(min_c, max_c + 1):
-                self.activate_special((r, j), 2, tile_colour2)
+                self.activate_special((r, j), 2, tile_colour2, is_combination_match=True)
         
         # bomb + bomb             
         elif tile_type1 == tile_type2 == 4:
@@ -751,7 +757,6 @@ class Board:
             min_c = max(central_c - 2, 0)
             max_c = min(central_c + 2, self.num_cols - 1)
             
-
             # Delete bombs
             self.board[:, coord1[0], coord1[1]] = 0
             self.board[:, coord2[0], coord2[1]] = 0
@@ -762,4 +767,4 @@ class Board:
                     if self.board[1, i, j] == 1:
                         self.board[:, i, j] = 0
                     elif self.board[1, i, j] != 0:
-                        self.activate_special((i, j), self.board[1, i, j], self.board[0, i, j])
+                        self.activate_special((i, j), self.board[1, i, j], self.board[0, i, j], is_combination_match=True)

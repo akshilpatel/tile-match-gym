@@ -192,6 +192,8 @@ def run_resolve_colour_match(grid, type_grid=None, num_colours=3):
     # b.board[0] = np.array(grid)
     b = Board(num_rows=len(grid), num_cols=len(grid[0]),
               num_colours=num_colours, board=grid)
+    b.num_specials_activated = 0
+    b.num_new_specials = 0
     # if type_grid is not None:
     #     b.board[1] = np.array(type_grid)
 
