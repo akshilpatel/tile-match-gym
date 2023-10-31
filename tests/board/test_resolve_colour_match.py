@@ -18,11 +18,11 @@ def print_boards(b1,b2):
     print_board(b2)
     print("###")
 
-def test_resolve_colour_match():
+def test_resolve_colour_matches():
 
     # No lines
     # Match where the colours are different
-    new_board = run_resolve_colour_match(
+    new_board = run_resolve_colour_matches(
         [[3, 1, 2, 2],
          [1, 3, 2, 3],
          [3, 1, 1, 2]]
@@ -40,7 +40,7 @@ def test_resolve_colour_match():
 
 
     # Single vertical line
-    new_board = run_resolve_colour_match(
+    new_board = run_resolve_colour_matches(
         np.array([[2, 3, 4, 3],
                   [3, 1, 3, 2],
                   [3, 1, 3, 2],
@@ -60,7 +60,7 @@ def test_resolve_colour_match():
     assert np.array_equal(new_board, expected), print_boards(expected, new_board)
 
     # Single horizontal line
-    new_board = run_resolve_colour_match(
+    new_board = run_resolve_colour_matches(
         np.array([[2, 3, 3, 4, 3],
                   [3, 2, 4, 3, 2],
                   [4, 1, 1, 1, 3],
@@ -80,7 +80,7 @@ def test_resolve_colour_match():
 
 
     # T 
-    new_board = run_resolve_colour_match(
+    new_board = run_resolve_colour_matches(
         np.array([[2, 3, 3, 4, 3],
                   [4, 1, 1, 1, 3],
                   [3, 2, 1, 3, 2],
@@ -101,7 +101,7 @@ def test_resolve_colour_match():
     # L
 
     # Disjoint lines should not be merged.
-    new_board = run_resolve_colour_match(
+    new_board = run_resolve_colour_matches(
         np.array([[2, 3, 3, 2, 3],
                   [4, 1, 4, 1, 3],
                   [3, 1, 3, 1, 2],
@@ -119,7 +119,7 @@ def test_resolve_colour_match():
            ]
         )), new_board
     # Lines > 3.
-    new_board = run_resolve_colour_match(
+    new_board = run_resolve_colour_matches(
         np.array([[2, 1, 3, 2, 3],
                   [4, 1, 4, 1, 3],
                   [3, 1, 3, 2, 2],
@@ -140,7 +140,7 @@ def test_resolve_colour_match():
 
 
     # Lines > 3 where the board config doesn't include the corresponding special.
-    new_board = run_resolve_colour_match(
+    new_board = run_resolve_colour_matches(
         np.array([[2, 1, 3, 2, 3],
                   [4, 1, 4, 1, 3],
                   [2, 1, 3, 2, 2],
@@ -164,7 +164,7 @@ def test_resolve_colour_match():
         ]
     )), new_board
 
-    new_board = run_resolve_colour_match(
+    new_board = run_resolve_colour_matches(
         np.array(
             [[3, 1, 2, 2],
              [3, 1, 2, 3],
@@ -182,7 +182,7 @@ def test_resolve_colour_match():
 
 
 
-def run_resolve_colour_match(grid, type_grid=None, num_colours=3):
+def run_resolve_colour_matches(grid, type_grid=None, num_colours=3):
     """
     Helper function to setup a board with a given grid.
     """
@@ -205,5 +205,3 @@ def run_resolve_colour_match(grid, type_grid=None, num_colours=3):
     # return tile_coords, tile_names, tile_colours
     return b.board
 
-if __name__ == "__main__":
-    test_resolve_colour_match()
