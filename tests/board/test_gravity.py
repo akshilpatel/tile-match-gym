@@ -8,6 +8,7 @@ from tile_match_gym.board import Board
 def test_gravity():
     # Case 1
     board = Board(4, 3, 5)
+    board.generate_board()
     board.board[0] =  np.array([[4, 1, 2], 
                                 [3, 2, 3], 
                                 [2, 4, 4], 
@@ -28,6 +29,7 @@ def test_gravity():
 
     # Case 2
     board = Board(8, 7, 5)
+    board.generate_board()
     board.board[0] = np.array([[2, 1, 1, 2, 3, 3, 2],
                                 [1, 3, 2, 3, 4, 3, 2],
                                 [4, 3, 3, 2, 4, 2, 3],

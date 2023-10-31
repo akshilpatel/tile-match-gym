@@ -38,13 +38,14 @@ def test_move():
     assert np.array_equal(expected_new, new_board), print_board(new_board)
 
     b = Board(4, 5, 4, seed=10)
+    b.generate_board()
     b.board[0] = np.array([[4, 1, 2, 1, 4], 
                            [4, 3, 1, 4, 3], 
                            [1, 1, 2, 3, 2], 
                            [4, 1, 2, 3, 4]])
     
 
-    num_eliminations, is_combination_match, num_new_specials, num_activations = b.move((2, 2), (1, 2))
+    num_eliminations, is_combination_match, num_new_specials, num_activations, shuffled = b.move((2, 2), (1, 2))
 
     assert num_eliminations == 12
     assert not is_combination_match 
@@ -53,6 +54,7 @@ def test_move():
     
     
     b = Board(4, 5, 4, seed=10)
+    b.generate_board()
     b.board[0] = np.array([[4, 1, 2, 1, 4], 
                            [4, 3, 1, 4, 3], 
                            [1, 1, 2, 3, 2], 
@@ -63,14 +65,14 @@ def test_move():
                            [1, 1, 1, 1, 1], 
                            [1, 1, 1, 1, 1]])
     
-    num_eliminations, is_combination_match, num_new_specials, num_activations = b.move((1, 1), (1, 2))
+    num_eliminations, is_combination_match, num_new_specials, num_activations, shuffled = b.move((1, 1), (1, 2))
     assert num_eliminations == 4
     assert num_new_specials == 1
     assert num_activations == 0
     assert not is_combination_match
 
     b = Board(4, 5, 4, seed=10)
-
+    b.generate_board()
     b.board[0] = np.array([[4, 4, 2, 1, 4], 
                            [4, 1, 1, 4, 3], 
                            [1, 3, 2, 3, 2], 
@@ -81,13 +83,14 @@ def test_move():
                            [1, 1, 1, 1, 1], 
                            [1, 2, 1, 1, 1]])
 
-    num_eliminations, is_combination_match, num_new_specials, num_activations = b.move((2, 0), (2, 1))
+    num_eliminations, is_combination_match, num_new_specials, num_activations, shuffled = b.move((2, 0), (2, 1))
     assert num_eliminations == 4
     assert num_new_specials == 0
     assert num_activations == 1
     assert not is_combination_match
 
     b = Board(4, 5, 4, seed=11)
+    b.generate_board()
     b.board[0] = np.array([[4, 4, 2, 1, 4], 
                            [4, 1, 1, 4, 3], 
                            [1, 3, 2, 3, 2], 
@@ -98,7 +101,7 @@ def test_move():
                            [1, 3, 1, 1, 1], 
                            [1, 2, 1, 1, 1]])
 
-    num_eliminations, is_combination_match, num_new_specials, num_activations = b.move((2, 1), (3, 1))
+    num_eliminations, is_combination_match, num_new_specials, num_activations, shuffled = b.move((2, 1), (3, 1))
     assert num_eliminations == 11
     assert num_new_specials == 0
     assert num_activations == 0
@@ -117,7 +120,7 @@ def run_move(grid, coord1, coord2, num_colours=4):
     
     print(f"Board after init = {b.board} with shape {b.board.shape} and b.num_rows = {b.num_rows}, b.num_cols = {b.num_cols}\n&&&&&&&&&&&&\n")
     
-    num_eliminations, is_combination_match, num_new_specials, num_activations = b.move(coord1, coord2)
+    num_eliminations, is_combination_match, num_new_specials, num_activations, shuffled = b.move(coord1, coord2)
 
     # return tile_coords, tile_names, tile_colours
     return b.board, num_eliminations, is_combination_match, num_new_specials, num_activations

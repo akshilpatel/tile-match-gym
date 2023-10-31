@@ -17,6 +17,7 @@ def test_get_colour_lines():
     np.random.seed(0)
 
     b = Board(num_rows=3, num_cols=4, num_colours=3)
+    b.generate_board()
 
     # Colourless specials should not be included
     b.board[0] = np.zeros((b.num_rows, b.num_cols))
@@ -58,6 +59,7 @@ def test_get_colour_lines():
 
     # Different board shape.
     b2 = Board(num_rows=5, num_cols=3, num_colours=7)
+    b2.generate_board()
     b2.board[0] = np.array([[3, 4, 4], 
                             [5, 5, 2], 
                             [4, 4, 3], 
@@ -132,6 +134,7 @@ def test_get_colour_lines():
 
     # Separate horizontal lines on same row
     b3 = Board(num_rows=4, num_cols=8, num_colours=5)
+    b3.generate_board()
     b3.board[0] = np.array([[2, 3, 2, 4, 4, 2, 3, 3],
                             [4, 2, 5, 2, 3, 4, 2, 3],
                             [3, 3, 3, 3, 5, 2, 2, 2],
@@ -141,6 +144,7 @@ def test_get_colour_lines():
     assert [(2, 5), (2, 6), (2, 7)] in b3.get_colour_lines()
 
     b4 = Board(num_rows=10, num_cols=4, num_colours=5)
+    b4.generate_board()
     b4.board[0] = np.array([[5, 5, 4, 5],
                             [3, 3, 5, 6],
                             [3, 6, 3, 3],
@@ -157,9 +161,10 @@ def test_get_colour_lines():
     assert len(output_lines) == 2, output_lines
     assert [(7,1),(8,1),(9,1)] in output_lines
     assert [(7,0),(7,1),(7,2)] in output_lines
-    # assert [(7, 1), (8, 1), (9, 1)] in output_lines
+
     # not on the bottom vertical line
     b6 = Board(num_rows=4, num_cols=4, num_colours=7)
+    b6.generate_board()
     b6.board[0] = np.array([[2, 3, 4, 3],
                            [3, 1, 3, 2],
                            [3, 1, 3, 2],
@@ -168,20 +173,21 @@ def test_get_colour_lines():
     assert len(b6.get_colour_lines()) == 1
 
     # T shape
-    print("T_SHAPE")
-    b8 = Board(num_rows=4, num_cols=4, num_colours=7) #, board=np.array([bo, bb]), seed=1)
+    b8 = Board(num_rows=4, num_cols=4, num_colours=7) #
+    b8.generate_board()
     b8.board[0] = np.array([[2, 3, 4, 3],
                            [1, 1, 1, 2],
                            [3, 1, 3, 2],
                            [4, 1, 2, 1]])
     lines = b8.get_colour_lines()
-    # assert  [(1,0),(1,1),(1,2),(2,1),(3,1)] in lines, lines
+
     assert [(1,1),(2,1),(3,1)] in lines, str([(1,1),(2,1),(3,1)]) + " should be " + str(lines)
     assert [(1,0),(1,1),(1,2)] in lines, str([(1,0),(1,1),(1,2)]) + " should be " + str(lines)
     assert len(b8.get_colour_lines()) == 2, "Should be 1 line, got " + str(len(b8.get_colour_lines()))
 
     # upside down T shape
     b8 = Board(num_rows=4, num_cols=4, num_colours=7) #, board=np.array([bo, bb]), seed=1)
+    b8.generate_board()
     b8.board[0] = np.array([[2, 3, 4, 3],
                            [4, 1, 2, 2],
                            [3, 1, 3, 2],
@@ -193,6 +199,7 @@ def test_get_colour_lines():
     assert len(b8.get_colour_lines()) == 2
     # L
     b8 = Board(num_rows=4, num_cols=4, num_colours=7) #, board=np.array([bo, bb]), seed=1)
+    b8.generate_board()
     b8.board[0] = np.array([[2, 3, 4, 3],
                            [4, 1, 2, 2],
                            [3, 1, 3, 2],
@@ -204,26 +211,19 @@ def test_get_colour_lines():
     assert len(b8.get_colour_lines()) == 2
 
     b9 = Board(num_rows=3, num_cols=4, num_colours=7) #, board=np.array([bo, bb]), seed=1)
+    b9.generate_board()
     b9.board[0] = np.array(
         [[3, 1, 2, 2],
          [3, 1, 2, 3],
          [3, 1, 1, 2]])
-#         [[1, 1, 1, 1],
-#          [1, 1, 1, 1],
-#          [1, 1, 1, 1]]
-#         ]
-#             )
+
     lines = b9.get_colour_lines()
-    # assert  [(1,0),(1,1),(1,2),(2,1),(3,1)] in lines, lines
-    print("lines = ",lines)
+
     assert [(0,0),(1,0),(2,0)] in lines, lines
     assert [(0,1),(1,1),(2,1)] in lines, lines
     assert len(b9.get_colour_lines()) == 2
-
-
     
 def test_process_colour_lines():
-
     # No lines
     # Match where the colours are different
     coordinates, match_types, match_colors = get_match_details(
@@ -351,6 +351,7 @@ def get_match_details(grid, type_grid=None, num_colours=3):
     Helper function to setup a board with a given grid.
     """
     b = Board(num_rows=len(grid), num_cols=len(grid[0]), num_colours=num_colours)
+    b.generate_board()
     b.board[0] = np.zeros((b.num_rows, b.num_cols))
     b.board[1] = np.ones_like(b.board[0])
     b.board[0] = np.array(grid)

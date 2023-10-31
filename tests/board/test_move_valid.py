@@ -6,6 +6,7 @@ from copy import deepcopy
 def test_is_move_effective():
     # 3 in a row and 3 in a col
     board = Board(10, 10, 5) 
+    board.generate_board()
     board.board[0] = np.array([[4, 4, 5, 4, 2, 2, 6, 6, 3, 3],
                                [3, 6, 3, 6, 3, 4, 5, 4, 2, 2],
                                [6, 5, 6, 4, 6, 3, 4, 5, 2, 3],
@@ -26,6 +27,7 @@ def test_is_move_effective():
 
     # 3 in a col
     board = Board(4, 3, 4)
+    board.generate_board()
     board.board[0] = np.array([[2, 4, 3],
                                [2, 1, 3],
                                [1, 3, 1],
@@ -52,6 +54,7 @@ def test_is_move_effective():
 
     # 4 in a row with special
     board = Board(4, 5, 5)
+    board.generate_board()
     board.board[0] = np.array([[1, 2, 2, 3, 4],
                                [1, 2, 1, 2, 4],
                                [4, 4, 1, 4, 2],
@@ -82,7 +85,7 @@ def test_is_move_effective():
 
     # 5 in a col
     board = Board(5, 5, 7, seed=2)  # cookie , and vertical lase, horizontal laser, bomb
-
+    board.generate_board()
     board.board[0] = np.array([[1, 2, 3, 3, 4],
                                [1, 2, 3, 2, 4],
                                [4, 4, 2, 3, 2],
@@ -100,7 +103,7 @@ def test_is_move_effective():
 
     # Cookie + special
     board = Board(7, 5, 12, seed=3)
-    print(board.board)
+    board.generate_board()
     board.board[0] = np.array([[8, 2, 9, 4, 5], 
                             [1, 9, 10, 6, 8], 
                             [4, 6, 11, 4, 9], 

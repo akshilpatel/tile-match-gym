@@ -6,6 +6,7 @@ import numpy as np
 def test_combination_match():
     # Cookie + cookie should clear the board.
     b = Board(6, 3, 4)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[4, 3, 3],
@@ -28,6 +29,7 @@ def test_combination_match():
 
     # Cookie + normal (no specials). Should remove normals of the same color, and activate specials of same colour
     b = Board(4, 6, 3)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[2, 2, 3, 2, 3, 2], 
@@ -53,6 +55,7 @@ def test_combination_match():
 
     # Cookie + normal (1 of each special activated)
     b = Board(6, 4, 4)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[3, 1, 1, 2],
@@ -86,6 +89,7 @@ def test_combination_match():
 
     # Cookie + bomb should  convert all of same colour to bomb
     b = Board(5, 5, 4)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[3, 1, 2, 1, 3],
@@ -144,6 +148,7 @@ def test_combination_match():
 
     # Cookie + v laser
     b = Board(6, 4, 5)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[2, 3, 1, 4],
@@ -178,6 +183,7 @@ def test_combination_match():
 
     # Cookie + h laser
     b = Board(5, 6, 3)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[3, 3, 1, 2, 2, 1],
@@ -210,6 +216,7 @@ def test_combination_match():
 
     # vertical laser + horizontal laser
     b = Board(4, 4, 6)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[4, 3, 6, 2],
@@ -236,6 +243,7 @@ def test_combination_match():
 
     # v_laser + v_laser
     b = Board(5, 6, 7)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[6, 4, 6, 2, 7, 3],
@@ -297,6 +305,7 @@ def test_combination_match():
     
     # bomb + bomb
     b = Board(6, 7, 6)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[2, 3, 5, 1, 1, 2, 6],
@@ -331,6 +340,7 @@ def test_combination_match():
     
     # bomb + v_laser
     b = Board(7, 7, 7)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[3, 2, 6, 6, 1, 4, 7],
@@ -369,6 +379,7 @@ def test_combination_match():
 
     # bomb + h_laser
     b = Board(7, 7, 7)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[3, 2, 6, 6, 1, 4, 7],

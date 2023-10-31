@@ -47,7 +47,7 @@ def test_possible_move():
 
     # bm = Board(6, 10, 4, board = bd)
     bm = Board(6, 10, 4)
-
+    bm.generate_board()
     for c in combinations:
         print("shape of board = ", bm.board.shape)
         print("shape of board[0, 1:4, 1:5] is ", bm.board[0,1:4, 1:5].shape, "shape of c is ", np.array(c).shape)
@@ -82,6 +82,7 @@ def test_possible_move():
     for i in range(100):
                 
         b = Board(num_rows=4, num_cols=4, num_colours=3, colour_specials= ["vertical_laser", "horizontal_laser", "bomb"], colourless_specials=["cookie"], seed=i)
+        b.generate_board()
         old_board = deepcopy(b.board)
         b.possible_move()
         assert np.array_equal(b.board, old_board)

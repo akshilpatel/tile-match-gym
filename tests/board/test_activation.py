@@ -11,8 +11,10 @@ def test_activate_special():
 
     # Bomb #
     b = Board(4, 5, 5)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
+    b.generate_board()
     b.board[0] = np.array([[3, 1, 4, 2, 2],
                         [1, 4, 2, 3, 4],
                         [3, 3, 2, 1, 1],
@@ -138,6 +140,7 @@ def test_activate_special():
 
     # Smaller board.
     b = Board(3, 3, 3)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.activate_special((1,1), 4, 3)
@@ -147,6 +150,7 @@ def test_activate_special():
 
     ########### V Laser #############
     b = Board(7, 4, 5)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[4, 4, 3, 3],
@@ -291,6 +295,7 @@ def test_activate_special():
 
     # H Laser
     b = Board(4, 9, 7)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[6, 6, 7, 2, 7, 5, 5, 2, 3],
@@ -367,6 +372,7 @@ def test_activate_special():
 
     # Cookie
     b = Board(4, 3, 4)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[1, 4, 4],
@@ -392,6 +398,7 @@ def test_activate_special():
                                                 [1, 1, 1]]))
 
     b = Board(4, 3, 4)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.array([[1, 3, 4],
@@ -534,6 +541,7 @@ def get_special_pos(grid, type_grid=None, num_colours=3, straight=True,
     Helper function to setup a board with a given grid.
     """
     b = Board(num_rows=len(grid), num_cols=len(grid[0]), num_colours=num_colours)
+    b.generate_board()
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.zeros((b.num_rows, b.num_cols))
