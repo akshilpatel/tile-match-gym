@@ -41,12 +41,10 @@ class Board:
         self.num_colours = num_colours
 
         self.flat_size = int(self.num_cols * self.num_rows)
-        self.num_actions = self.num_rows * (self.num_cols - 1) + self.num_cols * (self.num_rows - 1)
 
         self.colourless_specials = colourless_specials
         self.colour_specials = colour_specials
-        self.num_colour_specials = len(self.colour_specials)
-        self.num_colourless_specials = len(self.colourless_specials)
+        
         self.specials = set(self.colourless_specials + self.colour_specials)
         
         if seed is None:
@@ -67,8 +65,7 @@ class Board:
 
             self.num_rows = len(self.board[0])
             self.num_cols = len(self.board[0][0])
-        else:
-            self.generate_board()
+        
         self.indices = np.array([[(r, c) for r in range(self.num_cols)] for c in range(self.num_rows)])
 
     def generate_board(self):
