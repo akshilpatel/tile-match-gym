@@ -379,12 +379,13 @@ class Board:
         self.num_new_specials = 0
         num_eliminations = 0
         is_combination_match = False
+        shuffled = False
 
         if not self.is_move_legal(coord1, coord2):
             raise ValueError(f"Invalid move: {coord1}, {coord2}")
 
         if not self.is_move_effective(coord1, coord2):
-            return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated
+            return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated, shuffled
         
         self._swap_coords(coord1, coord2)
 
@@ -413,7 +414,6 @@ class Board:
         num_eliminations += self.num_new_specials # New specials are always placed in empty cells and this reduces count of eliminations.
 
         # Ensure the new board is playable.
-        shuffled=False
         line_matches = []
         num_line_matches = 0
         while not self.possible_move() or num_line_matches > 0:
