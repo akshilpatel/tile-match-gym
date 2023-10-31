@@ -79,16 +79,19 @@ class Board:
             if num_line_matches > 0:
                 self.remove_colour_lines(line_matches)
             else:
-                shuffled_idcs = np.arange(self.num_rows * self.num_cols)
-                self.np_random.shuffle(shuffled_idcs)
-                shuffled_idcs = shuffled_idcs.reshape(self.num_rows, self.num_cols)
-                self.board = self.board[:, shuffled_idcs // self.num_cols, shuffled_idcs % self.num_cols]
+                self.shuffle()
 
             line_matches = self.get_colour_lines()
             num_line_matches = len(line_matches)
-            
+        
         assert self.possible_move()
         assert self.get_colour_lines() == []
+
+    def shuffle(self):
+        shuffled_idcs = np.arange(self.num_rows * self.num_cols)
+        self.np_random.shuffle(shuffled_idcs)
+        shuffled_idcs = shuffled_idcs.reshape(self.num_rows, self.num_cols)
+        self.board = self.board[:, shuffled_idcs // self.num_cols, shuffled_idcs % self.num_cols]
             
     def remove_colour_lines(self, line_matches: List[List[Tuple[int, int]]]) -> None:
         """Given a board and list of lines where each line is a list of coordinates where the colour of the tiles at each coordinate in one line is the same, changes the board such that none of the
@@ -372,7 +375,6 @@ class Board:
         Returns:
             Tuple[int, int, int, int]: number of tiles eliminated, whether it was a combination match, number of specials created, number of specials activated.
         """
-        
         self.num_specials_activated = 0
         self.num_new_specials = 0
         num_eliminations = 0
@@ -384,7 +386,6 @@ class Board:
         if not self.is_move_effective(coord1, coord2):
             return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated
         
-        # Swap the coordinates.
         self._swap_coords(coord1, coord2)
 
         ## Combination match ##
@@ -409,8 +410,23 @@ class Board:
                 self.gravity()
                 self.refill()
 
-        num_eliminations += self.num_new_specials # New specials are always placed in empty cells.
-        return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated
+        num_eliminations += self.num_new_specials # New specials are always placed in empty cells and this reduces count of eliminations.
+
+        # Ensure the new board is playable.
+        shuffled=False
+        line_matches = []
+        num_line_matches = 0
+        while not self.possible_move() or num_line_matches > 0:
+            shuffled=True
+            if num_line_matches > 0:
+                self.remove_colour_lines(line_matches)
+            else:
+                self.shuffle()
+
+            line_matches = self.get_colour_lines()
+            num_line_matches = len(line_matches)
+  
+        return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated, shuffled
 
     def resolve_colour_matches(
             self, 
