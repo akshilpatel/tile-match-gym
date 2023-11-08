@@ -1,5 +1,4 @@
 import numpy as np
-
 from typing import Optional, List, Tuple, Dict
 from collections import Counter
 
@@ -191,9 +190,7 @@ class Board:
         Given a board with zeroes, push the zeroes to the top of the board.
         If an activation queue of coordinates is passed in, then the coordinates in the queue are updated as gravity pushes the coordinates down.
         """
-
         colour_zero_mask_T = self.board[0].T == 0
-        
         type_zero_mask_T = self.board[1].T == 0
         zero_mask_T = colour_zero_mask_T & type_zero_mask_T
         non_zero_mask_T = ~zero_mask_T
@@ -388,7 +385,7 @@ class Board:
             return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated, shuffled
         
         self._swap_coords(coord1, coord2)
-
+        
         ## Combination match ##
         has_two_specials = self.board[1, coord1[0], coord1[1]] not in [0,1] and self.board[1, coord2[0], coord2[1]] not in [0,1]
         has_one_colourless_special = self.board[1, coord1[0], coord1[1]] < 0 or self.board[1, coord2[0], coord2[1]] < 0
@@ -398,10 +395,11 @@ class Board:
             num_eliminations += self.flat_size - np.count_nonzero(self.board[1])
             self.gravity()
             self.refill()
-
+        
         ## Colour matching ##
         has_match = True
         while has_match:
+            
             match_locs, match_types, match_colours = self.detect_colour_matches()
             if len(match_locs) == 0:
                 has_match = False
@@ -410,7 +408,7 @@ class Board:
                 num_eliminations += self.flat_size - np.count_nonzero(self.board[1])
                 self.gravity()
                 self.refill()
-
+        
         num_eliminations += self.num_new_specials # New specials are always placed in empty cells and this reduces count of eliminations.
 
         # Ensure the new board is playable.
@@ -636,8 +634,8 @@ class Board:
             special_type (str): The type of new special tile to create
         """
 
-        assert self.board[0, coord[0], coord[1]] == 0
-        assert self.board[1, coord[0], coord[1]] == 0
+        assert self.board[0, coord[0], coord[1]] == 0, (coord, self.board[0])
+        assert self.board[1, coord[0], coord[1]] == 0, (coord, self.board[0])
         self.num_new_specials += 1
 
         if special_type == "cookie":
