@@ -550,5 +550,7 @@ def get_special_pos(grid, type_grid=None, num_colours=3, straight=True,
     if type_grid is not None:
         b.board[1] = type_grid
     coords = np.argwhere(b.board[0] == expected_color)
-    special_position = b.get_special_creation_pos(coords, straight)
+    coords = [tuple(c.tolist()) for c in coords]
+    taken_pos = set()
+    special_position = b.get_special_creation_pos(coords, taken_pos=taken_pos, straight_match=straight)
     return special_position
