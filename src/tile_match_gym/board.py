@@ -264,7 +264,6 @@ class Board:
         r_max = min(self.num_rows, max(coord1[0], coord2[0]) + 3)
         c_min = max(0, min(coord1[1], coord2[1]) - 2)
         c_max = min(self.num_cols, max(coord1[1], coord2[1]) + 3)
-
         
         # Swap the coordinates_ to see what happens.
         self._swap_coords(coord1, coord2)
@@ -426,6 +425,7 @@ class Board:
   
         return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated, shuffled
 
+    # TODO: get_special_creation_pos doesn't account for if there is a special assigned for creation there. So any two matches that share a coord will only create on special.
     def resolve_colour_matches(
             self, 
             match_locs: List[List[Tuple[int, int]]], 
@@ -441,9 +441,11 @@ class Board:
         """
         special_creation_q = []
         # Extract the special creation position first since the loop below deletes tiles so we cannot check colours for determining special pos.
+        taken_positions = set()
         for i in range(len(match_locs)):
             if match_types[i] != "normal":
-                special_creation_coord = self.get_special_creation_pos(match_locs[i], match_types[i] != "bomb")
+                special_creation_coord = self.get_special_creation_pos(match_locs[i], taken_pos=taken_positions, straight_match=match_types[i] != "bomb")
+                taken_positions.add(special_creation_coord)
                 special_creation_q.append((special_creation_coord, match_types[i], match_colours[i]))
 
         # Activate specials and delete tiles.
@@ -454,6 +456,44 @@ class Board:
         # Create new specials.
         for i in range(len(special_creation_q)):
             self.create_special(*special_creation_q[i])
+
+    def get_special_creation_pos(self, coords: List[Tuple[int, int]], taken_pos:set, straight_match: Optional[bool]=True) -> Tuple[int, int]:
+        """Given a set of coordinates return the position of the special tile that should be placed
+        The position should be as close to the center as possible but should not already be special.
+
+        Args:
+            coords (List[Tuple[int, int]]): The coordinates in the match that created the special.
+            taken_pos (set): Set of coordinates that are already pending special creation and so cannot be new special positions.
+            straight_match (Optional[bool]): Whether the match is straight (not a bomb) or not. Defaults to True.
+
+        """
+        def is_valid_pos(coord):
+            return (self.board[1, coord[0], coord[1]] in [0,1]) and (coord not in taken_pos)
+        
+        if not straight_match:
+            # Get the corner coords and find closest valid coord
+            xs = [c[0] for c in coords]
+            ys = [c[1] for c in coords]
+            corner = (max(xs, key=xs.count), max(ys, key=ys.count)) 
+
+            valid_coords = [c for c in coords if is_valid_pos(c)]
+            if corner in valid_coords:
+                assert corner not in taken_pos
+                return corner
+            else:
+                chosen_c = sorted(valid_coords, key=lambda x: (x[0] - corner[0]) ** 2 + (x[1] - corner[1]) ** 2)[0]
+                assert chosen_c not in taken_pos
+                return chosen_c
+
+        # For straight matches get the center of the coords
+        sorted_coords = sorted([c for c in coords if is_valid_pos(c)], key=lambda x: (x[0], x[1]))        
+        if len(sorted_coords) % 2 == 0:
+            chosen_c = sorted_coords[len(sorted_coords) // 2 - 1]
+            assert chosen_c not in taken_pos
+            return chosen_c
+        chosen_c = sorted_coords[len(sorted_coords) // 2]
+        assert chosen_c not in taken_pos
+        return chosen_c
 
     def resolve_colour_match(self, match_coords: List[Tuple[int, int]]) -> None:
         """Resolving a single match. This function eliminates normal tiles and activates special tiles.
@@ -556,34 +596,6 @@ class Board:
                     self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c])
         else: 
             raise ValueError(f"Tile type: {tile_type}, tile colour: {tile_colour} is an invalid special tile.")
-
-
-    def get_special_creation_pos(self, coords: List[Tuple[int, int]], straight_match: Optional[bool]=True) -> Tuple[int, int]:
-        """Given a set of coordinates return the position of the special tile that should be placed
-        The position should be as close to the center as possible but should not already be special.
-
-        Args:
-            coords (List[Tuple[int, int]]): The coordinates in the match that created the special.
-            straight_match (Optional[bool]): Whether the match is straight (not a bomb) or not. Defaults to True.
-
-        """
-        if not straight_match:
-            # get the corner coords
-            xs = [c[0] for c in coords]
-            ys = [c[1] for c in coords]
-            corner = (max(xs, key=xs.count), max(ys, key=ys.count))
-
-            std = [tuple(c) for c in coords if self.board[1, c[0], c[1]] in [0, 1]]
-            if corner in std:
-                return corner
-            else:
-                return sorted(std, key=lambda x: (x[0] - corner[0]) ** 2 + (x[1] - corner[1]) ** 2)[0]
-
-        sorted_coords = sorted([c for c in coords if self.board[1, c[0], c[1]] in [0, 1]], key=lambda x: (x[0], x[1]))
-        if len(sorted_coords) % 2 == 0:
-            return sorted_coords[len(sorted_coords) // 2 - 1]
-        return sorted_coords[len(sorted_coords) // 2]
-
 
     def possible_move(self, grid: Optional[np.ndarray] = None):
         """Checks if any 3 in a row/column can be made in the current grid.
