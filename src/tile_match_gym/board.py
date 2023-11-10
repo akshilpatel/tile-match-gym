@@ -425,7 +425,6 @@ class Board:
   
         return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated, shuffled
 
-    # TODO: get_special_creation_pos doesn't account for if there is a special assigned for creation there. So any two matches that share a coord will only create on special.
     def resolve_colour_matches(
             self, 
             match_locs: List[List[Tuple[int, int]]], 
