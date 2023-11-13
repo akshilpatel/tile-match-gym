@@ -489,7 +489,7 @@ def tests_get_special_creation_pos():
                                         [0, 2, 0, 0, 0],
                                         [0, 0, 0, 0, 0],
                                         [0, 0, 0, 0, 0]])
-    assert all(special_position == np.array([1, 1])), f"Special position is not correct. Expected: {np.array([1, 1])}, got: {special_position}"
+    assert all(special_position == np.array([2, 1])), f"Special position is not correct. Expected: {np.array([2, 1])}, got: {special_position}"
 
     # Match where non-middle is special.
     special_position = get_special_pos([[0, 1, 0, 0, 0],
@@ -503,7 +503,7 @@ def tests_get_special_creation_pos():
                                         [0, 2, 0, 0, 0],
                                         [0, 0, 0, 0, 0],
                                         [0, 0, 0, 0, 0]])
-    assert all(special_position == np.array([3, 1])), f"Special position is not correct. Expected: {np.array([3, 1])}, got: {special_position}"
+    assert all(special_position == np.array([2, 1])), f"Special position is not correct. Expected: {np.array([2, 1])}, got: {special_position}"
 
 
     # Match where a lot of the middle is special.
@@ -518,7 +518,7 @@ def tests_get_special_creation_pos():
                                         [0, 2, 0, 0, 0],
                                         [0, 2, 0, 0, 0],
                                         [0, 0, 0, 0, 0]])
-    assert all(special_position == np.array([0, 1])), f"Special position is not correct. Expected: {np.array([0, 1])}, got: {special_position}"
+    assert all(special_position == np.array([2, 1])), f"Special position is not correct. Expected: {np.array([2, 1])}, got: {special_position}"
 
     # already special in corner
     special_position = get_special_pos([[0, 0, 0, 0, 0],
@@ -532,7 +532,7 @@ def tests_get_special_creation_pos():
                                         [0, 0, 0, 0, 0],
                                         [0, 0, 0, 2, 0],
                                         [0, 0, 0, 0, 0]], straight=False)
-    assert all(special_position == np.array([2, 3])), f"Special position is not correct. Expected: {np.array([2, 3])}, got: {special_position}"
+    assert all(special_position == np.array([3, 3])), f"Special position is not correct. Expected: {np.array([3, 3])}, got: {special_position}"
 
     # Match where the colours are different
     special_position = get_special_pos([[3, 2, 5, 6, 7],
@@ -554,7 +554,7 @@ def get_special_pos(grid, type_grid=None, num_colours=3, straight=True,
     b.num_specials_activated = 0
     b.num_new_specials = 0
     b.board[0] = np.zeros((b.num_rows, b.num_cols))
-    b.board[1] = np.zeros((b.num_rows, b.num_cols))
+    b.board[1] = np.ones((b.num_rows, b.num_cols))
     b.board[0] = grid
     if type_grid is not None:
         b.board[1] = type_grid

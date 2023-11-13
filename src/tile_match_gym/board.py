@@ -470,17 +470,14 @@ class Board:
             taken_pos (set): Set of coordinates that are already pending special creation and so cannot be new special positions.
             straight_match (Optional[bool]): Whether the match is straight (not a bomb) or not. Defaults to True.
 
-        """
-        def is_valid_pos(coord):
-            return (self.board[1, coord[0], coord[1]] in [0,1]) and (coord not in taken_pos)
+        """        
+        valid_coords = [c for c in coords if c not in taken_pos]
         
         if not straight_match:
             # Get the corner coords and find closest valid coord
             xs = [c[0] for c in coords]
             ys = [c[1] for c in coords]
             corner = (max(xs, key=xs.count), max(ys, key=ys.count)) 
-
-            valid_coords = [c for c in coords if is_valid_pos(c)]
             if corner in valid_coords:
                 assert corner not in taken_pos
                 return corner
@@ -490,7 +487,7 @@ class Board:
                 return chosen_c
 
         # For straight matches get the center of the coords
-        sorted_coords = sorted([c for c in coords if is_valid_pos(c)], key=lambda x: (x[0], x[1]))        
+        sorted_coords = sorted(valid_coords, key=lambda x: (x[0], x[1]))        
         if len(sorted_coords) % 2 == 0:
             chosen_c = sorted_coords[len(sorted_coords) // 2 - 1]
             assert chosen_c not in taken_pos
