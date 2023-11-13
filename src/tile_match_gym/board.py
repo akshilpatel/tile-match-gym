@@ -307,8 +307,7 @@ class Board:
         tile_names = []
         tile_coords = []
         tile_colours = []
-        # print("----")
-        # print(self.board)
+
         lines = sorted([sorted(i, key=lambda x: (x[0], x[1])) for i in lines], key=lambda y: (y[0][0]), reverse=False)
 
         while len(lines) > 0:
@@ -350,7 +349,6 @@ class Board:
                         break  # Stop searching after finding one intersection. This should break out of the for loop.
             # Check for normals. This happends even if the lines are longer than 3 but there are no matching specials.
             elif len(line) >= 3:
-                # print("normal", line, self.board[0, line[0][0], line[0][1]])
                 tile_names.append("normal")
                 tile_coords.append(line)
                 tile_colours.append(self.board[0, line[0][0], line[0][1]])
@@ -511,7 +509,6 @@ class Board:
         
         for coord in match_coords:
             if self.board[1, coord[0], coord[1]] not in [0, 1]:
-                print("resolve_colour_match")
                 self.activate_special(coord, self.board[1, coord[0], coord[1]], self.board[0, coord[0], coord[1]])
             else:
                 self.board[:, coord[0], coord[1]] = 0 # Delete the normal tiles.   
@@ -546,7 +543,6 @@ class Board:
         
         # vertical laser
         if tile_type == 2:
-            print("vertical_laser", coord)
             for row in range(self.num_rows):
                 if row == special_r: 
                     continue
@@ -556,7 +552,6 @@ class Board:
 
         # horizontal_laser
         elif tile_type == 3:
-            print("horizontal_laser", coord)
             for col in range(self.num_cols):
                 if col == special_c:  # Already deleted the special tile.
                     continue
@@ -568,8 +563,6 @@ class Board:
                     self.board[:, special_r, col] = 0   
         # bomb
         elif tile_type == 4:
-            print("bomb activated", self.board)
-            print("bomb", coord)
 
             min_r = max(coord[0] - 1, 0)
             max_r = min(coord[0] + 1, self.num_rows - 1)
@@ -589,7 +582,6 @@ class Board:
         # cookie
         elif tile_type == -1:
             # If the most common colour is 0 then we'd be deleting nothing.
-            print("cookie activates", coord)
             mask = self.board[0] != 0
             if mask.sum() == 0:
                 return
@@ -729,7 +721,6 @@ class Board:
             for i in range(len(r_idcs)):
                 r, c = r_idcs[i], c_idcs[i]
                 if self.board[1, r, c] not in [0, 1]:
-                    print("cookie + normal combo", coord1, coord2)
                     self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c], is_combination_match=True)
                     
         # Cookie + vertical laser/horizontal laser/bomb -> convert all normals of same colour to the special type then activate them.
@@ -754,7 +745,6 @@ class Board:
                 r, c = r_idcs[i], c_idcs[i]
                 # If it hasn't already been activated (through chaining in previous iterations)
                 if self.board[1, r, c] not in [0, 1]: 
-                    print("cookie + laser/bomb", coord1, coord2)
                     self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c], is_combination_match=True)
                     
         # vertical laser + vertical laser or horizontal laser + horizontal laser or vertical laser + horizontal laser
@@ -768,7 +758,6 @@ class Board:
             c = min(coord1[1], coord2[1])
             
             # Activate a vertical and then horizontal laser.
-            print("two lasers combi", coord1, coord2)
             self.activate_special((r, c), 2, tile_colour1, is_combination_match=True)
             self.activate_special((r, c), 3, tile_colour1, is_combination_match=True)
             
@@ -788,12 +777,10 @@ class Board:
             
             # Activate horizontal lasers
             for i in range(min_r, max_r + 1):
-                print("laser + bomb", coord1, coord2)
                 self.activate_special((i, c), 3, tile_colour2, is_combination_match=True)
 
             # Activate vertical lasers.
             for j in range(min_c, max_c + 1):
-                print("laser + bomb", coord1, coord2)
                 self.activate_special((r, j), 2, tile_colour2, is_combination_match=True)
         
         # bomb + bomb             
@@ -817,5 +804,4 @@ class Board:
                     if self.board[1, i, j] == 1:
                         self.board[:, i, j] = 0
                     elif self.board[1, i, j] != 0:
-                        print("bomb + bomb", coord1, coord2)
                         self.activate_special((i, j), self.board[1, i, j], self.board[0, i, j], is_combination_match=True)
