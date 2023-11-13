@@ -423,6 +423,15 @@ def test_activate_special():
                                                 [1, 1, 0], 
                                                 [0, 0, 0]]))
 
+    # Try to activate a cookie when the board is empty
+    b = Board(4, 3, 4)
+    b.generate_board()
+    b.num_specials_activated = 0
+    b.num_new_specials = 0
+
+    b.board = np.zeros((2, 4, 3))
+    b.activate_special((1, 1), -1, 0, False)
+    assert np.array_equal(b.board, np.zeros((2, 4, 3)))
 
 
 def tests_get_special_creation_pos():
