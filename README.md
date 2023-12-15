@@ -1,7 +1,7 @@
-# Tile Matching Game Environments for RL 
+# Tile Matching Game Environments for Reinforcement Learning
 
 
-Welcome to the Reinforcement Learning Environments for Tile Matching Games repository! This repository aims to provide a collection of generalised tile matching game environments (like Bejeweled or Candy Crush) implemented in NumPy, poised to push reinforcement learning research forwards.
+Welcome to the Reinforcement Learning Environments for Tile Matching Games repository! This repository provides a collection of tile matching game environments (like Bejeweled or Candy Crush) implemented in NumPy, poised to push reinforcement learning research forwards.
 
 This genre of games is characterised by the following features which we find useful for reinforcement learning research:
 - Large action spaces
@@ -17,3 +17,18 @@ Please note that this project is a work in progress, and while many exciting fea
 On release, the environments will be installable via pip:
 
 ```pip install tile-match-gym```
+
+
+## Citation
+
+If you use this repository please cite as below:
+
+```
+@software{tile_match_gym,
+  author = {Patel, Akshil and Elson, James},
+  title = {{Tile Matching Game Reinforcement Learning Environments}},
+  url = {https://github.com/akshilpatel/tile-match-gym},
+  version = {0.0.1},
+  year = {2023}
+}
+```
