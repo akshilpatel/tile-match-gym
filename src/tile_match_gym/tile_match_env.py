@@ -1,8 +1,11 @@
-from tile_match_gym.board import Board
+
 import gymnasium as gym
+import numpy as np
+
 from gymnasium.spaces import Discrete, Box
 from typing import Optional, List
-import numpy as np
+from collections import OrderedDict
+from tile_match_gym.board import Board
 
 class TileMatchEnv(gym.Env):
     metadata = {'render.modes': ['human']}
@@ -35,12 +38,19 @@ class TileMatchEnv(gym.Env):
         obs_low = np.array([np.zeros((self.num_rows, self.num_cols), dtype=int), np.full((self.num_rows, self.num_cols), -self.num_colourless_specials, dtype=int)])
         obs_high = np.array([np.full((self.num_rows, self.num_cols), self.num_colours, dtype=int), np.full((self.num_rows, self.num_cols), self.num_colour_specials, dtype=int)])
         
-        self.observation_space = Box(
+        self._board_observation_space = Box(
             low=obs_low, 
             high=obs_high,
             shape=(2, self.num_rows, self.num_cols),
             dtype=int,
             seed = self.seed)
+        
+        self._moves_left_observation_space = Discrete(self.num_moves, seed=self.seed)
+
+        self.observation_space = gym.spaces.Dict({
+            "board": self._board_observation_space,
+            "num_moves_left": self._moves_left_observation_space
+        })
         
         self.timer = None
         self.action_space = Discrete(self.num_actions, seed=self.seed)
@@ -52,9 +62,9 @@ class TileMatchEnv(gym.Env):
 
     def reset(self):
         self.board.generate_board()
-        obs = self._get_obs()
-        info = {"num_moves_left": self.num_moves}
+        info = {}
         self.timer = 0
+        obs = self._get_obs()
         return obs, info
 
     def step(self, action):
@@ -71,14 +81,12 @@ class TileMatchEnv(gym.Env):
             "num_new_specials": num_new_specials,
             "num_specials_activated": num_specials_activated,
             "shuffled": shuffled,
-            "num_moves_left": self.num_moves - self.timer,
         }
-
         next_obs = self._get_obs()
         return next_obs, num_eliminations, done, False, info
     
     def _get_obs(self):
-        return self.board.board
+        return OrderedDict([("board", self.board.board), ("num_moves_left", self.num_moves - self.timer)])
 
     def _action_to_coords(self, action:int):
         if not 0 <= action <= self.num_actions:
@@ -94,6 +102,8 @@ class TileMatchEnv(gym.Env):
             return (row, col), (row, col + 1)
 
     def render(self, mode="human"):
+        if self.timer is None:
+            raise Exception("You must call reset before calling render")
         print(self.board.board)
 
     def close(self):
