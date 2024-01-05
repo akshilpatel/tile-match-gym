@@ -1,8 +1,5 @@
 import numpy as np
-from typing import Optional, List, Tuple, Dict
-from collections import Counter
-
-from tile_match_gym.utils.print_board_diffs import highlight_board_diff
+from typing import Optional, List, Tuple
 
 """
 tile_colours = {
