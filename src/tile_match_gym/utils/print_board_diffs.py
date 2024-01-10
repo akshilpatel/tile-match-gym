@@ -80,18 +80,3 @@ def highlight_board_diff(board: np.ndarray, expected: np.ndarray, gap=5, prnt=Fa
         print("\n".join(lines))
 
     return "\n".join(lines)
-
-
-if __name__ == "__main__":
-    board = np.array([[0, 1, 2], [3, 4, 5], [6, 7, 8]])
-    expected = np.array([[0, 1, 2], [3, 4, 5], [6, 7, 8]])
-    print_boards(board, expected)
-    expected[1][1] = 9
-    print_boards(board, expected)
-    highlight_board_diff(board, expected)
-
-    b3 = np.array([[0, 4, 4, 3, 1, 6], [2, 2, 3, 1, 5, 5], [6, 0, 0, 6, 7, 7], [8, 8, 9, 9, 2, 2], [1, 2, 3, 4, 5, 6], [7, 8, 9, 4, 6, 6]])
-    b4 = b3.copy()
-    b4[1][1] = 9
-    print_boards(b3, b4)
-    highlight_board_diff(b3, b4)

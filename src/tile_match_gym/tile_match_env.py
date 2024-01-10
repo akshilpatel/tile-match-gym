@@ -55,19 +55,19 @@ class TileMatchEnv(gym.Env):
         self.timer = None
         self.action_space = Discrete(self.num_actions, seed=self.seed)
 
-    def set_seed(self, seed:int):
+    def set_seed(self, seed:int) -> None:
         self.action_space.seed = seed
         self.observation_space.seed = seed
         self.board.np_random = np.random.default_rng(seed=seed)
 
-    def reset(self):
+    def reset(self)  -> Tuple[dict, dict]:
         self.board.generate_board()
         info = {}
         self.timer = 0
         obs = self._get_obs()
         return obs, info
 
-    def step(self, action):
+    def step(self, action: int) -> Tuple[dict, int, bool, bool, dict]:
         if self.timer is None or self.timer >= self.num_moves:
             raise Exception("You must call reset before calling step")
         
@@ -85,7 +85,7 @@ class TileMatchEnv(gym.Env):
         next_obs = self._get_obs()
         return next_obs, num_eliminations, done, False, info
     
-    def _get_obs(self):
+    def _get_obs(self) -> dict:
         return OrderedDict([("board", self.board.board), ("num_moves_left", self.num_moves - self.timer)])
 
     def _action_to_coords(self, action:int):
@@ -101,11 +101,11 @@ class TileMatchEnv(gym.Env):
             col = action_ % (self.num_cols - 1)
             return (row, col), (row, col + 1)
 
-    def render(self, mode="human"):
+    def render(self, mode: str="human") -> None:
         if self.timer is None:
             raise Exception("You must call reset before calling render")
         print(self.board.board)
 
-    def close(self):
+    def close(self) -> None:
         if self.renderer:
             self.renderer.close()
