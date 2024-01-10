@@ -1,9 +1,6 @@
 import numpy as np
 from tile_match_gym.board import Board
 from typing import List, Tuple
-from copy import deepcopy
-
-
 
 # create an array of alternating 2's and 3's
 def create_alternating_array(height: int, width: int) -> np.ndarray:

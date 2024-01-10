@@ -3,7 +3,7 @@ import gymnasium as gym
 import numpy as np
 
 from gymnasium.spaces import Discrete, Box
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from collections import OrderedDict
 from tile_match_gym.board import Board
 
@@ -107,5 +107,5 @@ class TileMatchEnv(gym.Env):
         print(self.board.board)
 
     def close(self) -> None:
-        if self.renderer:
+        if self.renderer is not None:
             self.renderer.close()
