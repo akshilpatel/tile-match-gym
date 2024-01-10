@@ -45,7 +45,7 @@ while True:
 
 ## Citation
 
-We'd love you to use our environments for you research! If you do use code from this repository please cite as below:
+We'd love it if you use our package for your research! If you do use code from this repository please cite us as below:
 
 ```
 @software{tile_match_gym,
