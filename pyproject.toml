@@ -1,6 +1,46 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "tile-match-gym"
+version = "0.0.2"
+authors = [
+    {name="Akshil Patel", email="akshilpatel11@gmail.com"},
+    {name="James Elson"}
+]
+description = "A set of reinforcement learning environments for tile matching games, consistent with the OpenAI Gym API."
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.24.3", 
+    "gymnasium>=0.28.1",
+]
+license = {file="LICENSE"}
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+keywords = ["reinforcement-learning", "gym", "tile-matching", "games", "rl", "openai-gym", "gymnasium", "rl-environment"]
+
+[project.optional-dependencies]
+testing = ["pytest>=7.4.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include=["tile_match_gym*"]
+
+
+[project.urls] 
+"Homepage" = "https://github.com/akshilpatel/tile-match-gym"
+"Issues" = "https://github.com/akshilpatel/tile-match-gym/issues"
 
 [tool-pytest.ini_options]
 testpaths = "tests"
