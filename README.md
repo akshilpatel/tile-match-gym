@@ -1,27 +1,51 @@
 # Tile Matching Reinforcement Learning Environments
 
+Welcome to the Reinforcement Learning Environments for Tile Matching Games repository! Here you can find a collection of tile matching game environments (like Bejeweled or Candy Crush), poised to push reinforcement learning research forwards.
 
-Welcome to the Reinforcement Learning Environments for Tile Matching Games repository! This repository provides a collection of tile matching game environments (like Bejeweled or Candy Crush) implemented in NumPy, poised to push reinforcement learning research forwards.
+This genre of games is characterised by the following features, which we find useful for reinforcement learning research:
 
-This genre of games is characterised by the following features which we find useful for reinforcement learning research:
 - Large action spaces
 - Intuitive action hierarchies
 - Procedurally generated levels
 - Structured complex stochasticity in transition dynamics
 
-**Work in Progress - Pre-release**
-
-Please note that this project is a work in progress, and while many exciting features are on the roadmap, they might not all be fully implemented at this time.
-
 ## Installation
-On release, the environments will be installable via pip:
+
+You can install the package via pip:
 
 ```pip install tile-match-gym```
 
+## Example Usage
+
+We follow the the Farama Foundation Gymnasium API:
+
+```
+from tile_match_gym.tile_match_env import TileMatchEnv
+
+env = TileMatchEnv(
+  num_rows=10, 
+  num_cols=10, 
+  num_colours=4, 
+  num_moves=30, 
+  colourless_specials=[], 
+  colour_specials=[], 
+  seed=2
+  )
+
+obs, _ = env.reset()
+
+while True:
+    action = env.action_space.sample()
+    next_obs, reward, done, truncated, info = env.step(action)
+    if done:
+        break
+    else:
+      next_obs = obs
+```
 
 ## Citation
 
-If you use this repository please cite as below:
+We'd love you to use our environments for you research! If you do use code from this repository please cite as below:
 
 ```
 @software{tile_match_gym,
@@ -30,5 +54,5 @@ If you use this repository please cite as below:
   url = {https://github.com/akshilpatel/tile-match-gym},
   version = {0.0.1},
   year = {2023}
-}
+  }
 ```
