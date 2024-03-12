@@ -65,7 +65,7 @@ class Board:
         self.indices = np.array([[(r, c) for r in range(self.num_cols)] for c in range(self.num_rows)])
 
     def generate_board(self):
-        self.board = np.ones((2, self.num_rows, self.num_cols), dtype=int)
+        self.board = np.ones((2, self.num_rows, self.num_cols), dtype=np.int32)
         self.board[0] = self.np_random.integers(1, self.num_colours+1, self.flat_size).reshape(self.num_rows, self.num_cols)
 
         line_matches = self.get_colour_lines()

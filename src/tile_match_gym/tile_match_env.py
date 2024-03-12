@@ -8,7 +8,7 @@ from collections import OrderedDict
 from tile_match_gym.board import Board
 
 class TileMatchEnv(gym.Env):
-    metadata = {'render.modes': ['human']}
+    metadata = {'render_modes': ['human']}
     def __init__(
             self, 
             num_rows:int, 
@@ -35,17 +35,17 @@ class TileMatchEnv(gym.Env):
         self.seed = seed
         self.board = Board(num_rows, num_cols, num_colours, colourless_specials, colour_specials, seed=seed)
 
-        obs_low = np.array([np.zeros((self.num_rows, self.num_cols), dtype=int), np.full((self.num_rows, self.num_cols), -self.num_colourless_specials, dtype=int)])
-        obs_high = np.array([np.full((self.num_rows, self.num_cols), self.num_colours, dtype=int), np.full((self.num_rows, self.num_cols), self.num_colour_specials, dtype=int)])
+        obs_low = np.array([np.zeros((self.num_rows, self.num_cols), dtype=np.int32), np.full((self.num_rows, self.num_cols), - self.num_colourless_specials, dtype=np.int32)])
+        obs_high = np.array([np.full((self.num_rows, self.num_cols), self.num_colours, dtype=np.int32), np.full((self.num_rows, self.num_cols), self.num_colour_specials + 2, dtype=np.int32)]) # + 1 for empty
         
         self._board_observation_space = Box(
             low=obs_low, 
             high=obs_high,
             shape=(2, self.num_rows, self.num_cols),
-            dtype=int,
+            dtype=np.int32,
             seed = self.seed)
         
-        self._moves_left_observation_space = Discrete(self.num_moves, seed=self.seed)
+        self._moves_left_observation_space = Discrete(self.num_moves + 1, seed=self.seed)
 
         self.observation_space = gym.spaces.Dict({
             "board": self._board_observation_space,
@@ -53,6 +53,7 @@ class TileMatchEnv(gym.Env):
         })
         
         self.timer = None
+        self.renderer = None
         self.action_space = Discrete(self.num_actions, seed=self.seed)
 
     def set_seed(self, seed:int) -> None:
@@ -60,7 +61,9 @@ class TileMatchEnv(gym.Env):
         self.observation_space.seed = seed
         self.board.np_random = np.random.default_rng(seed=seed)
 
-    def reset(self)  -> Tuple[dict, dict]:
+    def reset(self, seed=None, **kwargs)  -> Tuple[dict, dict]:
+        if seed is not None:
+            self.set_seed(seed)
         self.board.generate_board()
         info = {}
         self.timer = 0
@@ -102,8 +105,6 @@ class TileMatchEnv(gym.Env):
             return (row, col), (row, col + 1)
 
     def render(self, mode: str="human") -> None:
-        if self.timer is None:
-            raise Exception("You must call reset before calling render")
         print(self.board.board)
 
     def close(self) -> None:
