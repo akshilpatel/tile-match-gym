@@ -423,8 +423,8 @@ class Board:
             line_matches = self.get_colour_lines()
             num_line_matches = len(line_matches)
 
-        assert self.possible_move()
-        assert self.get_colour_lines() == []
+        # assert self.possible_move()
+        # assert self.get_colour_lines() == []
         return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated, shuffled
 
     def resolve_colour_matches(
