@@ -76,14 +76,16 @@ class TileMatchEnv(gym.Env):
         
         coord1, coord2 = self._action_to_coords(action)
         num_eliminations, is_combination_match, num_new_specials, num_specials_activated, shuffled = self.board.move(coord1, coord2)
-
+        
         self.timer += 1
         done = self.timer == self.num_moves
+        effective_actions = self._get_effective_actions()
         info = {
             "is_combination_match": is_combination_match,
             "num_new_specials": num_new_specials,
             "num_specials_activated": num_specials_activated,
             "shuffled": shuffled,
+            "effective_actions": effective_actions
         }
         next_obs = self._get_obs()
         return next_obs, num_eliminations, done, False, info
@@ -103,6 +105,16 @@ class TileMatchEnv(gym.Env):
             row = action_ // (self.num_cols - 1)            
             col = action_ % (self.num_cols - 1)
             return (row, col), (row, col + 1)
+
+    def _get_effective_actions(self) -> List[int]:
+        if self.timer == self.num_moves:
+            return []
+        effective_actions = []
+        for a in range(self.num_actions):
+            coord1, coord2 = self._action_to_coords(a)
+            if self.board.is_move_effective(coord1, coord2):
+                effective_actions.append(a)
+        return effective_actions
 
     def render(self, mode: str="human") -> None:
         print(self.board.board)
