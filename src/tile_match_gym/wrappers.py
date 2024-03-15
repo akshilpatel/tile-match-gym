@@ -5,6 +5,7 @@ from gymnasium.spaces import Box
 import gymnasium as gym
 import numpy as np
 
+# TODO: Change this to allow for colourless = 0
 class TMGOneHotWrapper(ObservationWrapper):
     def __init__(self, env):
         super().__init__(env)
@@ -17,7 +18,7 @@ class TMGOneHotWrapper(ObservationWrapper):
         self.board_obs_space = Box(
             low=0, high=1, 
             dtype=np.int32, 
-            shape = (1 + self.num_colours + self.num_colour_specials + self.num_colourless_specials, self.num_rows, self.num_cols))
+            shape = (2 + self.num_colours + self.num_colour_specials + self.num_colourless_specials, self.num_rows, self.num_cols))
 
         self.observation_space = gym.spaces.Dict({
             "board": self.board_obs_space,
@@ -30,10 +31,12 @@ class TMGOneHotWrapper(ObservationWrapper):
         ohe_board = self._one_hot_encode_board(board)
 
         return OrderedDict([("board", ohe_board), ("num_moves_left", num_moves_left)])
+    
 
+    
     def _one_hot_encode_board(self, board: np.ndarray) -> np.ndarray:
-        ohe_board = np.zeros((self.num_colours + 1 + self.num_colour_specials + self.num_colourless_specials, self.num_rows, self.num_cols), dtype=np.int32)
-        tile_colours = board[0] - 1
+        ohe_board = np.zeros((self.num_colours + 2 + self.num_colour_specials + self.num_colourless_specials, self.num_rows, self.num_cols), dtype=np.int32)
+        tile_colours = board[0]
         tile_types = board[1] - 1 + self.num_colourless_specials # tile_types start at 1, so we need to subtract 1 to get the index
         rows, cols = np.indices(tile_colours.shape)
         ohe_board[tile_colours.flatten(), rows.flatten(), cols.flatten()] = 1
