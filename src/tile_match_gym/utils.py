@@ -32,7 +32,10 @@ def get_tabular_obs(board: np.ndarray, num_moves_left: int) -> tuple:
 
 
 if __name__ == "__main__":
-    print(compute_num_states(4, 3, 4, mp.cpu_count()))
+    print(compute_num_states(5, 3, 3, mp.cpu_count()))
 
     # (4, 3, 3) (158052, 180870)
     # 4, 4, 3: (8426718, 8484138)
+    # 3, 3, 3: 5250, 9750
+    # 4, 3, 3: 158052, 180870
+    # 

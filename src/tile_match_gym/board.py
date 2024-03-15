@@ -251,37 +251,53 @@ class Board:
             bool: True iff action has an effect on the environment.
         """
         
+        print("-----------------")
+        print(self.board)
+        print(coord1, coord2)
         # Checks if both are special
         if (self.board[1, coord1[0], coord1[1]] not in [0, 1] ) and (self.board[1, coord2[0], coord2[1]] not in [0, 1]):
+            print("both special")
             return True
 
         # At least one colourless special.
         if self.board[1, coord1[0], coord1[1]] < 0 or self.board[1, coord2[0], coord2[1]] < 0:
+            print("at least one colourless special")
             return True
 
         # Extract a minimal grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
+
         r_min = max(0, min(coord1[0], coord2[0]) - 2)
-        r_max = min(self.num_rows, max(coord1[0], coord2[0]) + 3)
+        
+        r_max = min(self.num_rows-1, max(coord1[0], coord2[0]) + 2)
+
         c_min = max(0, min(coord1[1], coord2[1]) - 2)
-        c_max = min(self.num_cols, max(coord1[1], coord2[1]) + 3)
+        c_max = min(self.num_cols-1, max(coord1[1], coord2[1]) + 2)
+        print(r_min, r_max, c_min, c_max)
         
         # Swap the coordinates_ to see what happens.
         self._swap_coords(coord1, coord2)
-        for r in range(r_min, r_max):
-            for c in range(c_min, c_max):
-                # If the current and previous 2 are matched and that they are not cookies.
-                if self.board[1, r, c] > 0: # Check it isn't a colourless special or empty.
-                    if self.board[0, r, c - 2] == self.board[0, r, c - 1] == self.board[0, r, c]:
-                        # Swap back
-                        self._swap_coords(coord1, coord2)
-                        return True
+        
+        if c_min + 2 <= c_max:
+        # Horizontal Matches
+            for r in range(r_min, r_max + 1):
+                for c in range(c_min + 2, c_max + 1):
+                    # If the current and previous 2 are matched and that they are not cookies.
+                    if self.board[1, r, c] > 0: # Check it isn't a colourless special or empty.
+                        if self.board[0, r, c - 2] == self.board[0, r, c - 1] == self.board[0, r, c]:
+                            # Swap back
+                            self._swap_coords(coord1, coord2)
+                            print("horizontal", (r, c-2, c-1, c))
+                            return True
 
-        for r in range(r_min, r_max):
-            for c in range(c_min, c_max):
-                if self.board[1, r, c] > 0: 
-                    if self.board[0, r - 2, c] == self.board[0, r - 1, c] == self.board[0, r, c]:
-                        self._swap_coords(coord1, coord2)
-                        return True
+        # Vertical
+        if r_min + 2 <= r_max:
+            for r in range(r_min + 2, r_max+1):
+                for c in range(c_min, c_max+1):
+                    if self.board[1, r, c] > 0: 
+                        if self.board[0, r - 2, c] == self.board[0, r - 1, c] == self.board[0, r, c]:
+                            self._swap_coords(coord1, coord2)
+                            print("vertical" , (r-2, r-1, r, c))
+                            return True
 
 
         self._swap_coords(coord1, coord2)

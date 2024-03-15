@@ -65,7 +65,7 @@ class TileMatchEnv(gym.Env):
         if seed is not None:
             self.set_seed(seed)
         self.board.generate_board()
-        info = {}
+        info = {'effective_actions': self._get_effective_actions()}
         self.timer = 0
         obs = self._get_obs()
         return obs, info
