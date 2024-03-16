@@ -10,8 +10,7 @@ def test_env_step():
     next_obs, reward, done, _, info = env.step(6)
     assert np.array_equal(next_obs["board"], np.array([[[2, 3, 1, 2, 1],
                                                         [2, 2, 3, 1, 2],
-                                                        [3, 2, 1, 2, 3]],                            
-                                            
+                                                        [3, 2, 1, 2, 3]],
                                                        [[1, 1, 1, 1, 1],
                                                         [1, 1, 1, 1, 1],
                                                         [1, 1, 1, 1, 1]]]))
@@ -34,7 +33,6 @@ def test_env_step():
     assert np.array_equal(next_obs["board"], np.array([[[2, 3, 1, 3, 2],
                                                         [2, 2, 1, 2, 1],
                                                         [3, 1, 3, 3, 2]],
-                                             
                                                        [[1, 1, 1, 1, 1],
                                                         [1, 1, 1, 1, 1],
                                                         [1, 1, 1, 1, 1]]]))
@@ -56,7 +54,6 @@ def test_env_step():
     assert np.array_equal(next_obs["board"], np.array([[[1, 1, 2, 2, 1],
                                                         [2, 2, 3, 1, 2],
                                                         [1, 3, 2, 3, 1]],
-
                                                        [[1, 1, 1, 1, 1],
                                                         [1, 1, 1, 1, 1],
                                                         [1, 3, 4, 1, 1]]]))
@@ -67,7 +64,7 @@ def test_env_step():
         'num_new_specials': 2,
         'num_specials_activated': 0,
         'shuffled': False,
-        'effective_actions': [2, 4, 14, 17]
+        'effective_actions': [1, 2, 4, 7, 15, 17, 19]
         }
     
     
@@ -77,7 +74,7 @@ def test_env_step():
     assert np.array_equal(next_obs["board"], np.array([[[2, 2, 1, 1, 3],
                                                         [1, 3, 3, 1, 3],
                                                         [1, 3, 3, 2, 1]],
-                                                        
+
                                                        [[1, 3, 1, 1, 1],
                                                         [1, 1, 1, 1, 1],
                                                         [1, 1, 1, 1, 1]]]))
@@ -87,5 +84,6 @@ def test_env_step():
         'is_combination_match': True,
         'num_new_specials': 1,
         'num_specials_activated': 0,
-        'shuffled': False
+        'shuffled': False,
+        'effective_actions': [] # Because there are no moves left.
     }
