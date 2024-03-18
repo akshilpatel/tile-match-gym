@@ -87,3 +87,35 @@ def test_env_step():
         'shuffled': False,
         'effective_actions': [] # Because there are no moves left.
     }
+
+
+def test_get_effective_actions():
+    env = TileMatchEnv(5, 5, 4, 4, ["cookie"], ["bomb", "vertical_laser", "horizontal_laser"], seed=3)
+    obs, info = env.reset()
+    env.board.board[0] = np.array([
+        [4, 1, 1, 4, 4],
+        [2, 1, 2, 1, 4],
+        [3, 3, 1, 2, 1],
+        [4, 2, 1, 2, 3],
+        [2, 2, 4, 3, 2]])
+
+    env.board.board[1] = np.array([
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1]]
+        )
+    assert env._get_effective_actions() == [2, 3, 7, 8, 25, 26, 29, 39]
+
+    next_obs, reward, done, trunc, info = env.step(2)
+
+    env.board.board[1, 2, 2] = -1
+    env.board.board[0, 2, 2] = 0
+
+    assert env._get_effective_actions() == [3, 7, 12, 29, 30, 39], env._get_effective_actions()
+
+    env.board.board[1, 3, 1] = 2
+
+    assert env._get_effective_actions() == [3, 7, 12, 29, 30, 33, 39], env._get_effective_actions()
+        
