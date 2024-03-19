@@ -34,6 +34,7 @@ class TileMatchEnv(gym.Env):
 
         self.seed = seed
         self.board = Board(num_rows, num_cols, num_colours, colourless_specials, colour_specials, seed=seed)
+        self.np_random = self.board.np_random
 
         obs_low = np.array([np.zeros((self.num_rows, self.num_cols), dtype=np.int32), np.full((self.num_rows, self.num_cols), - self.num_colourless_specials, dtype=np.int32)])
         obs_high = np.array([np.full((self.num_rows, self.num_cols), self.num_colours, dtype=np.int32), np.full((self.num_rows, self.num_cols), self.num_colour_specials + 2, dtype=np.int32)]) # + 1 for empty
@@ -65,9 +66,9 @@ class TileMatchEnv(gym.Env):
         if seed is not None:
             self.set_seed(seed)
         self.board.generate_board()
-        info = {'effective_actions': self._get_effective_actions()}
         self.timer = 0
         obs = self._get_obs()
+        info = {'effective_actions': self._get_effective_actions()}
         return obs, info
 
     def step(self, action: int) -> Tuple[dict, int, bool, bool, dict]:
