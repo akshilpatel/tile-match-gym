@@ -5,6 +5,10 @@ from gymnasium.spaces import Box
 import gymnasium as gym
 import numpy as np
 
+# Have to use these because the special types have hardcoded ids in the environment.
+COLOURLESS_SPECIALS = {"cookie": -1}
+COLOUR_SPECIALS = {"vertical_laser": 2, "horizontal_laser": 3, "bomb": 4}
+
 # First num_colours slices are for colour. Absence in these slices means colourless.
 # Then the next 1 is for ordinary type. 
 # Then the next num_colourless_special slices are for colourless specials. 
@@ -21,7 +25,7 @@ class OneHotWrapper(ObservationWrapper):
         self.board_obs_space = Box(
             low=0, high=1, 
             dtype=np.int32, 
-            shape = (2 + self.num_colours + self.num_colour_specials + self.num_colourless_specials, self.num_rows, self.num_cols))
+            shape = (self.num_colours + self.num_colour_specials + self.num_colourless_specials, self.num_rows, self.num_cols))
 
         self.observation_space = gym.spaces.Dict({
             "board": self.board_obs_space, 
@@ -29,14 +33,21 @@ class OneHotWrapper(ObservationWrapper):
         })
 
         self.colour_specials = self.env.colour_specials
-        self.colourless_specials = self.env.colourless_specials
+        self.colourless_specials =   self.env.colourless_specials
 
-        self.type_to_idx = {
-            "ordinary": 1,
-            "empty": 0,
-            "cookie": -1,
-            
-        }
+        self.global_num_colourless_specials = len(COLOURLESS_SPECIALS)
+        self.global_num_colour_specials = len(COLOUR_SPECIALS)
+
+        self._global_specials = {**COLOURLESS_SPECIALS, **COLOUR_SPECIALS}
+        
+        self.type_slices = [] # Don't track ordinary type
+        for special, idx in self._global_specials.items():
+            if special in self.colour_specials or special in self.colourless_specials:
+                self.type_slices.append(idx)
+
+        self.type_slices = np.array(sorted(self.type_slices)) + self.global_num_colourless_specials
+        print(self.type_slices)
+        self.num_type_slices = len(self.type_slices)
 
     def observation(self, obs) -> dict:
         board = obs["board"]
@@ -45,63 +56,22 @@ class OneHotWrapper(ObservationWrapper):
     
     
     def _one_hot_encode_board(self, board: np.ndarray) -> np.ndarray:
-        
-        
-        
-        ohe_board = np.zeros((
-            self.num_colours + 2 + self.num_colour_specials + self.num_colourless_specials, # +1 for colourless, +1 for ordinary type
-            self.num_rows,
-            self.num_cols), dtype=np.int32)
-        
         tile_colours = board[0]
-        tile_types = board[1] + self.num_colourless_specials 
         rows, cols = np.indices(tile_colours.shape)
-        colour_ohe = np.zeros((1 + self.num_colours, self.num_rows, self.num_cols))
-        type_ohe = np.zeros((1 + 2 + self.num_colour_specials, self.num_rows, self.num_cols)) # +1 for ordinary, +1 for empty
-        
+        colour_ohe = np.zeros((1 + self.num_colours, self.num_rows, self.num_cols)) # Remove colourless slice after encoding
         colour_ohe[tile_colours.flatten(), rows.flatten(), cols.flatten()] = 1
-        type_ohe[tile_types.flatten(), rows.flatten(), cols.flatten()] = 1
+        ohe_board = colour_ohe[1:]
 
-        # Remove empty slice in type_ohe
-        type_ohe = np.concatenate([type_ohe[:self.num_colourless_specials], type_ohe[self.num_colourless_specials + 1:]], axis=0)
+        # Only keep the types for the specials that are in the environment (absence of any 1 means ordinary)
+        if self.num_type_slices > 0:
+            tile_types = board[1] + self.global_num_colourless_specials
+            type_ohe = np.zeros((2 + self.global_num_colour_specials + self.global_num_colourless_specials, self.num_rows, self.num_cols)) # +1 for ordinary, +1 for empty
+            type_ohe[tile_types.flatten(), rows.flatten(), cols.flatten()] = 1
+            type_ohe = type_ohe[self.type_slices]
+            ohe_board = np.concatenate([ohe_board, type_ohe], axis=0) # 1 + num_colours + num_colourless_specials + num_colour_specials.
         
-        # Concatenate colour and type ohe
-        ohe_board = np.concatenate([colour_ohe, type_ohe], axis=0) # 1 + num_colours + num_colourless_specials + num_colour_specials.
-
-        # Colourless
-        # Colour 1
-        # Colour 2...
-        # Colourless special 1 
-        # colourless special 2 
-        # ordinary
-        # colour special 1
-        # colour special 2
+        return ohe_board
         
-        # ohe_board[1:]
-        # ohe_board[:num_colours] and ohe_board[num_colours + 2:]
-        return ohe_board
-    
-class MinOneHotWrapper(OneHotWrapper):
-    def __init__(self, env):
-        super().__init__(env)
-        self.board_obs_space = Box(
-            low=0, high=1, 
-            dtype=np.int32, 
-            shape = (self.num_colours + self.num_colour_specials + self.num_colourless_specials, self.num_rows, self.num_cols))
-
-        self.observation_space = gym.spaces.Dict({
-            "board": self.board_obs_space, 
-            "num_moves_left": self.env._moves_left_observation_space
-        })
-    def _one_hot_encode_board(self, board: np.ndarray) -> np.ndarray:
-        ohe_board = super()._one_hot_encode_board(board)
-        ordinary_type_idx = 1 + self.num_colours + self.num_colourless_specials
-        if self.num_colour_specials > 0:
-            ohe_board = np.concatenate([ohe_board[1:ordinary_type_idx], ohe_board[ordinary_type_idx + 1:]], axis=0) 
-        else:
-            ohe_board = ohe_board[1:ordinary_type_idx]
-        return ohe_board
-
 class ProportionRewardWrapper(RewardWrapper):
     def __init__(self, env):
         self.env = env.unwrapped
@@ -109,3 +79,6 @@ class ProportionRewardWrapper(RewardWrapper):
     
     def reward(self, reward: float):
         return reward / self.flat_size
+    
+
+
