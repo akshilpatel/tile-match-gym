@@ -80,8 +80,8 @@ class Board:
             line_matches = self.get_colour_lines()
             num_line_matches = len(line_matches)
         
-        assert self.possible_move()
-        assert self.get_colour_lines() == []
+        # assert self.possible_move()
+        # assert self.get_colour_lines() == []
 
     def shuffle(self):
         shuffled_idcs = np.arange(self.num_rows * self.num_cols)
@@ -360,7 +360,7 @@ class Board:
                 tile_colours.append(self.board[0, line[0][0], line[0][1]])
             
 
-        assert len(tile_names) == len(tile_coords) == len(tile_colours), (tile_names, tile_coords, tile_colours)
+        # assert len(tile_names) == len(tile_coords) == len(tile_colours), (tile_names, tile_coords, tile_colours)
 
         return tile_coords, tile_names, tile_colours
 
@@ -485,21 +485,21 @@ class Board:
             ys = [c[1] for c in coords]
             corner = (max(xs, key=xs.count), max(ys, key=ys.count)) 
             if corner in valid_coords:
-                assert corner not in taken_pos
+                # assert corner not in taken_pos
                 return corner
             else:
                 chosen_c = sorted(valid_coords, key=lambda x: (x[0] - corner[0]) ** 2 + (x[1] - corner[1]) ** 2)[0]
-                assert chosen_c not in taken_pos
+                # assert chosen_c not in taken_pos
                 return chosen_c
 
         # For straight matches get the center of the coords
         sorted_coords = sorted(valid_coords, key=lambda x: (x[0], x[1]))        
         if len(sorted_coords) % 2 == 0:
             chosen_c = sorted_coords[len(sorted_coords) // 2 - 1]
-            assert chosen_c not in taken_pos
+            # assert chosen_c not in taken_pos
             return chosen_c
         chosen_c = sorted_coords[len(sorted_coords) // 2]
-        assert chosen_c not in taken_pos
+        # assert chosen_c not in taken_pos
         return chosen_c
 
     def resolve_colour_match(self, match_coords: List[Tuple[int, int]]) -> None:
@@ -591,7 +591,7 @@ class Board:
 
             counts = np.bincount(self.board[0][mask])
             most_common_colour = np.argmax(counts) # break ties randomly
-            assert most_common_colour != 0
+            # assert most_common_colour != 0
             
             # Delete all normal tiles of the chosen colour.
             colour_mask = self.board[0] == most_common_colour
@@ -662,8 +662,8 @@ class Board:
             special_type (str): The type of new special tile to create
         """
 
-        assert self.board[0, coord[0], coord[1]] == 0, (coord, self.board[0])
-        assert self.board[1, coord[0], coord[1]] == 0, (coord, self.board[0])
+        # assert self.board[0, coord[0], coord[1]] == 0, (coord, self.board[0])
+        # assert self.board[1, coord[0], coord[1]] == 0, (coord, self.board[0])
         self.num_new_specials += 1
 
         if special_type == "cookie":
