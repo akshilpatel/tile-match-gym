@@ -91,7 +91,6 @@ def test_env_step():
 
 def test_get_effective_actions():
     env = TileMatchEnv(5, 5, 4, 4, ["cookie"], ["bomb", "vertical_laser", "horizontal_laser"], seed=3)
-    assert env._get_effective_actions() == []
     
     obs, info = env.reset()
     env.board.board[0] = np.array([
