@@ -46,7 +46,6 @@ class OneHotWrapper(ObservationWrapper):
                 self.type_slices.append(idx)
 
         self.type_slices = np.array(sorted(self.type_slices)) + self.global_num_colourless_specials
-        print(self.type_slices)
         self.num_type_slices = len(self.type_slices)
 
     def observation(self, obs) -> dict:
