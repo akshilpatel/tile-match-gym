@@ -40,3 +40,20 @@ def test_one_hot_wrapper():
     assert obs["board"].shape == (4, 5, 5)
     assert obs["num_moves_left"] == 11
 
+def test_timing():
+    import time
+    env = TileMatchEnv(30, 30, 12, 10, [], [], seed=1)
+    env = OneHotWrapper(env)
+    start = time.time()
+    # run for 1000 steps
+    obs, info = env.reset()
+    for _ in range(100):
+        action = env.action_space.sample()
+        next_obs, _, done, _, _ = env.step(action)
+        obs = next_obs
+        if done:
+            obs, info = env.reset()
+    print(f"Time taken for 1000 steps: {time.time() - start} seconds")
+
+    assert False
+

@@ -237,8 +237,6 @@ class Board:
 
         return True
     
-    
-    # TODO: Make this faster.
     def is_move_effective(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
         """
         This function checks if the action actually does anything i.e. if the action achieves some form of matching.
@@ -263,34 +261,34 @@ class Board:
         # Extract a minimal grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
 
         r_min = max(0, min(coord1[0], coord2[0]) - 2)
-        
         r_max = min(self.num_rows-1, max(coord1[0], coord2[0]) + 2)
-
         c_min = max(0, min(coord1[1], coord2[1]) - 2)
         c_max = min(self.num_cols-1, max(coord1[1], coord2[1]) + 2)
+        
+        # print(f"for coords: {coord1}, {coord2}, row range: {r_min} - {r_max}, col range: {c_min} - {c_max}")
         
         # Swap the coordinates_ to see what happens.
         self._swap_coords(coord1, coord2)
         
-        if c_min + 2 <= c_max:
         # Horizontal Matches
-            for r in range(r_min, r_max + 1):
-                for c in range(c_min + 2, c_max + 1):
-                    # If the current and previous 2 are matched and that they are not cookies.
-                    if self.board[1, r, c] > 0: # Check it isn't a colourless special or empty.
-                        if self.board[0, r, c - 2] == self.board[0, r, c - 1] == self.board[0, r, c]:
-                            # Swap back
-                            self._swap_coords(coord1, coord2)
-                            return True
+        if c_min + 2 <= c_max:
+            horizontal_slice = self.board[0, r_min:r_max + 1, c_min:c_max + 1]  # Slice for horizontal comparison
+            horizontal_matches = (horizontal_slice[:, :-2] == horizontal_slice[:, 1:-1]) & (horizontal_slice[:, 1:-1] == horizontal_slice[:, 2:])
+            matching_indices = np.nonzero(horizontal_matches & (self.board[1, r_min:r_max + 1, c_min + 2:c_max + 1] > 0))
+            if matching_indices[0].size > 0:
+                # Swap back
+                self._swap_coords(coord1, coord2)
+                return True
 
-        # Vertical
+        # Vertical Matches
         if r_min + 2 <= r_max:
-            for r in range(r_min + 2, r_max+1):
-                for c in range(c_min, c_max+1):
-                    if self.board[1, r, c] > 0: 
-                        if self.board[0, r - 2, c] == self.board[0, r - 1, c] == self.board[0, r, c]:
-                            self._swap_coords(coord1, coord2)
-                            return True
+            vertical_slice = self.board[0, r_min:r_max + 1, c_min:c_max + 1]  # Slice for vertical comparison
+            vertical_matches = (vertical_slice[:-2, :] == vertical_slice[1:-1, :]) & (vertical_slice[1:-1, :] == vertical_slice[2:, :])
+            matching_indices = np.nonzero(vertical_matches & (self.board[1, r_min + 2:r_max + 1, c_min:c_max + 1] > 0))
+            if matching_indices[0].size > 0:
+                # Swap back
+                self._swap_coords(coord1, coord2)
+                return True
 
 
         self._swap_coords(coord1, coord2)
