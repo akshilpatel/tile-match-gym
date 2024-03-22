@@ -8,7 +8,7 @@ from collections import OrderedDict
 from tile_match_gym.board import Board
 
 class TileMatchEnv(gym.Env):
-    metadata = {'render_modes': ['human']}
+    metadata = {'render_modes': ['string']}
     def __init__(
             self, 
             num_rows:int, 
@@ -17,7 +17,8 @@ class TileMatchEnv(gym.Env):
             num_moves: int,
             colourless_specials:List[str], 
             colour_specials: List[str],
-            seed: Optional[int] = 1
+            seed: Optional[int] = 1,
+            render_mode: str = "string"
             ):
         self.num_rows = num_rows
         self.num_cols = num_cols
@@ -25,6 +26,10 @@ class TileMatchEnv(gym.Env):
         self.colourless_specials = colourless_specials
         self.colour_specials = colour_specials
         self.num_moves = num_moves
+
+        if render_mode == "string":
+            self.colour_map = self.np_random.choice(range(105, 230), size=self.num_colours + 1, replace=False)
+        self.render_mode = render_mode
 
         # Each coordinate can switch right or down but those one the right/bottom edge can't switch right/down
         self.num_actions = int((self.num_rows * self.num_cols * 2) - self.num_rows - self.num_cols )
@@ -35,7 +40,6 @@ class TileMatchEnv(gym.Env):
         self.seed = seed
         self.board = Board(num_rows, num_cols, num_colours, colourless_specials, colour_specials, seed=seed)
         self.np_random = self.board.np_random
-
         obs_low = np.array([np.zeros((self.num_rows, self.num_cols), dtype=np.int32), np.full((self.num_rows, self.num_cols), - self.num_colourless_specials, dtype=np.int32)])
         obs_high = np.array([np.full((self.num_rows, self.num_cols), self.num_colours, dtype=np.int32), np.full((self.num_rows, self.num_cols), self.num_colour_specials + 2, dtype=np.int32)]) # + 1 for empty
         
@@ -117,8 +121,32 @@ class TileMatchEnv(gym.Env):
                 effective_actions.append(a)
         return effective_actions
 
-    def render(self, mode: str="human") -> None:
-        print(self.board.board)
+    def render(self) -> None:
+        
+
+        if self.render_mode == "string":
+            
+            color = lambda id, c: "\033[48;5;16m" + f"\033[38;5;{self.colour_map[id]}m{c}\033[0m"
+            height = self.board.board.shape[1]
+            width = self.board.board.shape[2]
+
+            print(" " + "-" * (width * 2 + 1))
+            for row_num in range(height):
+                print("| ", end="\033[48;5;16m")
+                for col in range(width):
+                    tile_colour = self.board.board[0, row_num, col]
+                    tile_type = self.board.board[1, row_num, col]
+                
+                    print(color(tile_colour, tile_type), end="\033[48;5;16m ")
+                    print("\033[0m", end="")
+
+                print("|", end="\n")
+            print(" " + "-" * (width * 2 + 1))
+
+        elif self.render_mode == "image":
+            pass
+
+        
 
     def close(self) -> None:
         if self.renderer is not None:
