@@ -4,14 +4,13 @@ from tile_match_gym.wrappers import OneHotWrapper
 import numpy as np
 
 def main():
-    env = TileMatchEnv(30, 30, 12, 10, [], [], seed=1)
+    env = TileMatchEnv(30, 30, 12, 10, ["vertical_laser", "horizontal_laser", "bomb"], ["cookie"], seed=1)
     env = OneHotWrapper(env)
     # run for 1000 steps
     obs, info = env.reset()
-    for _ in range(100):
-        action = env.action_space.sample()
-        next_obs, _, done, _, _ = env.step(action)
-        obs = next_obs
+    for _ in range(200):
+        action = np.random.choice(info["effective_actions"])
+        obs, _, done, _, info = env.step(action)
         if done:
             obs, info = env.reset()
 

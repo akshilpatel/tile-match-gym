@@ -269,11 +269,11 @@ class Board:
         
         # Swap the coordinates_ to see what happens.
         self._swap_coords(coord1, coord2)
-        
+        colour_slice = self.board[0, r_min:r_max + 1, c_min:c_max + 1]
         # Horizontal Matches
         if c_min + 2 <= c_max:
-            horizontal_slice = self.board[0, r_min:r_max + 1, c_min:c_max + 1]  # Slice for horizontal comparison
-            horizontal_matches = (horizontal_slice[:, :-2] == horizontal_slice[:, 1:-1]) & (horizontal_slice[:, 1:-1] == horizontal_slice[:, 2:])
+            # horizontal_slice = colour_slice  # Slice for horizontal comparison
+            horizontal_matches = (colour_slice[:, :-2] == colour_slice[:, 1:-1]) & (colour_slice[:, 1:-1] == colour_slice[:, 2:])
             matching_indices = np.nonzero(horizontal_matches & (self.board[1, r_min:r_max + 1, c_min + 2:c_max + 1] > 0))
             if matching_indices[0].size > 0:
                 # Swap back
@@ -282,8 +282,8 @@ class Board:
 
         # Vertical Matches
         if r_min + 2 <= r_max:
-            vertical_slice = self.board[0, r_min:r_max + 1, c_min:c_max + 1]  # Slice for vertical comparison
-            vertical_matches = (vertical_slice[:-2, :] == vertical_slice[1:-1, :]) & (vertical_slice[1:-1, :] == vertical_slice[2:, :])
+            # vertical_slice = colour_slice  # Slice for vertical comparison
+            vertical_matches = (colour_slice[:-2, :] == colour_slice[1:-1, :]) & (colour_slice[1:-1, :] == colour_slice[2:, :])
             matching_indices = np.nonzero(vertical_matches & (self.board[1, r_min + 2:r_max + 1, c_min:c_max + 1] > 0))
             if matching_indices[0].size > 0:
                 # Swap back
