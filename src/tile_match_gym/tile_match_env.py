@@ -1,14 +1,22 @@
 
 import gymnasium as gym
 import numpy as np
+import matplotlib.pyplot as plt
+import distinctipy
+import importlib.resources as pkg_resources
 
 from gymnasium.spaces import Discrete, Box
 from typing import Optional, List, Tuple
 from collections import OrderedDict
 from tile_match_gym.board import Board
+from IPython.display import clear_output
+from matplotlib import colors
+
+
+
 
 class TileMatchEnv(gym.Env):
-    metadata = {'render_modes': ['string']}
+    metadata = {'render_modes': ['string', "image"]}
     def __init__(
             self, 
             num_rows:int, 
@@ -27,8 +35,7 @@ class TileMatchEnv(gym.Env):
         self.colour_specials = colour_specials
         self.num_moves = num_moves
 
-        if render_mode == "string":
-            self.colour_map = self.np_random.choice(range(105, 230), size=self.num_colours + 1, replace=False)
+
         self.render_mode = render_mode
 
         # Each coordinate can switch right or down but those one the right/bottom edge can't switch right/down
@@ -40,6 +47,19 @@ class TileMatchEnv(gym.Env):
         self.seed = seed
         self.board = Board(num_rows, num_cols, num_colours, colourless_specials, colour_specials, seed=seed)
         self.np_random = self.board.np_random
+
+        if render_mode == "string":
+            self.colour_map = self.np_random.choice(range(105, 230), size=self.num_colours + 1, replace=False)
+        else:
+            render_types = {1: "ordinary", 2:"vertical", 3:"horizontal", 4:"bomb", -1:"cookie"}
+            self.colours = distinctipy.get_colors(self.num_colours, colorblind_type="Deuteranopia", pastel_factor=0.7, rng=self.seed)
+            self.images = {x: plt.imread(pkg_resources.path(f"{x}.png")) for x in render_types}        
+            render_colours = np.concatenate([np.array(self.colours), np.ones((num_colours, 1))], axis=1)
+            self.colour_images = {
+                x: [colour_image(self.images[x], render_colours[j]) for j in render_colours] for x in self.images
+            }
+
+            self.colour_images = []
         obs_low = np.array([np.zeros((self.num_rows, self.num_cols), dtype=np.int32), np.full((self.num_rows, self.num_cols), - self.num_colourless_specials, dtype=np.int32)])
         obs_high = np.array([np.full((self.num_rows, self.num_cols), self.num_colours, dtype=np.int32), np.full((self.num_rows, self.num_cols), self.num_colour_specials + 2, dtype=np.int32)]) # + 1 for empty
         
@@ -122,11 +142,9 @@ class TileMatchEnv(gym.Env):
         return effective_actions
 
     def render(self) -> None:
-        
-
         if self.render_mode == "string":
             
-            color = lambda id, c: "\033[48;5;16m" + f"\033[38;5;{self.colour_map[id]}m{c}\033[0m"
+            colour = lambda id, c: "\033[48;5;16m" + f"\033[38;5;{self.colour_map[id]}m{c}\033[0m"
             height = self.board.board.shape[1]
             width = self.board.board.shape[2]
 
@@ -137,17 +155,44 @@ class TileMatchEnv(gym.Env):
                     tile_colour = self.board.board[0, row_num, col]
                     tile_type = self.board.board[1, row_num, col]
                 
-                    print(color(tile_colour, tile_type), end="\033[48;5;16m ")
+                    print(colour(tile_colour, tile_type), end="\033[48;5;16m ")
                     print("\033[0m", end="")
 
                 print("|", end="\n")
             print(" " + "-" * (width * 2 + 1))
 
         elif self.render_mode == "image":
-            pass
-
+            line_colour = np.array((60, 60, 60)) / 255
+            fig = plt.figure(num="env_render", figsize=(12, 9))
+            ax = plt.gca()
+            ax.clear()
+            clear_output(True)
+            fig.patch.set_facecolor(np.array(0,0,0,1))
+            # Render the board
+            for r in range(self.num_rows):
+                for c in range(self.num_cols):
+                    tile_type = self.board.board[1, r, c]
+                    tile_colour = self.board.board[0, r, c]
+                    if tile_type in self.colour_images:
+                        image = self.colour_images[tile_type][tile_colour]
+                        ax.imshow(image, extent=(c-0.5, c+0.5, r-0.5, r+0.5), aspect='auto', zorder=1, alpha=1)
+            
+            ax.grid(which='major', axis='both', linestyle='-', color=line_colour, linewidth=2, zorder=1)
+            ax.set_xticks(np.arange(-0.5, self.num_cols, 1))
+            ax.set_xticklabels([])
+            ax.set_yticks(np.arange(-0.5, self.num_rows, 1))
+            ax.set_yticklabels([])
+            ax.tick_params(left=False, bottom=False)
+            plt.show()
+                
         
 
     def close(self) -> None:
         if self.renderer is not None:
             self.renderer.close()
+
+
+def colour_image(image, colour):
+    mask = np.all(image == [0, 0, 0, 1], axis=-1)
+    image[mask] = colour
+    return image
