@@ -1,5 +1,9 @@
 import numpy as np
+import numba
+from numba import njit, types, typed
+from numba.experimental import jitclass
 from typing import Optional, List, Tuple
+
 
 """
 tile_colours = {
@@ -21,6 +25,29 @@ TILE_TYPES = {
     "cookie": -1,
 }
 
+
+TILE_TYPES = {
+    "empty": 0,
+    "normal": 1,
+    "vertical_laser": 2,
+    "horizontal_laser": 3,
+    "bomb": 4,
+    "cookie": -1,
+}
+numba_spec = [
+    ('num_rows', types.int32),
+    ('num_cols', types.int32),
+    ('num_colours', types.int32),
+    ('flat_size', types.int32),
+    ('colourless_specials', types.ListType(types.string)),
+    ('colour_specials', types.ListType(types.string)),
+    ('specials', types.ListType(types.string)),
+    ('np_random', numba.typeof(np.random.default_rng(0))),
+    ('board', types.Optional(types.Array(types.int32, ndim=3, layout='C'))),
+    ('indices', types.Array(types.int32, ndim=3, layout='C')),
+]
+
+@jitclass(numba_spec)
 class Board:
     def __init__(
         self,
@@ -29,7 +56,7 @@ class Board:
         num_colours: int,
         colourless_specials: List[str] = ["cookie"],
         colour_specials: List[str] = ["vertical_laser", "horizontal_laser", "bomb"],
-        seed: Optional[int] = None,
+        np_random: np.random.Generator = np.random.default_rng(0),
         board: Optional[np.ndarray] = None,
     ):
         self.num_rows = num_rows
@@ -38,19 +65,29 @@ class Board:
 
         self.flat_size = int(self.num_cols * self.num_rows)
 
-        self.colourless_specials = colourless_specials
-        self.colour_specials = colour_specials
+        if colour_specials is None:
+            self.colour_specials = typed.List.empty_list(types.string)
+        else:
+            self.colour_specials = colour_specials
+
+        if colourless_specials is None:
+            self.colourless_specials = typed.List.empty_list(types.string)
+        else:
+            self.colourless_specials = colourless_specials
         
-        self.specials = set(self.colourless_specials + self.colour_specials)
+        if colour_specials is None and colourless_specials is None:
+            self.specials = typed.List.empty_list(types.string)
+        elif colour_specials is None:
+            self.specials = colourless_specials
+        elif colourless_specials is None:
+            self.specials = colour_specials
+        else:
+            self.specials = self.colourless_specials + self.colour_specials
         
-        if seed is None:
-            seed = np.random.randint(0, 1000000000)
-        self.np_random = np.random.default_rng(seed)
+        self.np_random = np_random
 
         # handle the case where we are given a board
         if board is not None:
-            if type(board) == list:
-                board = np.array(board)
             if board.shape[0] != 2 or len(board.shape) < 3:
                 self.board = np.array([
                     board,
@@ -69,6 +106,7 @@ class Board:
         self.board[0] = self.np_random.integers(1, self.num_colours+1, self.flat_size).reshape(self.num_rows, self.num_cols)
 
         line_matches = self.get_colour_lines()
+        # line_matches = get_colour_lines(self.board)
         num_line_matches = len(line_matches)
 
         while not self.possible_move() or num_line_matches > 0:
@@ -78,6 +116,7 @@ class Board:
                 self.shuffle()
 
             line_matches = self.get_colour_lines()
+            # line_matches = get_colour_lines(self.board)
             num_line_matches = len(line_matches)
         
         # assert self.possible_move()
@@ -100,7 +139,8 @@ class Board:
             row = min(self.num_rows - 1, l[0][0] + 1)
             self.board[0, :row+1, :] = self.np_random.integers(1, self.num_colours+1, int((row+1) * self.num_cols)).reshape(-1, self.num_cols)
             line_matches = self.get_colour_lines()
-            
+            # line_matches = get_colour_lines(self.board)
+
     def detect_colour_matches(self) -> Tuple[List[List[Tuple[int, int]]], List[str], List[int]]:
         """
         Returns the types and locations of tiles involved in the bottom-most colour matches.
@@ -110,6 +150,7 @@ class Board:
         #     return [], [], []
         
         lines = self.get_colour_lines()
+        # lines = get_colour_lines(self.board)
 
         if len(lines) == 0:
             return [], [], []
@@ -251,7 +292,6 @@ class Board:
         
         # Checks if both are special
         if (self.board[1, coord1[0], coord1[1]] not in [0, 1] ) and (self.board[1, coord2[0], coord2[1]] not in [0, 1]):
-            
             return True
 
         # At least one colourless special.
@@ -289,8 +329,7 @@ class Board:
                 # Swap back
                 self._swap_coords(coord1, coord2)
                 return True
-
-
+            
         self._swap_coords(coord1, coord2)
         return False
 
@@ -387,7 +426,7 @@ class Board:
         if not self.is_move_legal(coord1, coord2):
             raise ValueError(f"Invalid move: {coord1}, {coord2}")
 
-        if not self.is_move_effective(coord1, coord2):
+        if not self.is_move_effective(self.board, coord1, coord2):
             return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated, shuffled
         
         self._swap_coords(coord1, coord2)
@@ -428,6 +467,8 @@ class Board:
                 self.shuffle()
 
             line_matches = self.get_colour_lines()
+            # line_matches = get_colour_lines(self.board)
+
             num_line_matches = len(line_matches)
 
         # assert self.possible_move()
@@ -806,3 +847,135 @@ class Board:
                         self.board[:, i, j] = 0
                     elif self.board[1, i, j] != 0:
                         self.activate_special((i, j), self.board[1, i, j], self.board[0, i, j], is_combination_match=True)
+
+# @njit
+# def swap_coords(board: np.ndarray, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None: 
+#     board[0, coord1[0], coord1[1]], board[0, coord2[0], coord2[1]] = board[0, coord2[0], coord2[1]], board[0, coord1[0], coord1[1]]
+#     board[1, coord1[0], coord1[1]], board[1, coord2[0], coord2[1]] = board[1, coord2[0], coord2[1]], board[1, coord1[0], coord1[1]]
+
+
+# @njit
+# def is_move_effective(board: np.ndarray, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
+#     """
+#     This function checks if the action actually does anything i.e. if the action achieves some form of matching.
+
+#     Args:
+#         coord (tuple): The first coordinate on grid corresponding to the action taken. This will always be above or to the left of the second coordinate below.
+#         coord2 (tuple): Second coordinate on grid corresponding to the action taken.
+
+#     Returns:
+#         bool: True iff action has an effect on the environment.
+#     """
+#     num_rows, num_cols = board.shape[1:]
+#     # Checks if both are special
+#     if (board[1, coord1[0], coord1[1]] not in [0, 1] ) and (board[1, coord2[0], coord2[1]] not in [0, 1]):
+#         return True
+
+#     # At least one colourless special.
+#     if board[1, coord1[0], coord1[1]] < 0 or board[1, coord2[0], coord2[1]] < 0:
+#         return True
+
+#     # Extract a minimal grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
+
+#     r_min = max(0, min(coord1[0], coord2[0]) - 2)
+#     r_max = min(num_rows-1, max(coord1[0], coord2[0]) + 2)
+#     c_min = max(0, min(coord1[1], coord2[1]) - 2)
+#     c_max = min(num_cols-1, max(coord1[1], coord2[1]) + 2)
+    
+#     # print(f"for coords: {coord1}, {coord2}, row range: {r_min} - {r_max}, col range: {c_min} - {c_max}")
+    
+#     # Swap the coordinates_ to see what happens.
+#     swap_coords(board, coord1, coord2)
+#     colour_slice = board[0, r_min:r_max + 1, c_min:c_max + 1]
+#     # Horizontal Matches
+#     if c_min + 2 <= c_max:
+#         # horizontal_slice = colour_slice  # Slice for horizontal comparison
+#         horizontal_matches = (colour_slice[:, :-2] == colour_slice[:, 1:-1]) & (colour_slice[:, 1:-1] == colour_slice[:, 2:])
+#         matching_indices = np.nonzero(horizontal_matches & (board[1, r_min:r_max + 1, c_min + 2:c_max + 1] > 0))
+#         if matching_indices[0].size > 0:
+#             # Swap back
+#             swap_coords(board, coord1, coord2)
+#             return True
+
+#     # Vertical Matches
+#     if r_min + 2 <= r_max:
+#         # vertical_slice = colour_slice  # Slice for vertical comparison
+#         vertical_matches = (colour_slice[:-2, :] == colour_slice[1:-1, :]) & (colour_slice[1:-1, :] == colour_slice[2:, :])
+#         matching_indices = np.nonzero(vertical_matches & (board[1, r_min + 2:r_max + 1, c_min:c_max + 1] > 0))
+#         if matching_indices[0].size > 0:
+#             # Swap back
+#             swap_coords(board, coord1, coord2)
+#             return True
+        
+#     swap_coords(board, coord1, coord2)
+#     return False
+
+# @njit
+# def get_colour_lines(board) -> List[List[Tuple[int, int]]]:
+#     """
+#     Starts from the top and checks for 3 or more in a row vertically or horizontally.
+#     Returns contiguous lines of 3 or more tiles.
+#     """
+#     num_rows, num_cols = board.shape[1:]
+#     lines = []
+#     vertical_line_coords = set()
+#     horizontal_line_coords = set()
+#     found_line = False
+#     for row in range(num_rows - 1, -1, -1):
+#         if found_line:
+#             break  # Only get lowest lines.
+#         for col in range(num_cols):
+#             # Vertical lines
+#             if 1 < row and (row, col) not in vertical_line_coords:
+#                 if board[1, row, col] > 0 : # Not Colourless special
+#                     if board[0, row, col] == board[0, row-1, col]: # Don't have to check the other one isn't a colourless special since colourless specials should be 0 in first axis.
+#                         line_start = row - 1
+#                         line_end = row
+#                         while line_start > 0:
+#                             if board[0, row, col] == board[0, line_start - 1, col]:
+#                                 line_start -= 1
+#                             else:
+#                                 break
+#                         if line_end - line_start >= 2:
+#                             found_line = True
+#                             line = [(i, col) for i in range(line_start, line_end + 1)]      
+#                             vertical_line_coords.update(line)
+#                             lines.append(line)
+#             # Horizontal lines
+#             if col < num_cols - 2 and (row, col) not in horizontal_line_coords:
+#                 if board[1, row, col] > 0 : # Not Colourless special
+#                     if board[0, row, col] == board[0, row, col + 1]: # Don't have to check the other one isn't a colourless special since colourless specials should be 0 in first axis.
+#                         line_start = col
+#                         line_end = col + 1
+#                         while line_end < num_cols - 1:
+#                             if board[0, row, col] == board[0, row, line_end + 1]:
+#                                 line_end += 1
+#                             else:
+#                                 break
+#                         if line_end - line_start >= 2:
+#                             found_line = True
+#                             line = [(row, i) for i in range(line_start, line_end + 1)]
+#                             horizontal_line_coords.update(line)
+#                             lines.append(line)
+    
+#     # go through all the coordinates as a list
+#     # find neighbours that are not in the coordinates list but have the same colour and (and are not colourless)
+#     # follow the neighbours until the end of the line is reached if the line is long enough, add it to the list of lines
+#     valid_coord = lambda coord: 0 <= coord[0] < num_rows and 0 <= coord[1] < num_cols
+#     match_color = lambda coord1, coord2: board[0, coord1[0], coord1[1]] == board[0, coord2[0], coord2[1]] and board[1, coord1[0], coord1[1]] > 0 and board[1, coord2[0], coord2[1]] > 0
+#     coords = [(i, j) for l in lines for i, j in l]
+#     directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+    
+#     for c in coords:
+#         for d in directions:
+#             line = [c]
+#             for direction in [d, (-d[0], -d[1])]:
+#                 n = (c[0] + direction[0], c[1] + direction[1])
+#                 while n not in coords and valid_coord(n) and match_color(c, n):
+#                     line.append(n)
+#                     n = (n[0] + direction[0], n[1] + direction[1])
+#             if len(line) >= 3:
+#                 sorted_line = sorted(line, key=lambda x: (x[0], x[1]))
+#                 if sorted_line not in lines:
+#                     lines.append(sorted_line)
+#     return lines

@@ -6,6 +6,7 @@ from gymnasium.spaces import Discrete, Box
 from typing import Optional, List, Tuple
 from collections import OrderedDict
 from tile_match_gym.board import Board
+# from tile_match_gym.board import is_move_effective
 
 class TileMatchEnv(gym.Env):
     metadata = {'render_modes': ['string']}
@@ -38,7 +39,14 @@ class TileMatchEnv(gym.Env):
         self.num_colourless_specials = len(self.colourless_specials)
 
         self.seed = seed
-        self.board = Board(num_rows, num_cols, num_colours, colourless_specials, colour_specials, seed=seed)
+
+        if len(colour_specials) == 0:
+            colour_specials = None
+        if len(colourless_specials) == 0:
+            colourless_specials = None
+
+        np_random = np.random.default_rng(seed=seed)
+        self.board = Board(num_rows, num_cols, num_colours, colourless_specials, colour_specials, np_random)
         self.np_random = self.board.np_random
         obs_low = np.array([np.zeros((self.num_rows, self.num_cols), dtype=np.int32), np.full((self.num_rows, self.num_cols), - self.num_colourless_specials, dtype=np.int32)])
         obs_high = np.array([np.full((self.num_rows, self.num_cols), self.num_colours, dtype=np.int32), np.full((self.num_rows, self.num_cols), self.num_colour_specials + 2, dtype=np.int32)]) # + 1 for empty
@@ -115,10 +123,13 @@ class TileMatchEnv(gym.Env):
         if self.timer == self.num_moves:
             return []
         effective_actions = []
-        for a in range(self.num_actions):
-            coord1, coord2 = self._action_to_coords(a)
-            if self.board.is_move_effective(coord1, coord2):
-                effective_actions.append(a)
+
+        action_check = lambda a: self.board.is_move_effective(*self._action_to_coords(a))
+        effective_actions = list(filter(action_check, range(self.num_actions)))
+        # for a in range(self.num_actions):
+        #     coord1, coord2 = self._action_to_coords(a)
+        #     if is_move_effective(self.board.board, coord1, coord2):
+        #         effective_actions.append(a)
         return effective_actions
 
     def render(self) -> None:
