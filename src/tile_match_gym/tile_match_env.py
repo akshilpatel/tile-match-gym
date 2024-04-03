@@ -122,10 +122,7 @@ class TileMatchEnv(gym.Env):
         return effective_actions
 
     def render(self) -> None:
-        
-
         if self.render_mode == "string":
-            
             color = lambda id, c: "\033[48;5;16m" + f"\033[38;5;{self.colour_map[id]}m{c}\033[0m"
             height = self.board.board.shape[1]
             width = self.board.board.shape[2]
