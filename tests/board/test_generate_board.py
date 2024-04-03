@@ -17,6 +17,7 @@ def test_generate_board():
         assert line_matches == []
         # All numbers within num_colourless_specials + 1 ,..., (1 + num_colour_specials) * num_colours + num_colourless_specials + 1
         assert np.all(b.board[0] > 0)
+        assert np.all(b.board[0] <= 3)
         assert np.all(b.board[1] == 1)
 
         # No colourless specials
@@ -25,6 +26,7 @@ def test_generate_board():
         line_matches = b.get_colour_lines()
         assert line_matches == []
         assert np.all(b.board[0] > 0)
+        assert np.all(b.board[0] <= 5)
         assert np.all(b.board[1] == 1)
         # print(b.board)
 
@@ -35,6 +37,7 @@ def test_generate_board():
         
         assert line_matches == []        
         assert np.all(b.board[0] > 0)
+        assert np.all(b.board[0] <= 7)
         assert np.all(b.board[1] == 1)
 
         print("DONE WITH GENERATE BOARD")
