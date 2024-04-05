@@ -81,7 +81,7 @@ def test_possible_move():
 
     for i in range(100):
                 
-        b = Board(num_rows=4, num_cols=4, num_colours=3, colour_specials= ["vertical_laser", "horizontal_laser", "bomb"], colourless_specials=["cookie"], seed=i)
+        b = Board(num_rows=4, num_cols=4, num_colours=3, colour_specials= ["vertical_laser", "horizontal_laser", "bomb"], colourless_specials=["cookie"], np_random=np.random.default_rng(i))
         b.generate_board()
         old_board = deepcopy(b.board)
         b.possible_move()

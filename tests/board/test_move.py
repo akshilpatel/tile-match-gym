@@ -4,6 +4,7 @@ import pytest
 
 from tile_match_gym.board import Board
 
+
 def print_board(b):
     for l in b:
         for row in l:
@@ -33,9 +34,6 @@ def print_boards(expected, actual):
 
 def test_move():
 
-    random.seed(0)
-    np.random.seed(0)
-
     print_board = lambda b: [[print(l) for l in p] for p in b]
 
     # Single vertical line
@@ -51,18 +49,22 @@ def test_move():
     )
     expected_new = np.array(
         [
-        [[2, 2, 3, 2],
-         [1, 2, 2, 3],
-         [2, 4, 1, 2]],
-        [[1, 3, 1, 1],
+        [[4, 4, 2, 2],
+         [2, 1, 2, 3],
+         [4, 4, 1, 2]],
+        [[1, 1, 1, 1],
          [1, 1, 1, 1],
          [1, 1, 1, 1]]
         ]
     )
-    new_board, num_eliminations, is_combination_match, num_new_specials, num_activations = run_move(old_board, (1,0), (1,1))
-    assert np.array_equal(expected_new, new_board), print_board(new_board)
+    b = Board(3, 4, 4, np_random=np.random.default_rng(10), board=old_board)
+    # b.board = old_board
 
-    b = Board(4, 5, 4, seed=10)
+    b.move((1,0), (1,1))
+    
+    assert np.array_equal(expected_new, b.board), b.board
+
+    b = Board(4, 5, 4, np_random=np.random.default_rng(10))
     b.generate_board()
     b.board[0] = np.array([[4, 1, 2, 1, 4], 
                            [4, 3, 1, 4, 3], 
@@ -91,7 +93,7 @@ def test_move():
     assert num_activations == 0
     
     
-    b = Board(4, 5, 4, seed=10)
+    b = Board(4, 5, 4, np_random=np.random.default_rng(10))
     b.generate_board()
     b.board[0] = np.array([[4, 1, 2, 1, 4], 
                            [4, 3, 1, 4, 3], 
@@ -122,7 +124,7 @@ def test_move():
     )
     assert np.array_equal(expected_new, b.board), print_boards(expected_new, b.board)
 
-    b = Board(4, 5, 4, seed=10)
+    b = Board(4, 5, 4, np_random=np.random.default_rng(10))
     b.generate_board()
     b.board[0] = np.array([[4, 4, 2, 1, 4], 
                            [4, 1, 1, 4, 3], 
@@ -154,7 +156,7 @@ def test_move():
     assert np.array_equal(expected_new, b.board), print_boards(expected_new, b.board)
     
     # swap a vertical and horizontal laser
-    b = Board(4, 5, 4, seed=11)
+    b = Board(4, 5, 4, np_random=np.random.default_rng(11))
     b.generate_board()
     b.board[0] = np.array([[4, 4, 2, 1, 4], 
                            [4, 1, 1, 4, 3], 
@@ -188,7 +190,7 @@ def test_move():
 
 
     # swap two vertical lasers - it should act as if the lasers are different
-    b = Board(4, 5, 5, seed=10)
+    b = Board(4, 5, 5, np_random=np.random.default_rng(10))
     b.generate_board()
     b.board[0] = np.array([[4, 4, 2, 1, 4], 
                            [4, 1, 1, 4, 3], 
@@ -220,7 +222,7 @@ def test_move():
     assert np.array_equal(expected_new, b.board), print_boards(expected_new, b.board)
 
     # swap vertical laser and bomb
-    b = Board(5, 5, 5, seed=10)
+    b = Board(5, 5, 5, np_random=np.random.default_rng(10))
     b.generate_board()
     b.board[0] = np.array([[4, 4, 2, 1, 4], 
                            [4, 1, 1, 4, 3], 
@@ -254,7 +256,7 @@ def test_move():
     
     # cookie
     print("start of cookie")
-    b = Board(5, 5, 5, seed=10)
+    b = Board(5, 5, 5, np_random=np.random.default_rng(10))
     b.generate_board()
     b.board[0] = np.array([[4, 4, 2, 1, 4], 
                            [4, 1, 3, 4, 3], 
@@ -286,7 +288,7 @@ def test_move():
     assert np.array_equal(expected_new, b.board), print_boards(expected_new, b.board)
 
     # vertical laser activation in big board
-    b = Board(8, 8, 9, seed=11)
+    b = Board(8, 8, 9, np_random=np.random.default_rng(11))
     b.generate_board()
     b.board[0] = np.array([[4, 4, 2, 9, 2, 3, 1, 4], 
                            [5, 3, 1, 8, 7, 1, 4, 3], 
@@ -328,19 +330,3 @@ def test_move():
         ]
     )
     assert np.array_equal(expected_new, b.board), print_boards(expected_new, b.board)
-
-
-def run_move(grid, coord1, coord2, num_colours=4):
-    """
-    Helper function to setup a board with a given grid.
-    """
-    b = Board(num_rows=len(grid), num_cols=len(grid[0]),
-              num_colours=num_colours, board=grid)
-    
-    num_eliminations, is_combination_match, num_new_specials, num_activations, shuffled = b.move(coord1, coord2)
-
-    # return tile_coords, tile_names, tile_colours
-    return b.board, num_eliminations, is_combination_match, num_new_specials, num_activations
-
-if __name__ == "__main__":
-    test_move()
