@@ -268,61 +268,7 @@ class Board:
             return False
 
         return True
-    
-    # def is_move_effective(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> bool:
-        # """
-        # This function checks if the action actually does anything i.e. if the action achieves some form of matching.
 
-        # Args:
-        #     coord (tuple): The first coordinate on grid corresponding to the action taken. This will always be above or to the left of the second coordinate below.
-        #     coord2 (tuple): Second coordinate on grid corresponding to the action taken.
-
-        # Returns:
-        #     bool: True iff action has an effect on the environment.
-        # """
-        
-        # # Checks if both are special
-        # if (self.board[1, coord1[0], coord1[1]] not in [0, 1] ) and (self.board[1, coord2[0], coord2[1]] not in [0, 1]):
-        #     return True
-
-        # # At least one colourless special.
-        # if self.board[1, coord1[0], coord1[1]] < 0 or self.board[1, coord2[0], coord2[1]] < 0:
-        #     return True
-
-        # # Extract a minimal grid around the coords to check for at least 3 match. This covers checking for Ls or Ts.
-
-        # r_min = max(0, min(coord1[0], coord2[0]) - 2)
-        # r_max = min(self.num_rows-1, max(coord1[0], coord2[0]) + 2)
-        # c_min = max(0, min(coord1[1], coord2[1]) - 2)
-        # c_max = min(self.num_cols-1, max(coord1[1], coord2[1]) + 2)
-        
-        # # print(f"for coords: {coord1}, {coord2}, row range: {r_min} - {r_max}, col range: {c_min} - {c_max}")
-        
-        # # Swap the coordinates_ to see what happens.
-        # self._swap_coords(coord1, coord2)
-        # colour_slice = self.board[0, r_min:r_max + 1, c_min:c_max + 1]
-        # # Horizontal Matches
-        # if c_min + 2 <= c_max:
-        #     # horizontal_slice = colour_slice  # Slice for horizontal comparison
-        #     horizontal_matches = (colour_slice[:, :-2] == colour_slice[:, 1:-1]) & (colour_slice[:, 1:-1] == colour_slice[:, 2:])
-        #     matching_indices = np.nonzero(horizontal_matches & (self.board[1, r_min:r_max + 1, c_min + 2:c_max + 1] > 0))
-        #     if matching_indices[0].size > 0:
-        #         # Swap back
-        #         self._swap_coords(coord1, coord2)
-        #         return True
-
-        # # Vertical Matches
-        # if r_min + 2 <= r_max:
-        #     # vertical_slice = colour_slice  # Slice for vertical comparison
-        #     vertical_matches = (colour_slice[:-2, :] == colour_slice[1:-1, :]) & (colour_slice[1:-1, :] == colour_slice[2:, :])
-        #     matching_indices = np.nonzero(vertical_matches & (self.board[1, r_min + 2:r_max + 1, c_min:c_max + 1] > 0))
-        #     if matching_indices[0].size > 0:
-        #         # Swap back
-        #         self._swap_coords(coord1, coord2)
-        #         return True
-            
-        # self._swap_coords(coord1, coord2)
-        # return False
 
     def _swap_coords(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
         self.board[0, coord1[0], coord1[1]], self.board[0, coord2[0], coord2[1]] = self.board[0, coord2[0], coord2[1]], self.board[0, coord1[0], coord1[1]]
@@ -413,7 +359,7 @@ class Board:
         num_eliminations = 0
         is_combination_match = False
         shuffled = False
-        
+
         if not self.is_move_legal(coord1, coord2):
             raise ValueError(f"Invalid move: {coord1}, {coord2}")
 
