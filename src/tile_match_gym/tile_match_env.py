@@ -1,4 +1,3 @@
-
 import gymnasium as gym
 import numpy as np
 
@@ -6,7 +5,7 @@ from gymnasium.spaces import Discrete, Box
 from typing import Optional, List, Tuple
 from collections import OrderedDict
 from tile_match_gym.board import Board
-# from tile_match_gym.board import is_move_effective
+from tile_match_gym.board import is_move_effective
 
 class TileMatchEnv(gym.Env):
     metadata = {'render_modes': ['string']}
@@ -39,11 +38,6 @@ class TileMatchEnv(gym.Env):
         self.num_colourless_specials = len(self.colourless_specials)
 
         self.seed = seed
-
-        if len(colour_specials) == 0:
-            colour_specials = None
-        if len(colourless_specials) == 0:
-            colourless_specials = None
 
         np_random = np.random.default_rng(seed=seed)
         self.board = Board(num_rows, num_cols, num_colours, colourless_specials, colour_specials, np_random)
@@ -124,7 +118,7 @@ class TileMatchEnv(gym.Env):
             return []
         effective_actions = []
 
-        action_check = lambda a: self.board.is_move_effective(*self._action_to_coords(a))
+        action_check = lambda a: is_move_effective(self.board.board, *self._action_to_coords(a))
         effective_actions = list(filter(action_check, range(self.num_actions)))
         # for a in range(self.num_actions):
         #     coord1, coord2 = self._action_to_coords(a)

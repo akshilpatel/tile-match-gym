@@ -1,5 +1,5 @@
 import numpy as np
-from tile_match_gym.board import Board
+from tile_match_gym.board import Board, is_move_effective
 from copy import deepcopy
 
 
@@ -19,10 +19,10 @@ def test_is_move_effective():
                                [4, 4, 5, 4, 6, 5, 2, 2, 4, 6]])
 
     old_board = deepcopy(board.board)
-    assert board.is_move_effective((1,1), (1, 2))
+    assert is_move_effective(board.board, (1,1), (1, 2))
     assert np.array_equal(board.board, old_board)
 
-    assert board.is_move_effective((1,1), (2, 1)), board.board[0]
+    assert is_move_effective(board.board, (1,1), (2, 1)), board.board[0]
     assert np.array_equal(board.board, old_board)
 
     # 3 in a col
@@ -34,11 +34,11 @@ def test_is_move_effective():
                                [1, 4, 1]])
 
     old_board = deepcopy(board.board)
-    assert board.is_move_effective((2, 1), (2, 2))
+    assert is_move_effective(board.board, (2, 1), (2, 2))
     assert np.array_equal(board.board, old_board)
-    assert board.is_move_effective((1, 1), (1, 0))
+    assert is_move_effective(board.board, (1, 1), (1, 0))
     assert np.array_equal(board.board, old_board)
-    assert board.is_move_effective((1, 1), (1, 2))
+    assert is_move_effective(board.board, (1, 1), (1, 2))
     assert np.array_equal(board.board, old_board)
 
     # 3 in a col with special.
@@ -48,7 +48,7 @@ def test_is_move_effective():
                             [1, 1, 2]])
 
     old_board = deepcopy(board.board)
-    assert board.is_move_effective((2, 1), (2, 2))
+    assert is_move_effective(board.board, (2, 1), (2, 2))
     assert np.array_equal(board.board, old_board)
 
 
@@ -65,7 +65,7 @@ def test_is_move_effective():
                                [1, 3, 1, 1, 1],
                                [1, 1, 2, 1, 1]]) 
     old_board = deepcopy(board.board)
-    assert board.is_move_effective((2, 2), (3, 2))
+    assert is_move_effective(board.board, (2, 2), (3, 2))
     assert np.array_equal(board.board, old_board)
 
     # 4 in a column
@@ -80,11 +80,11 @@ def test_is_move_effective():
                                [1, 3, 2, 1, 1]]) 
 
     old_board = deepcopy(board.board)
-    assert board.is_move_effective((2, 1), (2, 2))
+    assert is_move_effective(board.board, (2, 1), (2, 2))
     assert np.array_equal(board.board, old_board)
 
     # 5 in a col
-    board = Board(5, 5, 7, seed=2)  # cookie , and vertical lase, horizontal laser, bomb
+    board = Board(5, 5, 7, np_random=np.random.default_rng(2))  # cookie , and vertical lase, horizontal laser, bomb
     board.generate_board()
     board.board[0] = np.array([[1, 2, 3, 3, 4],
                                [1, 2, 3, 2, 4],
@@ -98,11 +98,11 @@ def test_is_move_effective():
                             [1, 3, 2, 1, 1],
                             [1, 2, 3, 3, 2]])
     old_board = deepcopy(board.board)
-    assert board.is_move_effective((2, 3), (2, 2))
+    assert is_move_effective(board.board, (2, 3), (2, 2))
     assert np.array_equal(board.board, old_board)
 
     # Cookie + special
-    board = Board(7, 5, 12, seed=3)
+    board = Board(7, 5, 12, np_random=np.random.default_rng(3))
     board.generate_board()
     board.board[0] = np.array([[8, 2, 9, 4, 5], 
                             [1, 9, 10, 6, 8], 
@@ -121,7 +121,7 @@ def test_is_move_effective():
                             [1, 1, 1, 1, 1]])
     board.board[0, 4, 2] = 0
     old_board = deepcopy(board.board)
-    assert board.is_move_effective((3, 2), (4, 2))
+    assert is_move_effective(board.board, (3, 2), (4, 2))
     assert np.array_equal(board.board, old_board)
 
 
@@ -137,8 +137,8 @@ def test_is_move_effective():
                             [1, 1, 1, 1, 1]])
 
     old_board = deepcopy(board.board)
-    assert board.is_move_effective((0, 0), (0, 1))
-    assert board.is_move_effective((0, 0), (1, 0))
+    assert is_move_effective(board.board, (0, 0), (0, 1))
+    assert is_move_effective(board.board, (0, 0), (1, 0))
     assert np.array_equal(board.board, old_board)
 
 
@@ -156,7 +156,7 @@ def test_is_move_effective():
                             [1, 1, 1, -1, -1]])
 
     old_board = deepcopy(board.board)
-    assert board.is_move_effective((6, 4), (6, 3))
+    assert is_move_effective(board.board, (6, 4), (6, 3))
     assert np.array_equal(board.board, old_board)
 
     
