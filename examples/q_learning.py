@@ -106,9 +106,8 @@ def save_results(results, output_dir):
     pickle_results = {k: v for k, v in results.items() if k not in json_results}
     with open(os.path.join(output_dir, "results.pkl"), "wb") as f:
         pickle.dump(pickle_results, f)
-
-if __name__ == "__main__":
-    def execute_run(epsilon_decay_dur, gamma, lr, num_episodes, output_dir, seed, num_repeats):
+    
+def execute_run(epsilon_decay_dur, gamma, lr, num_episodes, output_dir, seed, num_repeats):
         num_episodes=300_000
         num_moves = 10
         epsilon_decay_dur = int(num_episodes * num_moves * epsilon_decay_dur)
@@ -123,11 +122,13 @@ if __name__ == "__main__":
             agent = QLearningAgent(lr=lr, epsilon_decay_dur=epsilon_decay_dur, gamma=gamma, num_actions=env.num_actions, rng=rng)
                     
             r, eff_a, obs_seen, agent = train(agent, env, num_episodes)
-            save_results({"r": r, "eff_a": eff_a, "obs_seen": obs_seen, "agent": agent}, output_dir)
+            save_results({"r": r, "eff_a": eff_a, "obs_seen": obs_seen, "agent": agent}, r_dir)
 
             r_aucs.append(np.trapz(r))
         
         return np.mean(r_aucs)
+if __name__ == "__main__":
+    
 
     # Hyperparameter settings
     
@@ -140,14 +141,14 @@ if __name__ == "__main__":
     
     
 
-    pbounds = {
-        "epsilon_decay_dur": (0.1, 0.9),
-        "gamma": (0.7, 1),
-        "lr": (0.01, 0.5),
-        'epsilon_decay_dur': (0.001, 0.1, 0.3, 0.5, 0.7, 0.9),
-        'gamma': (0.7, 0.8, 0.9, 0.95, 0.99),
-        'lr': (0.01, 0.1, 0.25, 0.5),
-    } # 120 combinations x 5 repeats = 600 experiments in total
+    # pbounds = {
+    #     "epsilon_decay_dur": (0.1, 0.9),
+    #     "gamma": (0.7, 1),
+    #     "lr": (0.01, 0.5),
+    #     'epsilon_decay_dur': (0.001, 0.1, 0.3, 0.5, 0.7, 0.9),
+    #     'gamma': (0.7, 0.8, 0.9, 0.95, 0.99),
+    #     'lr': (0.01, 0.1, 0.25, 0.5),
+    # } # 120 combinations x 5 repeats = 600 experiments in total
     # 20mins per experiment -> 200 hours in total / 16 cores = 12.5 hours
 
 # Metrics: H
@@ -155,3 +156,4 @@ if __name__ == "__main__":
 # Effect of gamma
 # Effect of learning rate
 # Different Epsilon 
+
