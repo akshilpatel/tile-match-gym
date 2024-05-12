@@ -40,7 +40,7 @@ while True:
     if done:
         break
     else:
-      next_obs = obs
+      obs = next_obs
 ```
 
 ## Citation
