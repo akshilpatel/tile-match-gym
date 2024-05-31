@@ -9,13 +9,12 @@ from tile_match_gym.wrappers import ProportionRewardWrapper, OneHotWrapper
 import os
 import json
 import pickle
-import optuna
 
 class QLearningAgent:
     def __init__(self, lr, epsilon_decay_dur, gamma, num_actions, rng):
         self.lr = lr
         self.epsilon_decay_dur = epsilon_decay_dur
-
+        self.epsilon = 1
         self.gamma = gamma
         self.num_actions = num_actions
         self.q_table = defaultdict(lambda: np.zeros(self.num_actions, dtype=np.float32))
@@ -40,8 +39,8 @@ class QLearningAgent:
         self.update(obs, action, reward, next_obs, done)
 
     def decay_epsilon(self):
-        if self.epsilon > self.epsilon_end:
-            self.epsilon -= (self.epsilon_start - self.epsilon_end) / self.epsilon_decay_dur
+        if self.epsilon > 0:
+            self.epsilon -= 1 / self.epsilon_decay_dur
 
     def update(self, obs, action, reward, next_obs, done):
         s = self._preprocess_obs(obs)
@@ -82,14 +81,10 @@ def train(agent, env, num_episodes:int = 1000):
     epi_r = np.zeros(num_episodes)
     obs_seen = defaultdict(int)
     num_effective_actions_arr = np.zeros(num_episodes)
-    print_eps = True
-    for i in tqdm(range(num_episodes)):
+    
+    for i in range(num_episodes):
         total_reward, num_effective_actions, obs_seen = run_episode(agent, env, obs_seen)
-        if agent.epsilon > 0.1:
-            agent.epsilon *= 0.9999
-        elif print_eps:
-            print(f"Epsilon is low at episode {i}")
-            print_eps = False
+    
         epi_r[i] = total_reward
         num_effective_actions_arr[i] = num_effective_actions
     return epi_r, num_effective_actions_arr, obs_seen, agent
@@ -98,7 +93,15 @@ def save_results(results, output_dir):
     os.makedirs(output_dir, exist_ok=True)
     
     # Save results that can be serialized as JSON
-    json_results = {k: v for k, v in results.items() if isinstance(v, (list, dict, int, float, bool, str))}
+    r = results["r"]
+    eff_a = results["eff_a"]
+    obs_seen = results["obs_seen"]
+    json_results = {
+        "epi_r": r.tolist(),
+        
+        "num_effective_actions": eff_a.tolist(),
+        "num_obs_seen": len(obs_seen)
+    }
     with open(os.path.join(output_dir, "results.json"), "w") as f:
         json.dump(json_results, f)
     
@@ -107,39 +110,48 @@ def save_results(results, output_dir):
     with open(os.path.join(output_dir, "results.pkl"), "wb") as f:
         pickle.dump(pickle_results, f)
     
-def execute_run(epsilon_decay_dur, gamma, lr, num_episodes, output_dir, seed, num_repeats):
-        num_episodes=300_000
-        num_moves = 10
-        epsilon_decay_dur = int(num_episodes * num_moves * epsilon_decay_dur)
-        r_aucs = []
-        output_dir = f"results/gamma_{gamma}_lr_{lr}_eps_decay_dur_{epsilon_decay_dur}"
+def execute_run(epsilon_decay_dur, gamma, lr, seed):
+    num_episodes=300_000
+    num_moves = 10
+    epsilon_decay_dur = int(num_episodes * num_moves * epsilon_decay_dur)
+    output_dir = f"results/gamma_{gamma}_lr_{lr}_eps_decay_dur_{epsilon_decay_dur}_seed_{seed}"
 
-        for repeat in range(num_repeats):
-            r_dir = output_dir + f"/repeat_{repeat}"
-            env = gym.make("TileMatch-v0", num_rows=3, num_cols=3, num_colours=2, num_moves=10, colour_specials=[], colourless_specials=[], seed=seed)
-            env = ProportionRewardWrapper(env)
-            rng = np.random.default_rng(seed)
-            agent = QLearningAgent(lr=lr, epsilon_decay_dur=epsilon_decay_dur, gamma=gamma, num_actions=env.num_actions, rng=rng)
-                    
-            r, eff_a, obs_seen, agent = train(agent, env, num_episodes)
-            save_results({"r": r, "eff_a": eff_a, "obs_seen": obs_seen, "agent": agent}, r_dir)
 
-            r_aucs.append(np.trapz(r))
-        
-        return np.mean(r_aucs)
+    env = gym.make("TileMatch-v0", num_rows=3, num_cols=3, num_colours=2, num_moves=10, colour_specials=[], colourless_specials=[], seed=seed)
+    env = ProportionRewardWrapper(env)
+    rng = np.random.default_rng(seed)
+    agent = QLearningAgent(lr=lr, epsilon_decay_dur=epsilon_decay_dur, gamma=gamma, num_actions=env.num_actions, rng=rng)
+                
+    r, eff_a, obs_seen, agent = train(agent, env, num_episodes)
+    save_results({"r": r, "eff_a": eff_a, "obs_seen": obs_seen,  "r_auc": np.trapz(r)}, output_dir)
+    print(epsilon_decay_dur, gamma, lr, seed, np.trapz(r))
+
 if __name__ == "__main__":
     
 
     # Hyperparameter settings
     
     learning_rates = [0.01, 0.1, 0.25, 0.5]
-    epsilon_decay_durs = [0.001, 0.1, 0.3, 0.5, 0.7, 0.9]
-    num_episodes = 400_000
-    num_repeats = 5
+    epsilon_decay_durs = [0.1, 0.3, 0.5, 0.7, 0.9]
+    gammas = [0.7, 0.8, 0.9, 0.95, 0.99]
+    # learning_rates = [0.2]
+    # epsilon_decay_durs = [0.1, 0.3]
+    # gammas = [0.7, 0.8]
+    
+    seeds = range(1, 5)
 
     # Run experiments
+    params = []
+    for lr in learning_rates:
+        for epsilon_decay_dur in epsilon_decay_durs:
+            for gamma in gammas:
+                for seed in seeds:
+                    params.append((epsilon_decay_dur, gamma, lr, seed))
     
-    
+
+    import multiprocessing as mp
+    with mp.Pool(mp.cpu_count()) as pool:
+        results = pool.starmap(execute_run, params)
 
     # pbounds = {
     #     "epsilon_decay_dur": (0.1, 0.9),
