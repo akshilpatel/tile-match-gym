@@ -2,7 +2,7 @@ import gymnasium as gym
 import numpy as np
 
 from gymnasium.spaces import Discrete, Box
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 from collections import OrderedDict
 from tile_match_gym.board import Board
 from tile_match_gym.board import is_move_effective
@@ -11,15 +11,15 @@ class TileMatchEnv(gym.Env):
     metadata = {'render_modes': ['string']}
     def __init__(
             self, 
-            num_rows:int, 
-            num_cols:int, 
-            num_colours:int, 
+            num_rows: int,
+            num_cols: int,
+            num_colours: int,
             num_moves: int,
-            colourless_specials:List[str], 
+            colourless_specials: List[str],
             colour_specials: List[str],
             seed: Optional[int] = 1,
             render_mode: str = "string"
-            ):
+            ) -> None:
         self.num_rows = num_rows
         self.num_cols = num_cols
         self.num_colours = num_colours
@@ -68,7 +68,7 @@ class TileMatchEnv(gym.Env):
         self.observation_space.seed = seed
         self.board.np_random = np.random.default_rng(seed=seed)
 
-    def reset(self, seed=None, **kwargs)  -> Tuple[dict, dict]:
+    def reset(self, seed: Optional[int]=None, options: Optional[dict] = None)  -> Tuple[dict, dict]:
         if seed is not None:
             self.set_seed(seed)
         self.board.generate_board()
@@ -97,10 +97,10 @@ class TileMatchEnv(gym.Env):
         next_obs = self._get_obs()
         return next_obs, num_eliminations, done, False, info
     
-    def _get_obs(self) -> dict:
+    def _get_obs(self) -> dict[str, Union[np.ndarray, int]]:
         return OrderedDict([("board", self.board.board), ("num_moves_left", self.num_moves - self.timer)])
 
-    def _action_to_coords(self, action:int):
+    def _action_to_coords(self, action:int) -> tuple[tuple[int, int], tuple[int, int]]:
         if not 0 <= action <= self.num_actions:
             raise ValueError(f"Action {action} is not valid for this board {self.num_rows, self.num_cols}")
         if action < self.num_cols * (self.num_rows - 1):
@@ -116,14 +116,9 @@ class TileMatchEnv(gym.Env):
     def _get_effective_actions(self) -> List[int]:
         if self.timer == self.num_moves:
             return []
-        effective_actions = []
 
         action_check = lambda a: is_move_effective(self.board.board, *self._action_to_coords(a))
         effective_actions = list(filter(action_check, range(self.num_actions)))
-        # for a in range(self.num_actions):
-        #     coord1, coord2 = self._action_to_coords(a)
-        #     if is_move_effective(self.board.board, coord1, coord2):
-        #         effective_actions.append(a)
         return effective_actions
 
     def render(self) -> None:
@@ -145,11 +140,14 @@ class TileMatchEnv(gym.Env):
                 print("|", end="\n")
             print(" " + "-" * (width * 2 + 1))
 
-        elif self.render_mode == "image":
-            pass
+        else:
+            raise NotImplementedError()
 
-        
 
     def close(self) -> None:
         if self.renderer is not None:
             self.renderer.close()
+
+
+if __name__=="__main__":
+    pass

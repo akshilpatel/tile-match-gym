@@ -54,7 +54,6 @@ def save_results(results, output_dir):
     obs_seen = results["obs_seen"]
     json_results = {
         "r": r.tolist(),
-        
         "num_effective_actions": eff_a.tolist(),
         "obs_seen": {str(k): v for k, v in obs_seen.items()}
     }

@@ -1,7 +1,6 @@
 import numpy as np
 import numba
-from numba import njit, types, typed
-from numba.experimental import jitclass
+from numba import njit, types
 from typing import Optional, List, Tuple
 
 
@@ -47,7 +46,6 @@ numba_spec = [
     ('indices', types.Array(types.int32, ndim=3, layout='C')),
 ]
 
-# @jitclass(numba_spec)
 class Board:
     def __init__(
         self,
@@ -76,7 +74,6 @@ class Board:
         if board is not None:
             if isinstance(board, list):
                 board = np.array(board, dtype=np.int32)
-                print("hi")
             if board.shape[0] != 2 or len(board.shape) < 3:
                 self.board = np.array([board,np.ones_like(board)])
                 print(2)
@@ -97,7 +94,6 @@ class Board:
         self.board[0] = self.np_random.integers(1, self.num_colours+1, self.flat_size).reshape(self.num_rows, self.num_cols)
 
         line_matches = self.get_colour_lines()
-        # line_matches = get_colour_lines(self.board)
         num_line_matches = len(line_matches)
 
         while not self.possible_move() or num_line_matches > 0:
@@ -107,7 +103,6 @@ class Board:
                 self.shuffle()
 
             line_matches = self.get_colour_lines()
-            # line_matches = get_colour_lines(self.board)
             num_line_matches = len(line_matches)
         
         # assert self.possible_move()
@@ -141,7 +136,6 @@ class Board:
         #     return [], [], []
         
         lines = self.get_colour_lines()
-        # lines = get_colour_lines(self.board)
 
         if len(lines) == 0:
             return [], [], []
@@ -696,12 +690,8 @@ class Board:
             # Activate all specials of same colour.
             special_type_mask = self.board[1] > 1
             mask = colour_mask & special_type_mask
-            r_idcs, c_idcs = np.where(mask)
-            for i in range(len(r_idcs)):
-                r, c = r_idcs[i], c_idcs[i]
-                if self.board[1, r, c] not in [0, 1]:
-                    self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c], is_combination_match=True)
-                    
+            self.activate_specials_in_mask(mask)
+
         # Cookie + vertical laser/horizontal laser/bomb -> convert all normals of same colour to the special type then activate them.
         elif (tile_type1 == -1 and tile_type2 >= 2) or (tile_type1 >=2  and tile_type2 == -1):
             if tile_type2 == -1:
@@ -719,12 +709,7 @@ class Board:
             self.board[1, mask] = tile_type2
             
             # Activate specials.
-            r_idcs, c_idcs = np.where(colour_mask)
-            for i in range(len(r_idcs)):
-                r, c = r_idcs[i], c_idcs[i]
-                # If it hasn't already been activated (through chaining in previous iterations)
-                if self.board[1, r, c] not in [0, 1]: 
-                    self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c], is_combination_match=True)
+            self.activate_specials_in_mask(colour_mask)
                     
         # vertical laser + vertical laser or horizontal laser + horizontal laser or vertical laser + horizontal laser
         elif tile_type1 == tile_type2 == 2 or tile_type1 == tile_type2 == 3 or (tile_type1 == 2 and tile_type2 == 3) or (tile_type1 == 3 and tile_type2 == 2):
@@ -784,6 +769,14 @@ class Board:
                         self.board[:, i, j] = 0
                     elif self.board[1, i, j] != 0:
                         self.activate_special((i, j), self.board[1, i, j], self.board[0, i, j], is_combination_match=True)
+
+    def activate_specials_in_mask(self, mask):
+        r_idcs, c_idcs = np.where(mask)
+        for i in range(len(r_idcs)):
+            r, c = r_idcs[i], c_idcs[i]
+            if self.board[1, r, c] not in [0, 1]:
+                self.activate_special((r, c), self.board[1, r, c], self.board[0, r, c], is_combination_match=True)
+
 
 @njit
 def swap_coords(board: np.ndarray, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None: 
