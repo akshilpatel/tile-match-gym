@@ -64,8 +64,10 @@ class TileMatchEnv(gym.Env):
         self.action_space = Discrete(self.num_actions, seed=self.seed)
 
     def set_seed(self, seed:int) -> None:
-        self.action_space.seed = seed
-        self.observation_space.seed = seed
+        self.action_space._np_random_seed = seed
+        self.action_space._np_random = np.random.default_rng(seed=seed)
+        self.observation_space._np_random_seed = seed
+        self.observation_space._np_random = np.random.default_rng(seed=seed)
         self.board.np_random = np.random.default_rng(seed=seed)
 
     def reset(self, seed: Optional[int]=None, options: Optional[dict] = None)  -> Tuple[dict, dict]:
