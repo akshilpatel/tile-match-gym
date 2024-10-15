@@ -335,7 +335,7 @@ class Board:
 
 
     # We return number of eliminations, whether it was a combination match, number of new specials created, number of specials activated.
-    def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> Tuple[int, int, int, int]:
+    def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> Tuple[int, int, int, int, bool]:
         """High-level entry point for each move. This function checks if the move is legal and effective, then executes the move.
 
         Args:
