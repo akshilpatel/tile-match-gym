@@ -27,9 +27,10 @@ env = TileMatchEnv(
   num_cols=10, 
   num_colours=4, 
   num_moves=30, 
-  colourless_specials=[], 
-  colour_specials=[], 
+  colourless_specials=["cookie"], 
+  colour_specials=["vertical_laser", "horizontal_laser", "bomb"], 
   seed=2
+  render_mode="human",
   )
 
 obs, _ = env.reset()
@@ -37,6 +38,7 @@ obs, _ = env.reset()
 while True:
     action = env.action_space.sample()
     next_obs, reward, done, truncated, info = env.step(action)
+    env.render()
     if done:
         break
     else:
@@ -52,7 +54,7 @@ We'd love it if you use our package for your research! If you do use code from t
   author = {Patel, Akshil and Elson, James},
   title = {{Tile Matching Game Reinforcement Learning Environments}},
   url = {https://github.com/akshilpatel/tile-match-gym},
-  version = {0.0.5},
+  version = {1.0.0},
   year = {2023}
   }
 ```

@@ -1,10 +1,6 @@
 import numpy as np
 import gymnasium as gym
-from copy import deepcopy
-from numba import njit
-from tile_match_gym.tile_match_env import TileMatchEnv
 from collections import defaultdict
-from tqdm import tqdm
 from tile_match_gym.wrappers import ProportionRewardWrapper, OneHotWrapper
 import os
 import json
