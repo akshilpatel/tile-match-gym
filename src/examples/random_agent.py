@@ -10,7 +10,6 @@ from tile_match_gym.wrappers import ProportionRewardWrapper
 
 def run_random_episode(env, obs_seen, rng, use_effective_actions=False):
     obs, info = env.reset()
-    done = False
     total_reward = 0
     num_effective_actions = 0
     
@@ -21,7 +20,11 @@ def run_random_episode(env, obs_seen, rng, use_effective_actions=False):
         else:
             action = rng.choice(info["effective_actions"])
 
+
+
         next_obs, reward, done, _, info = env.step(action)
+        if len(info["effective_actions"]) == 0 and not done:
+            print(next_obs["board"], next_obs["num_moves_left"])
         obs_seen[tuple(next_obs["board"].flatten().tolist() + [next_obs["num_moves_left"]])] += 1
         
         num_effective_actions += int(reward > 0)
@@ -65,20 +68,21 @@ def save_results(results, output_dir):
     with open(os.path.join(output_dir, "results.pkl"), "wb") as f:
         pickle.dump(pickle_results, f)
     
-def run_random_baseline(num_episodes, output_dir, seed, num_repeats, use_effective_actions=False):
-    num_moves = 10    
+def run_random_baseline(num_episodes, output_dir, num_repeats, use_effective_actions=False):
+    num_moves = 5
     r_aucs = []
-    output_dir = f"{output_dir}/{seed}"
+    output_dir = f"{output_dir}/"
 
     for repeat in range(num_repeats):
+        print(repeat, "---------------")
         r_dir = output_dir + f"/repeat_{repeat}"
-        env = gym.make("TileMatch-v0", num_rows=3, num_cols=3, num_colours=2, num_moves=num_moves, colour_specials=[], colourless_specials=[], seed=seed)
+        env = gym.make("TileMatch-v0", num_rows=5, num_cols=5, num_colours=4, num_moves=num_moves, colour_specials=[], colourless_specials=[], seed=repeat)
         env = ProportionRewardWrapper(env)
-        r, eff_a, obs_seen = run_random(env, seed, num_episodes, use_effective_actions)        
+        r, eff_a, obs_seen = run_random(env, repeat, num_episodes, use_effective_actions)
         save_results({"r": r, "eff_a": eff_a, "obs_seen": obs_seen}, r_dir)
         r_aucs.append(np.trapz(r))
 
 
 if __name__ == "__main__":
-    run_random_baseline(3000, "results/random", 0, 5)
-    run_random_baseline(3000, "results/random_eff_a", 0, 5, use_effective_actions=True)
+    run_random_baseline(1000, "../../results/random_5_5_4", 5, False)
+    run_random_baseline(1000, "../../results/random_5_5_4_eff_a", 5, use_effective_actions=True)
