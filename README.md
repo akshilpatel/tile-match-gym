@@ -54,7 +54,7 @@ We'd love it if you use our package for your research! If you do use code from t
   author = {Patel, Akshil and Elson, James},
   title = {{Tile Matching Game Reinforcement Learning Environments}},
   url = {https://github.com/akshilpatel/tile-match-gym},
-  version = {1.0.0},
+  version = {1.0.1},
   year = {2023}
   }
 ```
