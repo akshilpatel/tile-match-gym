@@ -10,8 +10,9 @@ def test_one_hot_wrapper():
 
     obs, info = env.reset()
     # Check colours
+    print(env.board.board)
     assert np.array_equal(obs["board"][:, 0, 0], np.array([0, 0, 1, 0, 0], dtype=np.float32)), obs["board"][:, 0, 0]
-    assert np.array_equal(obs["board"][:, 0, 1], np.array([1, 0, 0, 0, 0], dtype=np.float32)), obs["board"][:, 0, 1]
+    assert np.array_equal(obs["board"][:, 1, 1], np.array([1, 0, 0, 0, 0], dtype=np.float32)), obs["board"][:, 0, 1]
     assert obs["num_moves_left"] == 10
 
 

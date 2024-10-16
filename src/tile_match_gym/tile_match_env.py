@@ -32,14 +32,15 @@ class TileMatchEnv(gym.Env):
         self.colour_specials = colour_specials
         self.num_moves = num_moves
 
+        self.renderer = None
         if render_mode == "string":
             self.colour_map = self.np_random.choice(range(105, 230), size=self.num_colours + 1, replace=False)
         elif render_mode in ["human", "rgb_array"]:
             self.renderer = Renderer(num_rows, num_cols, num_colours, num_moves, render_mode=render_mode)
 
+
         self.render_mode = render_mode
         # Each coordinate can switch right or down but those on the right/bottom edge can't switch right/down
-        self.num_actions = int((self.num_rows * self.num_cols * 2) - self.num_rows - self.num_cols)
 
         self.num_colour_specials = len(self.colour_specials)
         self.num_colourless_specials = len(self.colourless_specials)
@@ -55,6 +56,8 @@ class TileMatchEnv(gym.Env):
                              np.full((self.num_rows, self.num_cols), self.num_colour_specials + 2,
                                      dtype=np.int32)])  # + 1 for empty
 
+        self.num_actions = int((self.num_rows * self.num_cols * 2) - self.num_rows - self.num_cols)
+        self._action_to_coords = self.board.action_to_coords
         self._board_observation_space = Box(
             low=obs_low,
             high=obs_high,
@@ -92,9 +95,8 @@ class TileMatchEnv(gym.Env):
         if self.timer is None or self.timer >= self.num_moves:
             raise Exception("You must call reset before calling step")
 
-        coord1, coord2 = self._action_to_coords(action)
-        num_eliminations, is_combination_match, num_new_specials, num_specials_activated, shuffled = self.board.move(
-            coord1, coord2)
+        coord1, coord2 = self._action_to_coords[action]
+        num_eliminations, is_combination_match, num_new_specials, num_specials_activated, shuffled = self.board.move(coord1, coord2)
 
         self.timer += 1
         done = self.timer == self.num_moves
@@ -113,24 +115,12 @@ class TileMatchEnv(gym.Env):
     def _get_obs(self) -> dict[str, Union[np.ndarray, int]]:
         return OrderedDict([("board", self.board.board), ("num_moves_left", self.num_moves - self.timer)])
 
-    def _action_to_coords(self, action: int) -> tuple[tuple[int, int], tuple[int, int]]:
-        if not 0 <= action <= self.num_actions:
-            raise ValueError(f"Action {action} is not valid for this board {self.num_rows, self.num_cols}")
-        if action < self.num_cols * (self.num_rows - 1):
-            row = action // self.num_cols
-            col = action % self.num_cols
-            return (row, col), (row + 1, col)
-        else:
-            action_ = action - self.num_cols * (self.num_rows - 1)
-            row = action_ // (self.num_cols - 1)
-            col = action_ % (self.num_cols - 1)
-            return (row, col), (row, col + 1)
 
     def _get_effective_actions(self) -> List[int]:
         if self.timer == self.num_moves:
             return []
 
-        action_check = lambda a: is_move_effective(self.board.board, *self._action_to_coords(a))
+        action_check = lambda a: is_move_effective(self.board.board, *self._action_to_coords[a])
         effective_actions = list(filter(action_check, range(self.num_actions)))
         return effective_actions
 
