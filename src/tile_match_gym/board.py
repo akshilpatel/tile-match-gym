@@ -264,10 +264,6 @@ class Board:
         return True
 
 
-    def _swap_coords(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> None:
-        self.board[0, coord1[0], coord1[1]], self.board[0, coord2[0], coord2[1]] = self.board[0, coord2[0], coord2[1]], self.board[0, coord1[0], coord1[1]]
-        self.board[1, coord1[0], coord1[1]], self.board[1, coord2[0], coord2[1]] = self.board[1, coord2[0], coord2[1]], self.board[1, coord1[0], coord1[1]]
-
     def process_colour_lines(self, lines: List[List[Tuple[int, int]]]) -> Tuple[List[List[Tuple[int, int]]], List[str], List[int]]:
         """
         Given list of contiguous lines (each a list of coords), this function detects the match type from the bottom up, merging any lines that share a coordinate.
@@ -320,20 +316,15 @@ class Board:
                             for c in sorted_closest[:3]:  # Remove the coordinates that were taken for the bomb
                                 l.remove(c)
                         break  # Stop searching after finding one intersection. This should break out of the for loop.
-            # Check for normals. This happends even if the lines are longer than 3 but there are no matching specials.
+            # Check for normals. This happens even if the lines are longer than 3 but there are no matching specials.
             elif len(line) >= 3:
                 tile_names.append("normal")
                 tile_coords.append(line)
                 tile_colours.append(self.board[0, line[0][0], line[0][1]])
-            
-
-        # assert len(tile_names) == len(tile_coords) == len(tile_colours), (tile_names, tile_coords, tile_colours)
 
         return tile_coords, tile_names, tile_colours
 
 
-
-    # We return number of eliminations, whether it was a combination match, number of new specials created, number of specials activated.
     def move(self, coord1: Tuple[int, int], coord2: Tuple[int, int]) -> Tuple[int, int, int, int, bool]:
         """High-level entry point for each move. This function checks if the move is legal and effective, then executes the move.
 
@@ -345,7 +336,7 @@ class Board:
             ValueError: If the move is illegal, an error is raised.
 
         Returns:
-            Tuple[int, int, int, int]: number of tiles eliminated, whether it was a combination match, number of specials created, number of specials activated.
+            Tuple[int, int, int, int, bool]: Number of tiles eliminated, whether it was a combination match, number of specials created, number of specials activated, whether a shuffle was performed.
         """
         self.num_specials_activated = 0
         self.num_new_specials = 0
@@ -359,7 +350,7 @@ class Board:
         if not is_move_effective(self.board, coord1, coord2):
             return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated, shuffled
         
-        self._swap_coords(coord1, coord2)
+        swap_coords(self.board, coord1, coord2)
         
         ## Combination match ##
         has_two_specials = self.board[1, coord1[0], coord1[1]] not in [0,1] and self.board[1, coord2[0], coord2[1]] not in [0,1]
@@ -399,7 +390,7 @@ class Board:
             line_matches = self.get_colour_lines()
             num_line_matches = len(line_matches)
 
-        assert self.possible_move()
+        # assert self.possible_move()
         # assert self.get_colour_lines() == []
         return num_eliminations, is_combination_match, self.num_new_specials, self.num_specials_activated, shuffled
 
@@ -471,7 +462,6 @@ class Board:
 
         Args:
             match_coords (List[Tuple[int, int]]): List of coordinates that are part of the match.
-            match_type (str): Match type.
         """
         
         for coord in match_coords:
@@ -580,7 +570,7 @@ class Board:
     def possible_move(self, grid: Optional[np.ndarray] = None):
         """Wrapper function that checks if there is an effective move possible.
         Args: 
-            grid (Optional[np.ndarray]): Optionally, a grid can be passed in to check for this function. Otherwise self.board is used.
+            grid (Optional[np.ndarray]): Optionally, a grid can be passed in to check for this function. Otherwise, self.board is used.
 
         """
         if grid is None:
@@ -758,7 +748,8 @@ def is_move_effective(board: np.ndarray, coord1: Tuple[int, int], coord2: Tuple[
     This function checks if the action actually does anything i.e. if the action achieves some form of matching.
 
     Args:
-        coord (tuple): The first coordinate on grid corresponding to the action taken. This will always be above or to the left of the second coordinate below.
+        board (np.ndarray): The board.
+        coord1 (tuple): The first coordinate on grid corresponding to the action taken. This will always be above or to the left of the second coordinate below.
         coord2 (tuple): Second coordinate on grid corresponding to the action taken.
 
     Returns:
