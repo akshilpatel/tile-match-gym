@@ -30,12 +30,9 @@ class Renderer:
         self.display_screen = None
         self.colour_map = []
         for i in range(1, num_colours + 1):  # Skip white
-            # Evenly space the hue value            hue = i / num_colours
-            # Fix saturation and lightness at 0.6 and 0.5 for vivid colors
             saturation = 0.6
             lightness = 0.5
             hue = i / num_colours
-            # Convert the HSL values to RGB (returns values in range [0, 1], so scale to [0, 255])
             rgb = colorsys.hls_to_rgb(hue, lightness, saturation)
             rgb = tuple(int(val * 255) for val in rgb)  # Scale to [0, 255]
             self.colour_map.append(rgb)
