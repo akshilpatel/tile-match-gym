@@ -1,6 +1,5 @@
 from sb3_contrib import QRDQN
 import gymnasium as gym
-import gym_pipedream
 
 import tile_match_gym
 from stable_baselines3 import PPO, DQN

@@ -4,6 +4,7 @@ import numpy as np
 from gymnasium.spaces import Discrete, Box
 from typing import Optional, List, Tuple, Union
 from collections import OrderedDict
+
 from tile_match_gym.board import Board
 from tile_match_gym.board import is_move_effective
 
@@ -147,3 +148,25 @@ class TileMatchEnv(gym.Env):
     def close(self) -> None:
         if self.renderer is not None:
             self.renderer.close()
+
+
+if __name__=="__main__":
+    import gymnasium
+    from gymnasium.wrappers import RecordVideo
+    import tile_match_gym
+
+    env_kwargs = dict(num_rows=3, num_cols=3, num_colours=3, num_moves=10, colour_specials=[], colourless_specials=[], seed=0, render_mode="rgb_array")
+
+    env = gymnasium.make("TileMatch-v0", **env_kwargs)
+
+    env = RecordVideo(env, "tmp")
+
+    obs, info = env.reset()
+
+    rng = np.random.default_rng(1)
+    while True:
+        action = rng.choice(info["effective_actions"])
+        next_obs, reward, done, _, info = env.step(action)
+
+        if done:
+            break
