@@ -11,7 +11,7 @@ from tile_match_gym.renderer import Renderer
 
 
 class TileMatchEnv(gym.Env):
-    metadata = {"render_modes": ["string", "human", "rgb_array"]}
+    metadata = {"render_modes": ["string", "human", "rgb_array"], "render_fps": 10}
 
     def __init__(
             self,
@@ -36,7 +36,7 @@ class TileMatchEnv(gym.Env):
         if render_mode == "string":
             self.colour_map = self.np_random.choice(range(105, 230), size=self.num_colours + 1, replace=False)
         elif render_mode in ["human", "rgb_array"]:
-            self.renderer = Renderer(num_rows, num_cols, num_colours, num_moves, render_mode=render_mode)
+            self.renderer = Renderer(num_rows, num_cols, num_colours, num_moves, render_fps=self.metadata["render_fps"], render_mode=render_mode)
 
 
         self.render_mode = render_mode

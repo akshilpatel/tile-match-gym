@@ -1,5 +1,5 @@
 import colorsys
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 import pygame
@@ -12,6 +12,7 @@ class Renderer:
             num_cols: int,
             num_colours: int,
             num_moves: int,
+            render_fps: int,
             window_size: int = 512,
             render_mode: Optional[str] = "human"
     ) -> None:
@@ -19,13 +20,14 @@ class Renderer:
         self.num_cols = num_cols
         self.num_colours = num_colours
         self.num_moves = num_moves
+        self.render_fps = render_fps
         self.window_size = window_size
         self.render_mode = render_mode
 
         self.screen = None
         self.width = None
         self.height = None
-
+        self.display_screen = None
         self.colour_map = []
         for i in range(1, num_colours + 1):  # Skip white
             # Evenly space the hue value            hue = i / num_colours
@@ -38,7 +40,7 @@ class Renderer:
             rgb = tuple(int(val * 255) for val in rgb)  # Scale to [0, 255]
             self.colour_map.append(rgb)
 
-    def render(self, board: np.ndarray, num_moves_left: int) -> Union[None, np.ndarray]:
+    def render(self, board: np.ndarray, num_moves_left: int) -> np.ndarray:
         if self.screen is None:
             self._init_pygame()
 
@@ -96,13 +98,16 @@ class Renderer:
         text_y = ((self.text_area_height - text_surface.get_height() + self.tile_size) // 2)
 
         self.screen.blit(text_surface, (text_x, text_y))
-        pygame.display.flip()
 
-        if self.render_mode == "rgb_array":
-            img = np.transpose(
-                np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
-            )
-            return img
+        if self.render_mode == "human":
+            self.display_screen.blit(self.screen, (0, 0))
+            pygame.display.update()
+            self.clock.tick(self.render_fps)
+
+        img = np.transpose(
+            np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
+        )
+        return img
 
 
     def _init_pygame(self):
@@ -110,6 +115,7 @@ class Renderer:
         pygame.display.init()
         pygame.display.set_caption("Tile Match")
         info = pygame.display.Info()
+        self.clock = pygame.time.Clock()
 
         board_screen_ratio = 0.3
         screen_width, screen_height = info.current_w * board_screen_ratio, info.current_h * board_screen_ratio
@@ -143,8 +149,9 @@ class Renderer:
         min_width = max_text.get_width() + 2 * self.tile_size
 
         self.screen_width = max(self.screen_width, min_width)
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
-
+        self.screen = pygame.Surface((self.screen_width, self.screen_height))
+        if self.render_mode == "human":
+            self.display_screen = pygame.display.set_mode((self.screen_width, self.screen_height))  # Visible window
 
     def close(self):
         if self.screen is not None:
