@@ -78,14 +78,16 @@ class Board:
         self.action_to_coords = []
 
         for i in range(self.num_actions):
+            # down
             if i < self.num_cols * (self.num_rows - 1):
                 row = i // self.num_cols
                 col = i % self.num_cols
                 self.action_to_coords.append(((row, col), (row + 1, col)))
+            # right
             else:
-                i = i - self.num_cols * (self.num_rows - 1)
-                row = i // (self.num_cols - 1)
-                col = i % (self.num_cols - 1)
+                i_ = i - self.num_cols * (self.num_rows - 1)
+                row = i_ // (self.num_cols - 1)
+                col = i_ % (self.num_cols - 1)
                 self.action_to_coords.append(((row, col), (row, col + 1)))
 
         self.action_to_coords = tuple(self.action_to_coords)
