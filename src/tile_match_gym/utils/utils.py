@@ -5,7 +5,7 @@ import multiprocessing as mp
 
 def compute_num_states(num_rows, num_cols, num_colours, num_processes, colour_specials=[], colourless_specials=[]):
 
-    board = Board(num_rows, num_cols, num_colours, [], [], 0)
+    board = Board(num_rows, num_cols, num_colours, [], [], np.random.default_rng(0))
     board.board = np.ones((2, num_rows, num_cols), dtype=np.int32)
     num_flat = int(num_rows*num_cols)
     potential_boards = list(product(range(1, num_colours+1), repeat=num_flat))
