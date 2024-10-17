@@ -40,8 +40,6 @@ class TileMatchEnv(gym.Env):
 
 
         self.render_mode = render_mode
-        # Each coordinate can switch right or down but those on the right/bottom edge can't switch right/down
-
         self.num_colour_specials = len(self.colour_specials)
         self.num_colourless_specials = len(self.colourless_specials)
 
