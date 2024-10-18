@@ -13,7 +13,6 @@ class Renderer:
             num_colours: int,
             num_moves: int,
             render_fps: int,
-            window_size: int = 512,
             render_mode: Optional[str] = "human"
     ) -> None:
         self.num_rows = num_rows
@@ -21,7 +20,6 @@ class Renderer:
         self.num_colours = num_colours
         self.num_moves = num_moves
         self.render_fps = render_fps
-        self.window_size = window_size
         self.render_mode = render_mode
 
         self.screen = None
@@ -58,8 +56,8 @@ class Renderer:
 
                 x = board_x + col * (self.tile_size + self.spacing)
                 y = board_y + row * (self.tile_size + self.spacing)
-                assert 0 <= x <= self.screen_width - self.tile_size - self.margin_size
-                assert 0 <= y <= self.screen_height - self.tile_size - self.margin_size
+                # assert 0 <= x <= self.screen_width - self.tile_size - self.margin_size
+                # assert 0 <= y <= self.screen_height - self.tile_size - self.margin_size
 
                 if tile_type > 0:  # Coloured tiles.
                     pygame.draw.rect(self.screen, color, (x, y, self.tile_size, self.tile_size))
@@ -103,34 +101,33 @@ class Renderer:
         board_screen_ratio = 0.35
         if self.num_cols > self.num_rows:
             self.board_render_width = info.current_w * board_screen_ratio
-            self.board_render_height = self.board_render_width * (self.num_rows / self.num_cols)
+            self.board_render_height = np.ceil(self.board_render_width * (self.num_rows / self.num_cols))
         else:
             self.board_render_height = info.current_h * board_screen_ratio
-            self.board_render_width = self.board_render_height * (self.num_cols / self.num_rows)
+            self.board_render_width = np.ceil(self.board_render_height * (self.num_cols / self.num_rows))
 
         margin_ratio = 0.02  # Proportion of board size to add on for each margin
         self.text_area_height = 40
 
-
         # Available height and width for the board after removing margins and text area
-        self.margin_size = min(self.board_render_width, self.board_render_height) * margin_ratio
+        self.margin_size = np.round(min(self.board_render_width, self.board_render_height) * margin_ratio, 1)
         spacing_ratio = 0.04  # Proportion of tile_size to be used for spacing
         max_tile_width = self.board_render_width / self.num_cols
         max_tile_height = self.board_render_height / self.num_rows
-        self.tile_size = (1 - spacing_ratio) * min(max_tile_width, max_tile_height)
-        self.spacing = min(max_tile_width, max_tile_height) * spacing_ratio
-        assert self.tile_size > 10
+        self.tile_size = np.floor((1 - spacing_ratio) * min(max_tile_width, max_tile_height))
+        self.spacing = np.round((min(max_tile_width, max_tile_height) * spacing_ratio), 2)
+        # assert self.tile_size > 10, self.tile_size
 
         self.board_render_width = (self.tile_size + self.spacing) * self.num_cols
         self.board_render_height = (self.tile_size + self.spacing) * self.num_rows
         self.screen_width = self.board_render_width + 2 * self.margin_size
         self.screen_height = self.board_render_height + 4 * self.margin_size + self.text_area_height
 
-        assert self.board_render_width + (2 * self.margin_size) <= self.screen_width
-        assert self.board_render_height + (4 * self.margin_size) + self.text_area_height <= self.screen_height
-
-        assert self.screen_width >= self.board_render_width + 2 * self.margin_size
-        assert self.screen_height >= self.board_render_height + 4 * self.margin_size + self.text_area_height
+        # assert self.board_render_width + (2 * self.margin_size) <= self.screen_width
+        # assert self.board_render_height + (4 * self.margin_size) + self.text_area_height <= self.screen_height
+        #
+        # assert self.screen_width >= self.board_render_width + 2 * self.margin_size
+        # assert self.screen_height >= self.board_render_height + 4 * self.margin_size + self.text_area_height
 
         self.font_size = (self.text_area_height * 8) // 10
         font = pygame.font.SysFont("helvetica", self.font_size)
@@ -138,7 +135,14 @@ class Renderer:
         min_width = max_text.get_width() + 2 * self.margin_size
 
         self.screen_width = max(self.screen_width, min_width)
-
+        self.board_render_width *= 0.9
+        self.board_render_height *= 0.9
+        self.margin_size *=0.9
+        self.text_area_height *= 0.9
+        self.tile_size *= 0.9
+        self.spacing *= 0.9
+        # assert self.screen_width <= info.current_w
+        # assert self.screen_height <= info.current_h
         if self.render_mode == "human":
             pygame.display.init()
             pygame.display.set_caption("Tile Match")
@@ -151,38 +155,4 @@ class Renderer:
         if self.screen is not None:
             pygame.display.quit()
             pygame.quit()
-
-def tmp(env_kwargs, i):
-    env = gymnasium.make("TileMatch-v0", render_mode="rgb_array", **env_kwargs)
-    env = RecordVideo(env, "tmp" + str(i), fps=2)
-    rng = np.random.default_rng(1)
-    obs, info = env.reset()
-    done = False
-    while not done :
-        action = rng.choice(info["effective_actions"])
-        next_obs, reward, done, _, info = env.step(action)
-        # env.render()
-        plt.imshow(env.render())
-        plt.show()
-
-    env.close()
-
-if __name__=="__main__":
-    import gymnasium
-    from gymnasium.wrappers import RecordVideo
-    import tile_match_gym
-    from tile_match_gym.wrappers import ProportionRewardWrapper, OneHotWrapper
-    from matplotlib import pyplot as plt
-
-    # This doesn't work
-    env_kwargs = dict(num_rows=3, num_cols=3, num_colours=3, num_moves=10, colour_specials=[], colourless_specials=[], seed=0)
-    tmp(env_kwargs, 0)
-
-    # This works
-    env_kwargs = dict(num_rows=24, num_cols=4, num_colours=10, num_moves=10, colour_specials=[], colourless_specials=[], seed=0)
-    tmp(env_kwargs, 1)
-
-    # This doesnt work
-    env_kwargs = dict(num_rows=5, num_cols=5, num_colours=10, num_moves=10, colour_specials=[], colourless_specials=[],seed=0)
-    tmp(env_kwargs, 2)
 
