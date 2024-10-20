@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tile-match-gym"
-version = "1.0.3"
+version = "1.0.4"
 authors = [
     {name="Akshil Patel", email="akshilpatel11@gmail.com"},
     {name="James Elson"}
@@ -14,7 +14,7 @@ readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.8"
 dependencies = [
     "numpy>=1.24.3", 
-    "gymnasium>=0.28.1",
+    "gymnasium>=1.0.0",
     "numba==0.59.1",
     "pygame==2.6.1",
 ]
