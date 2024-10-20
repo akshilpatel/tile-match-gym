@@ -16,24 +16,21 @@ COLOUR_SPECIALS = {"vertical_laser": 2, "horizontal_laser": 3, "bomb": 4}
 class OneHotWrapper(ObservationWrapper):
     def __init__(self, env):
         super().__init__(env)
-        self.env = env.unwrapped
-        self.num_colours = self.env.num_colours
-        self.num_colour_specials = self.env.num_colour_specials
-        self.num_colourless_specials = self.env.num_colourless_specials
-        self.num_rows = self.env.num_rows
-        self.num_cols = self.env.num_cols
-        self.board_obs_space = Box(
-            low=0, high=1, 
-            dtype=np.int32, 
-            shape = (self.num_colours + self.num_colour_specials + self.num_colourless_specials, self.num_rows, self.num_cols))
+
+        self.num_colours = self.unwrapped.num_colours
+        self.num_colour_specials = self.unwrapped.num_colour_specials
+        self.num_colourless_specials = self.unwrapped.num_colourless_specials
+        self.num_rows = self.unwrapped.num_rows
+        self.num_cols = self.unwrapped.num_cols
+        self.board_obs_space = Box(low=0, high=1, dtype=np.int32, shape = (self.num_colours + self.num_colour_specials + self.num_colourless_specials, self.num_rows, self.num_cols))
 
         self.observation_space = gym.spaces.Dict({
-            "board": self.board_obs_space, 
-            "num_moves_left": self.env._moves_left_observation_space
+            "board": self.board_obs_space,
+            "num_moves_left": self.unwrapped._moves_left_observation_space
         })
 
-        self.colour_specials = self.env.colour_specials
-        self.colourless_specials =   self.env.colourless_specials
+        self.colour_specials = self.unwrapped.colour_specials
+        self.colourless_specials =   self.unwrapped.colourless_specials
 
         self.global_num_colourless_specials = len(COLOURLESS_SPECIALS)
         self.global_num_colour_specials = len(COLOUR_SPECIALS)
@@ -73,11 +70,18 @@ class OneHotWrapper(ObservationWrapper):
         
 class ProportionRewardWrapper(RewardWrapper):
     def __init__(self, env):
-        self.env = env.unwrapped
-        self.flat_size = self.env.num_rows * self.env.num_cols
+        super().__init__(env)
+        self.flat_size = self.unwrapped.num_rows * self.unwrapped.num_cols
     
     def reward(self, reward: float):
         return reward / self.flat_size
     
 
 
+if __name__=="__main__":
+    import gymnasium as gym
+    import tile_match_gym
+    env = gym.make("TileMatch-v0", num_rows=5, num_cols=4, num_colours=2, num_moves = 10, colour_specials=["vertical_laser", "horizontal_laser", "bomb"], colourless_specials=["cookie"], seed=2)
+    env = OneHotWrapper(ProportionRewardWrapper(env))
+
+    obs, _ = env.reset()
