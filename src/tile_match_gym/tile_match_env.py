@@ -12,7 +12,7 @@ from tile_match_gym.renderer import Renderer
 
 
 class TileMatchEnv(gym.Env):
-    metadata = {"render_modes": ["string", "human", "rgb_array"], "render_fps": 10}
+    metadata = {"render_modes": ["string", "human", "rgb_array"], "render_fps": 2}
 
     def __init__(
             self,
