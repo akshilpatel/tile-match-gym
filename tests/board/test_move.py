@@ -171,7 +171,7 @@ def test_move():
     num_eliminations, is_combination_match, num_new_specials, num_activations, shuffled = b.move((2, 1), (3, 1))
     assert num_eliminations == 11
     assert num_new_specials == 0
-    assert num_activations == 0
+    assert num_activations == 2
     assert is_combination_match
     expected_new = np.array(
         [
@@ -205,7 +205,7 @@ def test_move():
     num_eliminations, is_combination_match, num_new_specials, num_activations, shuffled = b.move((2, 1), (3, 1))
     assert num_eliminations == 11
     assert num_new_specials == 0
-    assert num_activations == 0
+    assert num_activations == 2
     assert is_combination_match
     expected_new = np.array(
         [
@@ -251,11 +251,12 @@ def test_move():
          [1, 1, 1, 1, 1]],
         ]
     )
+    assert is_combination_match
+    assert num_activations == 2
     assert np.array_equal(expected_new, b.board), print_boards(expected_new, b.board)
 
     
-    # cookie
-    print("start of cookie")
+    # cookie +
     b = Board(5, 5, 5, np_random=np.random.default_rng(10))
     b.generate_board()
     b.board[0] = np.array([[4, 4, 2, 1, 4], 
@@ -286,6 +287,8 @@ def test_move():
         ]
     )
     assert np.array_equal(expected_new, b.board), print_boards(expected_new, b.board)
+    assert is_combination_match
+    assert num_activations == 1
 
     # vertical laser activation in big board
     b = Board(8, 8, 9, np_random=np.random.default_rng(11))
@@ -294,7 +297,7 @@ def test_move():
                            [5, 3, 1, 8, 7, 1, 4, 3], 
                            [1, 1, 3, 7, 6, 6, 2, 4], 
                            [3, 2, 3, 3, 4, 1, 4, 3], 
-                           [4, 2, 1, 9, 3, 2, 2, 7], 
+                           [4, 2, 1, 9, 3, 2, 2, 7],
                            [3, 4, 1, 3, 1, 1, 4, 3], 
                            [1, 3, 2, 3, 2, 5, 3, 2], 
                            [4, 1, 1, 5, 2, 2, 3, 4]])
@@ -307,7 +310,6 @@ def test_move():
                            [1, 1, 1, 2, 1, 1, 1, 1], 
                            [1, 1, 1, 1, 1, 1, 1, 1], 
                            [1, 1, 1, 1, 1, 1, 1, 1]])
-
     num_eliminations, is_combination_match, num_new_specials, num_activations, shuffled = b.move((4, 3), (4, 4))
     expected_new = np.array(
         [
@@ -329,4 +331,7 @@ def test_move():
          [1, 1, 1, 2, 1, 1, 1, 1]],
         ]
     )
+    assert not is_combination_match
+    assert num_new_specials == 1
+
     assert np.array_equal(expected_new, b.board), print_boards(expected_new, b.board)

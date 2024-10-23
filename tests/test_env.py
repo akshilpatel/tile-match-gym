@@ -21,7 +21,6 @@ def test_env_step():
     assert info == {
         'is_combination_match': False,
         'num_new_specials': 0,
-        'num_new_specials': 0,
         'num_specials_activated': 0,
         'shuffled': False,
         'effective_actions': [3, 10, 16, 17, 18]
@@ -83,7 +82,7 @@ def test_env_step():
     assert info == {
         'is_combination_match': True,
         'num_new_specials': 1,
-        'num_specials_activated': 0,
+        'num_specials_activated': 2,
         'shuffled': False,
         'effective_actions': [] # Because there are no moves left.
     }
