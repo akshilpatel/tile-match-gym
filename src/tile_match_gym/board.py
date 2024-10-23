@@ -118,8 +118,8 @@ class Board:
         self.board = self.board[:, shuffled_idcs // self.num_cols, shuffled_idcs % self.num_cols]
 
     def remove_colour_lines(self, line_matches: List[List[Tuple[int, int]]]) -> None:
-        """Given a board and list of lines where each line is a list of coordinates where the colour of the tiles at each coordinate in one line is the same, changes the board such that none of the
-            This is only used for generating the board. This function does not touch the type of tiles in the board, only the colours.
+        """Given a board and list of lines where each line is a list of coordinates where the colour of the tiles at each coordinate in one line is the same, changes the board such that no colour matches exist.
+            This is only used for generating the board or when a shuffle is needed. This function does not touch the type of tiles in the board, only the colours.
         Args:
             line_matches (List[List[Tuple[int, int]]]): List of lines where each line is colour match.
         """
